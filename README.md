@@ -9,14 +9,14 @@ Unlike proprietary alternatives, AICW is fully transparent, open-source, run it 
 
 ## 🔓 Everything Included. Nothing Locked.
 
-✅ **Multi-Model Querying** - ChatGPT, Claude, Gemini, Llama, Mistral, DeepSeek, Qwen, Perplexity, and more
-✅ **Historical Trends** - Track rising/falling mentions over time
-✅ **Influence Scoring** - Weighted by real AI model usage data
-✅ **Entity Extraction** - Auto-identify products, companies, people, places
-✅ **Advanced Filtering** - By model, trend, link type, date range
-✅ **Beautiful Reports** - Interactive HTML with charts and drill-downs
-✅ **AI-Generated Summaries** - Executive insights from Claude/GPT
-✅ **Full Source Code** - Audit algorithms, verify calculations, contribute
+- ✅ **Multi-Model Querying** - ChatGPT, Claude, Gemini, Llama, Mistral, DeepSeek, Qwen, Perplexity, and more
+- ✅ **Historical Trends** - Track rising/falling mentions over time
+- ✅ **Influence Scoring** - Weighted by real AI model usage data
+- ✅ **Entity Extraction** - Auto-identify products, companies, people, places
+- ✅ **Advanced Filtering** - By model, trend, link type, date range
+- ✅ **Beautiful Reports** - Interactive HTML with charts and drill-downs
+- ✅ **AI-Generated Summaries** - Executive insights from Claude/GPT
+- ✅ **Full Source Code** - Audit algorithms, verify calculations, contribute
 
 **Run it on your computer. Free. Forever.**
 
@@ -49,6 +49,44 @@ aicw
 → Select AI models preset + enter your topic and preset of questions to use
 → Get your first AI monitoring report!
 ```
+
+---
+
+## 🎬 AICW in Action
+
+### Terminal Interface
+
+<p align="center">
+  <img src="https://aichatwatch.com/assets/images/screenshots/aicw-running-in-terminal.png" alt="AICW Terminal Menu" width="700"/>
+</p>
+
+**Interactive CLI menu** - Create projects, run pipelines, generate reports, all from your terminal.
+
+<p align="center">
+  <img src="https://aichatwatch.com/assets/images/screenshots/aicw-running-in-terminal-processing.png" alt="AICW Processing" width="700"/>
+</p>
+
+**Real-time processing** - Watch as AICW queries AI models, extracts entities, and classifies links.
+
+### Interactive Reports
+
+<p align="center">
+  <img src="https://aichatwatch.com/assets/images/screenshots/aicw-report-screenshot-filter-by-ai.png" alt="Filter by AI Model" width="700"/>
+</p>
+
+**Filter by AI model** - Select specific models to see which AIs are mentioning your brand.
+
+<p align="center">
+  <img src="https://aichatwatch.com/assets/images/screenshots/aicw-report-screenshot-filter-by-trend.png" alt="Filter by Trend" width="700"/>
+</p>
+
+**Filter by trend** - Focus on New, Growing, Declining, or Stable mentions to spot opportunities.
+
+<p align="center">
+  <img src="https://aichatwatch.com/assets/images/screenshots/aicw-report-screenshot-view-table.png" alt="Table View with Metrics" width="700"/>
+</p>
+
+**Detailed metrics table** - View influence scores, mention counts, trends, and links with full context.
 
 ---
 
@@ -304,7 +342,7 @@ aicw help
 ### Project Structure
 
 ```
-aicw-ee/
+aicw-/
 ├── src/
 │   ├── actions/           # Pipeline steps aka actions
 │   ├── utils/             # Shared utilities
