@@ -1,0 +1,1 @@
+Identifies challenges and their solutions within a domain. Ideal for understanding pain points and how to address them.

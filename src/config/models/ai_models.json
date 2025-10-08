@@ -1,0 +1,517 @@
+{
+  "aliases": [
+    {
+      "id": "anthropic_claude_with_search_latest",
+      "display_name": "Anthropic Claude Sonnet (latest)",
+      "targetModelId": "or_anthropic_claude_sonnet_4.5",
+      "updated_at": "2025-10-06",
+      "estimated_mau": 7500000
+    },
+    {
+      "id": "openai_chatgpt_with_search_latest",
+      "display_name": "OpenAI ChatGPT Latest",
+      "targetModelId": "or_openai_gpt-4o_online",
+      "updated_at": "2025-10-02",
+      "estimated_mau": 105000000
+    },
+    {
+      "id": "perplexity_with_search_latest",
+      "display_name": "Perplexity Sonar (with search) (latest)",
+      "targetModelId": "or_perplexity_sonar_with_search",
+      "updated_at": "2025-10-02",
+      "estimated_mau": 22000000
+    }
+  ],
+  "models": 
+  [
+    {
+      "id": "openai_gpt_5_latest",
+      "model": "gpt-5-chat-latest",
+      "display_name": "OpenAI GPT-5 Chat Latest",
+      "url": "https://openai.com/gpt-5",
+      "api_url": "https://api.openai.com/v1/",
+      "api_key_env": "OPENAI_API_KEY",
+       
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 10000000,
+      "extra_body":{
+        "order": ["OpenAI"],
+        "plugins": []
+      }      
+    },    
+    {
+      "id": "or_google_gemini_flash",
+      "model": "google/gemini-flash-1.5",
+      "display_name": "Google Gemini Flash 1.5",
+      "url": "https://gemini.google.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+     
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 225000000
+    },
+    {
+      "id": "or_google_gemini_pro",
+      "model": "google/gemini-pro-1.5",
+      "display_name": "Google Gemini Pro 1.5",
+      "url": "https://gemini.google.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+       
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 125000000
+    },
+    {
+      "id": "or_openai_gpt_4o_mini",
+      "model": "openai/gpt-4o-mini",
+      "display_name": "OpenAI GPT-4o Mini",
+      "url": "https://openai.com/gpt-4",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+         
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 125000000
+    },
+    {
+      "id": "or_google_gemini_2_0_flash_exp",
+      "model": "google/gemini-2.0-flash-exp:free",
+      "display_name": "Google Gemini 2.0 Flash Experimental",
+      "url": "https://gemini.google.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+             
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-29",      
+      "estimated_mau": 40000000
+    },
+    {
+      "id": "or_google_gemini_2_5_pro",
+      "model": "google/gemini-2.5-pro",
+      "display_name": "Google Gemini 2.5 Pro",
+      "url": "https://gemini.google.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+       
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 50000000
+    },
+    {
+      "id": "or_perplexity_sonar_with_search",
+      "model": "perplexity/sonar",
+      "display_name": "Perplexity Sonar (with search)",
+      "url": "https://perplexity.ai",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+   
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 22000000,
+      "extra_body": {
+        "order": ["Perplexity"],
+        "plugins": [
+            {
+              "id": "web",
+              "engine": "native"
+            }
+          ]
+      }
+    },
+    {
+      "id": "or_x_ai_grok_4",
+      "model": "x-ai/grok-4",
+      "display_name": "X.AI Grok 4",
+      "url": "https://x.ai",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+   
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 1000000
+    },
+    {
+      "id": "or_cohere_command",
+      "model": "cohere/command",
+      "display_name": "Cohere Command",
+      "url": "https://cohere.ai",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+      
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 300000
+    },
+    {
+      "id": "or_deepseek_chat_v3",
+      "model": "deepseek/deepseek-chat-v3-0324:free",
+      "display_name": "DeepSeek Chat v3",
+      "url": "https://deepseek.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+       
+      
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-29",
+      "estimated_mau": 90000000
+    },
+    {
+      "id": "or_deepseek_r1",
+      "model": "deepseek/deepseek-r1:free",
+      "display_name": "DeepSeek R1",
+      "url": "https://deepseek.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+             
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-29",
+      "estimated_mau": 110000000
+    },
+    {
+      "id": "or_qwen_32b",
+      "model": "qwen/qwq-32b",
+      "display_name": "Qwen 32B",
+      "url": "https://qwen.ai",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+             
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-29",
+      "estimated_mau": 325000
+    },
+    {
+      "id": "or_mistral_nemo",
+      "model": "mistralai/mistral-nemo:free",
+      "display_name": "Mistral Nemo",
+      "url": "https://mistral.ai",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+             
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-29",
+      "estimated_mau": 500000
+    },
+    {
+      "id": "or_llama_4_maverick",
+      "model": "meta-llama/llama-4-maverick",
+      "display_name": "Llama 4 Maverick",
+      "url": "https://llama.meta.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+
+      
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 15000000
+    },
+    {
+      "id": "or_mistral_small_3_2",
+      "model": "mistralai/mistral-small-3.2-24b-instruct:free",
+      "display_name": "Mistral Small 3.2 24B",
+      "url": "https://mistral.ai",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+       
+      
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 125000
+    },
+    {
+      "id": "or_mistral_7b_instruct",
+      "model": "mistralai/mistral-7b-instruct:free",
+      "display_name": "Mistral 7B Instruct",
+      "url": "https://mistral.ai",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+       
+      
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 1250000
+    },
+    {
+      "id": "or_meta_llama_3_3_70b",
+      "model": "meta-llama/llama-3.3-70b-instruct:free",
+      "display_name": "Llama 3.3 70B Instruct",
+      "url": "https://llama.meta.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+       
+      
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 27500000
+    },
+    {
+      "id": "or_google_gemma_3",
+      "model": "google/gemma-3-12b-it:free",
+      "display_name": "Gemma 3 12B IT",
+      "url": "https://gemma.google.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+       
+      
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 7500000
+    },
+    {
+      "id": "or_tencent_hunyuan",
+      "model": "tencent/hunyuan-a13b-instruct:free",
+      "display_name": "Tencent Hunyuan A13B",
+      "url": "https://hunyuan.tencent.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+       
+      
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 125000
+    },
+    {
+      "id": "or_anthropic_claude_3_5_sonnet",
+      "model": "anthropic/claude-3.5-sonnet",
+      "display_name": "Claude 3.5 Sonnet",
+      "url": "https://anthropic.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+   
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 27000000
+    },
+    {
+      "id": "or_anthropic_claude_4_sonnet",
+      "model": "anthropic/claude-sonnet-4",
+      "display_name": "Claude 4 Sonnet",
+      "url": "https://anthropic.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+   
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 7500000
+    },
+    {
+      "id": "or_deepseek_chat",
+      "model": "deepseek/deepseek-chat",
+      "display_name": "DeepSeek Chat",
+      "url": "https://deepseek.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 90000000,
+      "extra_body": {
+        "order": ["DeepSeek"],
+        "plugins": [
+            {
+              "id": "web",
+              "engine": "native"
+            }
+          ]
+      }
+    },
+    {
+      "id": "or_perplexity_sonar_pro",
+      "model": "perplexity/sonar-pro",
+      "display_name": "Perplexity Sonar Pro (advanced search)",
+      "url": "https://perplexity.ai",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+   
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 22000000,
+      "extra_body": {
+        "order": ["Perplexity"],
+        "plugins": [
+            {
+              "id": "web",
+              "engine": "native"
+            }
+          ]
+      }
+    },
+    {
+      "id": "or_perplexity_sonar_deep_research",
+      "model": "perplexity/sonar-deep-research",
+      "display_name": "Perplexity Sonar Deep Research",
+      "url": "https://perplexity.ai",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+   
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 22000000,
+      "extra_body": {
+        "order": ["Perplexity"],
+        "plugins": [
+            {
+              "id": "web",
+              "engine": "native"
+            }
+        ]
+      }
+    },
+    {
+      "id": "openai_gpt_4",
+      "model": "gpt-4",
+      "display_name": "OpenAI GPT-4",
+      "url": "https://openai.com/gpt-4",
+      "api_url": "https://api.openai.com/v1/",
+      "api_key_env": "OPENAI_API_KEY",
+       
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 10000000,
+      "extra_body":{
+        "order": ["OpenAI"],
+        "plugins": []
+      }      
+    },
+    {
+      "id": "openai_gpt_3_5_turbo_16k",
+      "model": "gpt-3.5-turbo-16k",
+      "display_name": "OpenAI GPT-3.5 Turbo 16K",
+      "url": "https://openai.com/pricing",
+      "api_url": "https://api.openai.com/v1/",
+      "api_key_env": "OPENAI_API_KEY",
+         
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 30000000
+    },
+    {
+      "id": "or_google_gemini_2_0_flash_thinking",
+      "model": "google/gemini-2.0-flash-thinking-exp-1219",
+      "display_name": "Google Gemini 2.0 Flash Thinking",
+      "url": "https://gemini.google.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+             
+      "created_at": "2025-07-19",
+      "updated_at": "2025-07-19",
+      "estimated_mau": 27500000,
+      "extra_body":{
+        "order": ["Google"],
+        "plugins": [
+            {
+              "id": "web",
+              "engine": "native"
+            }
+          ]
+      }
+    },
+    {
+      "id": "or_openai_gpt-4o_online",
+      "model": "openai/gpt-4o:online",
+      "display_name": "OpenAI GPT-4o Online",
+      "url": "https://openai.com/gpt-4",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+
+      "extra_body": {
+        "order": ["OpenAI"],
+        "plugins": [
+            {
+              "id": "web",
+              "engine": "native"
+            }
+          ]
+      },
+      "created_at": "2025-09-24",
+      "updated_at": "2025-09-24",
+      "estimated_mau": 105000000
+    },
+    {
+      "id": "or_perplexity_sonar_reasoning",
+      "model": "perplexity/sonar-reasoning",
+      "display_name": "Perplexity Sonar Reasoning Online",
+      "url": "https://perplexity.ai",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+
+      "extra_body": {
+        "order": ["Perplexity"],
+        "plugins": [
+            {
+              "id": "web",
+              "engine": "native"
+            }
+          ]
+      },
+      "created_at": "2025-09-24",
+      "updated_at": "2025-09-24",
+      "estimated_mau": 22000000
+    },
+    {
+      "id": "or_openai_gpt-4o_search_preview",
+      "model": "openai/gpt-4o-search-preview",
+      "display_name": "OpenAI GPT-4o Search Preview",
+      "url": "https://openai.com/gpt-4",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+
+      "extra_body": {
+        "order": ["OpenAI"],
+        "plugins": [
+            {
+              "id": "web",
+              "engine": "native"
+            }
+          ]
+      },
+      "created_at": "2025-09-24",
+      "updated_at": "2025-09-24",
+      "estimated_mau": 105000000
+    },    
+    {
+      "id": "or_anthropic_claude_sonnet_4.5",
+      "model": "anthropic/claude-sonnet-4.5",
+      "display_name": "Anthropic Claude Sonnet 4.5",
+      "url": "https://anthropic.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+
+      "extra_body": {
+        "order": ["Anthropic"],
+        "plugins": [
+            {
+              "id": "web",
+              "engine": "native"
+            }
+          ]
+      },
+      "created_at": "2025-09-24",
+      "updated_at": "2025-09-24",
+      "estimated_mau": 7500000
+    },    
+    {
+      "id": "or_anthropic_claude_sonnet_4",
+      "model": "anthropic/claude-sonnet-4",
+      "display_name": "Anthropic Claude Sonnet 4",
+      "url": "https://anthropic.com",
+      "api_url": "https://openrouter.ai/api/v1/",
+      "api_key_env": "OPENROUTER_API_KEY",
+
+      "extra_body": {
+        "order": ["Anthropic"],
+        "plugins": [
+            {
+              "id": "web",
+              "engine": "native"
+            }
+          ]
+      },
+      "created_at": "2025-09-24",
+      "updated_at": "2025-09-24",
+      "estimated_mau": 7500000
+    }  
+  ]
+}

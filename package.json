@@ -1,0 +1,91 @@
+{
+  "name": "@aichatwatch/aicw",
+  "version": "1.0.8",
+  "description": "AI Chat Watch - Know what AI says about your brand, competitors and industry",
+  "type": "module",
+  "bin": {
+    "aicw": "./bin/aicw.js",
+    "aicw-dev": "./bin/aicw-dev.js"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "src/config/templates/",
+    "src/config/models/",
+    "src/config/prompts/",
+    "src/config/link-types/",
+    "src/config/*.json",
+    "src/data/",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "prebuild": "rm -rf dist/ && node scripts/build-link-types.js",
+    "postbuild": "node scripts/copy-assets.js",
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "dev:run": "node bin/aicw-dev.js",
+    "start": "node bin/aicw.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:local": "npm run build && node bin/aicw.js help",
+    "link:local": "npm run build && npm link && echo 'aicw command is now available globally'",
+    "link:dev": "npm run build && npm link && npm link aicw && echo 'Development mode enabled with auto-rebuild'",
+    "unlink:local": "npm unlink -g aicw && echo 'aicw command removed'",
+    "prepublishOnly": "npm run build",
+    "clean": "rimraf dist/ .last-build *.tgz",
+    "rebuild": "npm run clean && npm run build",
+    "pack:test": "npm run build && npm pack && echo 'Package created'",
+    "pack:verify": "npm run pack:test",
+    "pack:inspect": "npm run pack:test",
+    "pack:clean": "rimraf aicw-*.tgz && echo 'Cleaned up test packages'",
+    "prepack": "npm run build",
+    "package:dry": "npm pack --dry-run"
+  },
+  "keywords": [
+    "ai",
+    "chat",
+    "monitoring",
+    "llm",
+    "chatbot",
+    "gpt",
+    "claude",
+    "gemini",
+    "ai-tools",
+    "cli",
+    "openai",
+    "anthropic",
+    "google",
+    "ai chat watch"    
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aichatwatch/aicw"
+  },
+  "homepage": "https://aichatwatch.com",
+  "bugs": {
+    "url": "https://github.com/aichatwatch/aicw/issues"
+  },
+  "author": "Evgenii Mironichev",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "dependencies": {
+    "csv-parse": "^5.5.0",
+    "fs-extra": "^11.2.0",
+    "marked": "^16.0.0",
+    "openai": "^4.21.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.19.17",
+    "husky": "^8.0.3",
+    "jest": "^29.7.0",
+    "rimraf": "^5.0.10",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.8.3"
+  }
+}

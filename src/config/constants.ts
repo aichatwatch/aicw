@@ -1,0 +1,1 @@
+export const AGGREGATED_DIR_NAME = '_all-questions-combined';

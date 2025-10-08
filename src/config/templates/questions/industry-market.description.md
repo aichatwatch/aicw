@@ -1,0 +1,1 @@
+Analyzes market dynamics and key players. Ideal for understanding the competitive landscape and industry structure.

@@ -1,0 +1,56 @@
+# Build outputs
+dist/
+*.tgz
+*.tar.gz
+
+# OS files
+.DS_Store
+*/**/.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+.env.*
+.env.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+.cache/
+
+# Build artifacts
+.last-build
+build/
+
+# User data (never commit)
+data/projects/
+data/OUTPUT/
+data/reports/
+data/clients/
+
+# misc
+.playwright-mc/
+.claude/
+
+# Package testing
+package/
+

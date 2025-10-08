@@ -1,0 +1,1 @@
+Examines pricing, costs, and return on investment. Essential for budget planning and financial decision-making.

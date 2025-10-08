@@ -1,0 +1,190 @@
+# ====================================================================
+# .npmignore - Controls what gets excluded from the npm package
+# ====================================================================
+
+# Development and source files (keep only what's specified in package.json)
+src/**/*.ts
+!src/config/categories.ts
+!src/shim.d.ts
+*.map
+tsconfig.json
+.last-build
+
+# Test files
+test/
+tests/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+seo_test_log.txt
+test-regex.js
+__tests__/
+coverage/
+.nyc_output/
+
+# User data directories (NEVER include user data)
+data/projects/
+data/OUTPUT/
+data/reports/
+data/clients/
+data/*.md
+!data/templates/
+
+# Development environment files
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+Thumbs.db
+.sublime-*
+*.sublime-*
+.atom/
+.history/
+
+# Documentation source files
+docs/
+doc/
+*.md
+!README.md
+!CONTRIBUTING.md
+
+# Build and log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.npm/
+*.tgz
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+.cache/
+.tmp/
+
+# Development scripts and configs
+scripts/dev-*
+.eslintrc*
+.prettierrc*
+.editorconfig
+.travis.yml
+.circleci/
+.gitlab-ci.yml
+appveyor.yml
+
+# Package manager files (except package.json)
+yarn.lock
+pnpm-lock.yaml
+.pnpm-debug.log
+shrinkwrap.yaml
+.yarn/
+
+# Misc development files
+Makefile
+makefile
+gulpfile.js
+Gruntfile.js
+webpack.config.js
+rollup.config.js
+.babelrc*
+jest.config.*
+
+# macOS specific
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows specific
+Desktop.ini
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux specific
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Node specific
+node_modules/
+jspm_packages/
+web_modules/
+*.pid
+*.seed
+*.pid.lock
+.grunt
+bower_components
+.lock-wscript
+build/Release
+.npm
+.node_repl_history
+*.tgz
+.yarn-integrity
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# EE directory (commercial license, handled separately if exists)
+ee/
+
+# Local development only files
+dev-notes.txt
+TODO.txt
+NOTES.txt
+scratch/
+experiments/
