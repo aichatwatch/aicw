@@ -1,6 +1,9 @@
 {
   "name": "@aichatwatch/aicw",
   "version": "1.0.8",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "AI Chat Watch - Know what AI says about your brand, competitors and industry",
   "type": "module",
   "bin": {
