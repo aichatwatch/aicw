@@ -2,7 +2,9 @@
 
 **Fully Transparent AI Monitoring For Marketers. Self-Host Free or Let Us Handle It.**
 
-Track what ChatGPT, Claude, Gemini, Perplexity, and 20+ other AI models say about your brand, competitors, products, or any topic. Unlike proprietary alternatives, AICW is fully transparent—audit every algorithm, run it on your own computer. 
+Track what ChatGPT, Claude, Gemini, Perplexity, and 20+ other AI models say about your brand, competitors, products, or any topic.
+
+Unlike proprietary alternatives, AICW is fully transparent, open-source, run it on your own computer. 
 ---
 
 ## 🔓 Everything Included. Nothing Locked.
@@ -10,10 +12,10 @@ Track what ChatGPT, Claude, Gemini, Perplexity, and 20+ other AI models say abou
 ✅ **Multi-Model Querying** - ChatGPT, Claude, Gemini, Llama, Mistral, DeepSeek, Qwen, Perplexity, and more
 ✅ **Historical Trends** - Track rising/falling mentions over time
 ✅ **Influence Scoring** - Weighted by real AI model usage data
-✅ **AI-Generated Summaries** - Executive insights from Claude/GPT
 ✅ **Entity Extraction** - Auto-identify products, companies, people, places
 ✅ **Advanced Filtering** - By model, trend, link type, date range
 ✅ **Beautiful Reports** - Interactive HTML with charts and drill-downs
+✅ **AI-Generated Summaries** - Executive insights from Claude/GPT
 ✅ **Full Source Code** - Audit algorithms, verify calculations, contribute
 
 **Run it on your computer. Free. Forever.**
@@ -92,7 +94,7 @@ When you're tracking what AI models say about your brand, you need to **trust th
 
 - 🔍 **Audit every algorithm** - See exactly how trends are calculated, how influence is scored
 - 🛡️ **Verify data handling** - No black boxes, no hidden metrics
-- 🔓 **No vendor lock-in** - Self-host forever, export data anytime
+- 🔓 **No vendor lock-in** - Run on your computer, own all data, export data anytime
 - 🤝 **Community-driven** - Contribute improvements, fix bugs, shape the roadmap
 - 📖 **Educational** - Learn from real production AI monitoring code
 
@@ -135,26 +137,9 @@ When you're tracking what AI models say about your brand, you need to **trust th
 - Your data and backups
 - Software updates
 
-### AICW Cloud (From $49/month)
-
-**Perfect for:**
-- Teams who want to focus on insights, not infrastructure
-- Companies that value their DevOps time
-- Fast-growing startups
-- Anyone who wants "just works" experience
-
-**You get everything when running on your computer PLUS:**
-- ⚡ Zero setup - Start in 5 minutes
-- 📅 Scheduled runs (daily/weekly/monthly)
-- 🔔 Alerts 
-- 👥 Team collaboration
-- 💬 Priority support
-- 🔐 Automatic backups
-- 🔄 Automatic updates
-
 **We manage:** Everything.
 
-**[Signup for AICW Cloud →](https://aichatwatch.com/cloud)**
+**[More Info About Cloud →](https://aichatwatch.com/cloud)**
 
 ---
 
