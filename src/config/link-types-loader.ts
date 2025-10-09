@@ -2,8 +2,9 @@
    * Link Types Loader
    */
 
-// import link types from json
-import linkTypesData from './generated-from-data/link-types.json' with { type: 'json' };
+// import link types from link-types.json which is automatically generated
+// from /config/data/link-types/patterns during prebuild using scripts/build-link-types.js
+import linkTypesData from './data-generated/link-types.json' with { type: 'json' };
 
 // Type definitions
 export interface LinkTypeConfig {

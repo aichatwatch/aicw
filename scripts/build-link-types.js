@@ -14,8 +14,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.join(__dirname, '..');
 
 // Paths
-const basePatternsDir = path.join(projectRoot, 'src', 'data', 'link-types', 'patterns');
-const baseOutputPath = path.join(projectRoot, 'src', 'config', 'link-types.json');
+const basePatternsDir = path.join(projectRoot, 'src', 'config', 'data', 'link-types', 'patterns');
+const baseOutputPath = path.join(projectRoot, 'src', 'config', 'data-generated', 'link-types.json');
 
 /**
  * Main build function for OSS version

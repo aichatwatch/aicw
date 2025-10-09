@@ -15,7 +15,7 @@ import { performUpdate, showVersion } from './utils/update-installer.js';
 import { getCliMenuItems, getInvokablePipelines, getActionByCommand, CliMenuItem, getPipeline } from './config/pipelines-and-actions.js';
 import { PipelineExecutor, ExecutionOptions } from './utils/pipeline-executor.js';
 import { validateAndLoadProject } from './utils/project-utils.js';
-import { startServer, stopServer } from './utils/report-serve.js';
+import { startServer, stopServer } from './actions/utils/report-serve.js';
 
 // Helper function to get absolute path to script files
 function getScriptPath(scriptName: string): string {

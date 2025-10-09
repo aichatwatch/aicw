@@ -131,7 +131,7 @@ export function predictAttributeValueForEntities(data: any, entities: Entity[], 
               // so we can use it as a link for prediction!
               e.link = suggestedLink;
               result.push(e);
-              logger.info(`predictAttributeValueForEntities: predicted link value for "${e.value}" in "${e.sectionName}" section: ${e.link}`);
+              logger.info(`predicted link value for "${e.value}" in "${e.sectionName}" section: ${e.link}`);
               predictedLinksCount++;
               break;
             }
@@ -139,7 +139,7 @@ export function predictAttributeValueForEntities(data: any, entities: Entity[], 
         }
       }
     }
-    logger.info(`predictAttributeValueForEntities: predicted ${result.length} values for "${attrName}" attribute`);
+    logger.info(`predicted "${attrName}" attribute for ${result.length} items`);
   }
   // NO OTHER TYPES ARE SUPPORTED YET
   else {

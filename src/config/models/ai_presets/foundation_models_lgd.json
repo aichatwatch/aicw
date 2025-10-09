@@ -1,10 +1,10 @@
 {
-    "name": "Foundation Models",
-    "description": "Foundation LLM models (Llama, Qwen, Deepseek) (via OpenRouter, free models). Uses paid o4-mini for analysis",
+    "name": "Foundation Models LGD",
+    "description": "Foundation LLM models LGD (Llama, Gemini, Deepseek) (via OpenRouter, free models). Uses paid o4-mini for analysis",
     "models": {
         "get_answer": [
             "or_meta_llama_3_3_70b",
-            "or_qwen_32b",
+            "or_google_gemini_2_0_flash_exp",
             "or_deepseek_chat_v3"
         ],
         "extract_entities": [

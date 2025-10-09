@@ -397,7 +397,7 @@ export const APP_ACTIONS: AppAction[] = [
 
   {
     id: 'report-serve',
-    cmd: 'utils/report-serve',
+    cmd: 'actions/utils/report-serve',
     name: 'Reports: run reports server',
     desc: 'Start web server to view reports in browser',
     pipelines: [],
@@ -406,6 +406,16 @@ export const APP_ACTIONS: AppAction[] = [
     requiresProject: false,
   },
 
+  {
+    id: 'show-user-data-location',
+    cmd: 'actions/utils/show-user-data-location',
+    name: 'Utility: show user data folders location',
+    desc: 'Show user data folder location',
+    pipelines: [],    
+    category: 'utility',
+    requiresProject: false,
+  },  
+/*
   {
     id: 'report-compare',
     cmd: 'actions/report-compare',
@@ -416,6 +426,7 @@ export const APP_ACTIONS: AppAction[] = [
     category: 'utility',
     requiresProject: true,
   },
+  */
 ];
 
 // PIPELINE DEFINITIONS

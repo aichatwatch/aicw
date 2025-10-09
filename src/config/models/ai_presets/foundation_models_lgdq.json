@@ -5,7 +5,8 @@
         "get_answer": [
             "or_meta_llama_3_3_70b",
             "or_qwen_32b",
-            "or_deepseek_chat_v3"
+            "or_deepseek_chat_v3",
+            "or_google_gemini_2_0_flash_exp"
         ],
         "extract_entities": [
             "or_openai_gpt_4o_mini"

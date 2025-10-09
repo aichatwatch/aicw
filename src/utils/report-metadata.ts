@@ -67,7 +67,14 @@ export function addReportMetadata(
     const items = data[arrayName] || [];
     const botCounts: { [botId: string]: number } = {};
 
-    // Count items for each bot
+    // Initialize with ALL bots from data.bots (with count=0)
+    if (data.bots && Array.isArray(data.bots)) {
+      for (const bot of data.bots) {
+        botCounts[bot.id] = 0;
+      }
+    }
+
+    // Count total mentions of items for each bot
     for (const item of items) {
       if (item.mentionsByModel) {
         for (const [botId, mentions] of Object.entries(item.mentionsByModel)) {
