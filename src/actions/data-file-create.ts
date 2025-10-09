@@ -1,17 +1,10 @@
-/**
- * Extract Entities - Prepare Data File
- *
- * Creates initial {date}-data.js files from template before entity extraction.
- * This step ensures the data structure exists before extract-entities populates it.
- */
-
 import { promises as fs } from 'fs';
 import path from 'path';
 import { QuestionEntry } from '../config/types.js';
 import { QUESTIONS_DIR, QUESTION_DATA_COMPILED_DATE_DIR, MIN_VALID_OUTPUT_DATA_SIZE, REPORT_HTML_TEMPLATE_DIR } from '../config/paths.js';
 import { logger } from '../utils/compact-logger.js';
 import { replaceMacrosInTemplate, waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
-import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, readQuestions, validateAndLoadProject } from '../utils/project-utils.js';
+import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, loadProjectModelConfigs, ModelType, readQuestions, validateAndLoadProject } from '../utils/project-utils.js';
 import { writeFileAtomic } from '../utils/misc-utils.js';
 import { PipelineCriticalError } from '../utils/pipeline-errors.js';
 import { MAIN_SECTIONS } from '../config/entities.js';
@@ -61,8 +54,18 @@ export async function dataFilePrepare(project: string, targetDate: string): Prom
       // Create directory if needed
       await fs.mkdir(compiledDir, { recursive: true });
 
-      // Fill template
+      // date without dashes
       const dateWithoutDashes = targetDate.replace(/-/g, '');
+
+      // information about AI models for this project
+      // getting list of AI models for this project for answer fetching
+      const projectAIModels = await loadProjectModelConfigs(project, ModelType.GET_ANSWER);
+      const projectAIModelsAsJson = JSON.stringify(projectAIModels.map(m => ({
+        id: m.id,
+        name: m.display_name,
+        url: m.url,
+        estimated_mau: m.estimated_mau || 0
+      })));      
 
       const filled = await replaceMacrosInTemplate(template, {
         '{{REPORT_QUESTION}}': question.question,
@@ -70,7 +73,8 @@ export async function dataFilePrepare(project: string, targetDate: string): Prom
         '{{REPORT_QUESTION_ID}}': question.folder,
         '{{REPORT_CREATED_AT_DATETIME}}': getCurrentDateTimeAsString(),
         '{{REPORT_DATE_WITHOUT_DASHES}}': dateWithoutDashes,
-        '{{MAIN_SECTIONS_JSON}}': MAIN_SECTIONS.map(entity => `"${entity}":[]\n`).join(',')
+        '{{MAIN_SECTIONS_JSON}}': MAIN_SECTIONS.map(entity => `"${entity}":[]\n`).join(','),
+        '{{AI_MODELS_JSON}}': projectAIModelsAsJson
       });
 
       // Write data file

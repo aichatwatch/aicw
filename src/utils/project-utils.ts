@@ -75,12 +75,12 @@ export async function loadDataJs(file: string, keyPrefix: string = 'AppData'): P
       timeout: 5000
     });
   } catch (error: any) {
-    throw new Error(`Failed to execute JS file ${path.basename(file)}: ${error.message}`);
+    throw new Error(`Failed to execute JS file ${file}: ${error.message}`);
   }
 
   const dataKey = Object.keys(context.window).find(k => k.startsWith(keyPrefix));
   if (!dataKey) {
-    throw new Error(`Unable to find ${keyPrefix} in ${path.basename(file)}`);
+    throw new Error(`Unable to find ${keyPrefix} in ${file}`);
   }
 
   return { data: context.window[dataKey], dataKey: dataKey };

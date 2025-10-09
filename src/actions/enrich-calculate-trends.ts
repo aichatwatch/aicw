@@ -367,13 +367,6 @@ export async function enrichCalculateTrends(project: string, targetDate: string)
         }
       }
 
-      // Add bots array from project models (required by report UI)
-      data.bots = projectModels.map(m => ({
-        id: m.id,
-        name: m.display_name,
-        estimated_mau: m.estimated_mau || 0
-      }));
-
       // Add report metadata before saving
       addReportMetadata(data, dates);
 
