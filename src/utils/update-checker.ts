@@ -284,6 +284,12 @@ export function getUpdateNotification(): string | null {
     return null;
   }
 
+  // Skip notification if current version is 0.0.0
+  // (indicates fresh install, dev mode, or error)
+  if (cached.currentVersion === '0.0.0') {
+    return null;
+  }  
+
   const binaryName = getBinaryName();
   return `ℹ️  Update available: ${cached.currentVersion} → ${cached.latestVersion}\n   Run '${binaryName} update' to upgrade`;
 }
