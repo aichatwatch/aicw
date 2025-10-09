@@ -28,19 +28,39 @@ export const CONFIG_DIR: string = getPackageConfigDir();
 
 
 export const DATE_FOLDER_NAME_PATTERN_REGEX = /^\d{4}-\d{2}-\d{2}$/
-// Config subdirectories (from package)
-const MODELS_DIR: string = path.join(CONFIG_DIR, 'models');
-export const AI_PRESETS_DIR: string = path.join(MODELS_DIR, 'ai_presets');
-const ANSWERS_CONFIG_DIR: string = path.join(CONFIG_DIR, 'answers');
+
 export const PROMPTS_DIR: string = path.join(CONFIG_DIR, 'prompts');
 // Templates should be read from package directory
 export const TEMPLATES_DIR: string = getPackageTemplatesDir();
-export const QUESTION_TEMPLATES_DIR: string = path.join(TEMPLATES_DIR, 'questions');
+
+// ---- USER DATA (copied from /config/default/* on setup)
+export const USER_CONFIG_DIR: string = path.join(USER_DATA_DIR, 'config');
+// source folder with default files for user 
+export const DEFAULT_DATA_FOR_USER_DATA_DIR = path.join(CONFIG_DIR, 'default');
+// using .credentials directory to hide the credentials file from the user
+export const USER_CONFIG_CREDENTIALS_DIR: string = path.join(USER_CONFIG_DIR, '.credentials');
+export const USER_CONFIG_CREDENTIALS_FILE: string = path.join(USER_CONFIG_CREDENTIALS_DIR, 'credentials.json');
+
+
+export const USER_CONFIG_PROMPTS_DIR: string = path.join(USER_CONFIG_DIR, 'prompts');
+export const USER_CONFIG_TEMPLATES_DIR = path.join(USER_CONFIG_DIR, 'templates')
+const USER_MODELS_DIR: string = path.join(USER_CONFIG_DIR, 'models');
+// ai models
+export const USER_MODELS_JSON_FILE: string = path.join(USER_MODELS_DIR, 'ai_models.json');
+// presets with ai models
+export const USER_AI_PRESETS_DIR: string = path.join(USER_CONFIG_DIR, 'ai_presets');
+export const USER_QUESTION_TEMPLATES_DIR: string = path.join(USER_CONFIG_TEMPLATES_DIR, 'questions');
+//============
+
+
 export const REPORT_TEMPLATES_DIR: string = path.join(TEMPLATES_DIR, 'report');
 
-// Specific config files
-export const MODELS_JSON_FILE: string = path.join(MODELS_DIR, 'ai_models.json');
-export const SYSTEM_PROMPT_PATH: string = path.join(PROMPTS_DIR, 'answers', 'system-prompt.md');
+
+
+
+export const SYSTEM_PROMPT_PATH: string = path.join(USER_CONFIG_PROMPTS_DIR, 'answers', 'system-prompt.md');
+
+
 export const ENRICH_GENERATE_SUMMARY_PROMPT_PATH: string = path.join(PROMPTS_DIR, 'enrich-generate-summary.md');
 export const ENRICH_GENERATE_SUMMARY_AGGREGATE_PROMPT_PATH: string = path.join(PROMPTS_DIR, 'enrich-generate-summary-aggregate.md');
 
@@ -77,11 +97,6 @@ export const AGGREGATED_DATA_COMPILED_DIR = (project: string): string =>
   getUserAggregatedDataCompiledDir(project);
 export const AGGREGATED_DATA_COMPILED_DATE_DIR = (project: string, date: string): string => 
   getUserAggregatedDataCompiledDateDir(project, date);
-
-// User data directory (delegate to user-paths for consistency)
-export const getUserDataPath = (): string => {
-  return USER_DATA_DIR;
-};
 
 // File size constraints
 export const MIN_VALID_ANSWER_SIZE = 200; // Minimum size in bytes for a valid answer

@@ -3,7 +3,7 @@ import path, { join } from 'path';
 import { createInterface } from 'readline';
 import { colorize,  waitForEnterInInteractiveMode,  writeFileAtomic } from '../utils/misc-utils.js';
 import { ModelConfig, loadAllAIPresets, getAIAIPresetWithModels } from '../utils/model-config.js';
-import { ROOT_DIR, QUESTION_TEMPLATES_DIR, PROJECT_DIR } from '../config/paths.js';
+import { ROOT_DIR, USER_QUESTION_TEMPLATES_DIR, PROJECT_DIR } from '../config/paths.js';
 import { getProjectDisplayPath, getPackageRoot, getUserProjectQuestionsFile, getUserProjectConfigFile } from '../config/user-paths.js';
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
@@ -79,7 +79,7 @@ async function loadQuestionTemplates(): Promise<QuestionTemplate[]> {
   const templates: QuestionTemplate[] = [];
   
   try {
-    const files = await fs.readdir(QUESTION_TEMPLATES_DIR);
+    const files = await fs.readdir(USER_QUESTION_TEMPLATES_DIR);
     const templateFiles = files.filter(f => f.endsWith('.md') && !f.includes('.description.'));
     
     for (const file of templateFiles) {
@@ -89,14 +89,14 @@ async function loadQuestionTemplates(): Promise<QuestionTemplate[]> {
       ).join(' ');
       
       // Load template questions
-      const questionsPath = join(QUESTION_TEMPLATES_DIR, file);
+      const questionsPath = join(USER_QUESTION_TEMPLATES_DIR, file);
       const questionsContent = await fs.readFile(questionsPath, 'utf-8');
       const questions = questionsContent.split('\n').filter(line => line.trim());
       
       // Load description if exists
       let description = '';
       try {
-        const descPath = join(QUESTION_TEMPLATES_DIR, `${name}.description.md`);
+        const descPath = join(USER_QUESTION_TEMPLATES_DIR, `${name}.description.md`);
         description = await fs.readFile(descPath, 'utf-8').then(d => d.trim());
       } catch {
         description = `Questions about ${display_name}`;

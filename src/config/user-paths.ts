@@ -1,9 +1,11 @@
 import path, { dirname } from 'path';
 import { homedir, platform } from 'os';
-import { existsSync, mkdirSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
+import { copySync } from 'fs-extra';
 import { AGGREGATED_DIR_NAME } from './constants.js';
 import { CompactLogger } from '../utils/compact-logger.js';
+import { DEFAULT_DATA_FOR_USER_DATA_DIR } from './paths.js';
 const logger = CompactLogger.getInstance();
 
 // default other link type short name
@@ -11,6 +13,8 @@ export const DEFAULT_OTHER_LINK_TYPE_SHORT_NAME = 'oth';
 export const DEFAULT_OTHER_LINK_TYPE_LONG_NAME = 'Other';
 
 const DEFAULT_AICW_USER_NAME = 'default-user';
+
+// User data directory (delegate to user-paths for consistency)
 // User data subdirectories
 export const USER_DATA_DIR = getUserDataDir();
 export const USER_PROJECTS_DIR = path.join(USER_DATA_DIR, 'projects');
@@ -24,14 +28,6 @@ export const DEFAULT_INDEX_FILE = 'index.html';
 
 const QUESTION_FILE_NAME = 'question.md';
 const QUESTIONS_FILE_NAME = 'questions.md';
-
-
-/*
-export function isForceRebuildEnabled(): boolean {
-  return process.env.AICW_FORCE_REBUILD === undefined || process.env.AICW_FORCE_REBUILD !== 'false';
-}
-*/
-
 
 /**
  * User data path management for aicw
@@ -191,6 +187,9 @@ export function getActualReportsPath(projectName: string): string {
 
 // Initialize user directories (creates them if they don't exist)
 export function initializeUserDirectories(): void {
+
+  logger.info(`Initializing user data directories...`);
+  // project and reports directories
   const directories = [
     USER_DATA_DIR,
     USER_PROJECTS_DIR,
@@ -204,7 +203,80 @@ export function initializeUserDirectories(): void {
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
     }
+    else {
+      logger.info(`Folder ${dir} already exists, skipping creation.`);
+    }
   }
+  // copy default data to user folder
+  copyDefaultDataToUserConfig();
+}
+
+export function copyDefaultDataToUserConfig(): void {
+    // now get folders from config/default
+  // by scanning for all subfodlers
+  // Synchronously read all subfolders in DEFAULT_DATA_FOR_USER_DATA_DIR
+  const defaultDataFoldersInConfigDefault = readdirSync(DEFAULT_DATA_FOR_USER_DATA_DIR, { withFileTypes: true })
+    .filter(f => f.isDirectory())
+    .map(f => f.name);
+  // now copy all folders from config/default to user config directory
+  for (const folder of defaultDataFoldersInConfigDefault) {
+    const srcFolder = path.join(DEFAULT_DATA_FOR_USER_DATA_DIR, folder);
+    const destFolder = path.join(USER_CONFIG_DIR, folder);
+
+    // Ensure destination folder exists
+    if (!existsSync(destFolder)) {
+      mkdirSync(destFolder, { recursive: true });
+    }
+
+    // Copy each file individually, only if it does not exist
+    const files = readdirSync(srcFolder, { withFileTypes: true })
+      .filter(f => f.isFile())
+      .map(f => f.name);
+
+    for (const file of files) {
+      const srcFile = path.join(srcFolder, file);
+      const destFile = path.join(destFolder, file);
+      if (!existsSync(destFile)) {
+        copySync(srcFile, destFile);
+      } else {
+        logger.warn(`File ${destFile} already exists. Skipping copy.`);
+      }
+    }
+  }
+}
+
+export function checkIfUserConfigFolderHasAllRequiredDataFiles(): boolean {
+  // Get all folders in config/default
+  const defaultDataFolders = readdirSync(DEFAULT_DATA_FOR_USER_DATA_DIR, { withFileTypes: true })
+    .filter(f => f.isDirectory())
+    .map(f => f.name);
+
+  const missingFiles: string[] = [];
+
+  for (const folder of defaultDataFolders) {
+    const srcFolder = path.join(DEFAULT_DATA_FOR_USER_DATA_DIR, folder);
+    const destFolder = path.join(USER_CONFIG_DIR, folder);
+
+    // Get all files in the default folder
+    const files = readdirSync(srcFolder, { withFileTypes: true })
+      .filter(f => f.isFile())
+      .map(f => f.name);
+
+    for (const file of files) {
+      const destFile = path.join(destFolder, file);
+      if (!existsSync(destFile)) {
+        missingFiles.push(path.relative(USER_CONFIG_DIR, destFile));
+      }
+    }
+  }
+
+  if (missingFiles.length > 0) {
+    logger.warn(`Missing required user config files: \n${missingFiles.join('\n')}\nRun setup again to fix this.`);
+    return false;
+  }
+
+  // otherwise return true
+  return true;
 }
 
 // Check if running in development mode (has src directory)

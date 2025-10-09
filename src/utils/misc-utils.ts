@@ -2,12 +2,13 @@ import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { randomBytes } from 'crypto';
-import { USER_CONFIG_DIR, isDevMode } from '../config/user-paths.js';
+import { isDevMode } from '../config/user-paths.js';
 import { decryptCredentialsFile, isEncryptedCredentials } from './crypto-utils.js';
 import { output } from './output-manager.js';
-import { MIN_VALID_OUTPUT_DATA_SIZE } from '../config/paths.js';
+import { MIN_VALID_OUTPUT_DATA_SIZE, USER_CONFIG_CREDENTIALS_FILE } from '../config/paths.js';
 import { PipelineCriticalError } from './pipeline-errors.js';
-import { logger } from './compact-logger.js';
+import { CompactLogger } from './compact-logger.js';
+const logger = CompactLogger.getInstance();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = join(__dirname, '..');
@@ -133,7 +134,7 @@ export function formatDuration(ms: number): string {
 // Load encrypted API keys from user config directory
 export async function loadEnvFile(): Promise<void> {
   try {
-    const credentialsPath = join(USER_CONFIG_DIR, 'credentials.json');
+    const credentialsPath = USER_CONFIG_CREDENTIALS_FILE;
     const credContent = await fs.readFile(credentialsPath, 'utf8');
     const credData = JSON.parse(credContent);
 
@@ -148,7 +149,7 @@ export async function loadEnvFile(): Promise<void> {
     }
   } catch {
     // No credentials file found - user needs to run setup
-    console.warn(`No credentials file found - user needs to run setup`);
+    logger.warn(`No credentials file found - user needs to run setup`);
   }
 }
 
@@ -263,7 +264,7 @@ export async function writeFileAtomic(
         await fs.copyFile(filePath, backupPath);
       } catch {
         // File doesn't exist yet, no backup needed
-        console.info(`File ${filePath} does not exist yet, no backup needed`);
+        logger.info(`File ${filePath} does not exist yet, no backup needed`);
       }
     }
 

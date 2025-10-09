@@ -345,7 +345,7 @@ async function showReportsFolder(): Promise<void> {
 async function printHelp(): Promise<void> {
   printHeader();
   // output content of QUICK-START.md
-  const quickStartPath = path.join(getPackageRoot(), 'QUICK-START.md');
+  const quickStartPath = path.join(getPackageRoot(), 'README.md');
   const quickStartContent = readFileSync(quickStartPath, 'utf8');
   output.writeLine(quickStartContent);
     // Wait for Enter in interactive mode
@@ -502,8 +502,9 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
   // Special menu items
   output.writeLine('\n' + colorize('⚙️  More Options:', 'yellow'));
 
-  const quickStartChoice = String(choiceNum++);
-  output.writeLine(`${quickStartChoice}) ` + colorize('Quick Start', 'cyan') + ' - Show quick start guide');
+
+  const helpChoice = String(choiceNum++);
+  output.writeLine(`${helpChoice}) ` + colorize('Help', 'cyan') + ' - Show Help');
 
   const licenseChoice = String(choiceNum++);
   output.writeLine(`${licenseChoice}) ` + colorize('License', 'cyan') + ' - Show License');
@@ -536,14 +537,12 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
           output.writeLine(colorize('\nStopping web server...', 'dim'));
           stopWebServer();
         }
-        output.writeLine(colorize('\n👋 Thanks for using AI Chat Watch!', 'green'));
-        output.writeLine('Goodbye!\n');
+        output.writeLine(colorize('\nBye! 👋 Thanks for using AI Chat Watch!', 'green'));
         resolve(MenuState.EXIT);
         return;
       }
 
-      // Handle help
-      if (choiceStr === quickStartChoice) {
+      if(choiceStr === helpChoice) {
         process.env.AICW_INTERACTIVE_MODE = 'true';
         await printHelp();
         resolve(MenuState.CONTINUE);

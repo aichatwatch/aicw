@@ -8,6 +8,7 @@ import { createCredentialsFile, decryptCredentialsFile, isEncryptedCredentials }
 import { loadAllAIPresets, getAIAIPresetWithModels } from './ai-preset-manager.js';
 import { ModelConfig } from './utils/model-config.js';
 import { CompactLogger } from './utils/compact-logger.js';
+import { USER_CONFIG_CREDENTIALS_FILE } from './config/paths.js';
 const logger = CompactLogger.getInstance();
 
 
@@ -217,7 +218,7 @@ async function loadExistingCredentials(): Promise<Record<string, string>> {
 
   // Then check encrypted credentials file
   try {
-    const credentialsPath = join(USER_CONFIG_DIR, 'credentials.json');
+    const credentialsPath = USER_CONFIG_CREDENTIALS_FILE;
     const credContent = await fs.readFile(credentialsPath, 'utf8');
     const credData = JSON.parse(credContent);
 
@@ -299,7 +300,7 @@ async function saveAllCredentials(credentials: Record<string, string>): Promise<
   // Create encrypted credentials file
   const encryptedCreds = createCredentialsFile(credentials);
 
-  const credentialsPath = join(USER_CONFIG_DIR, 'credentials.json');
+  const credentialsPath = USER_CONFIG_CREDENTIALS_FILE;
   await writeFileAtomic(credentialsPath, JSON.stringify(encryptedCreds, null, 2));
 
   // Set secure file permissions (readable/writable by owner only)

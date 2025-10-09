@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { AI_PRESETS_DIR, MODELS_JSON_FILE } from './config/paths.js';
+import { USER_AI_PRESETS_DIR, USER_MODELS_JSON_FILE } from './config/paths.js';
 import { ModelConfig } from './utils/model-config.js';
 import { logger } from './utils/compact-logger.js';
 import { PipelineCriticalError } from './utils/pipeline-errors.js';
@@ -33,14 +33,14 @@ export function loadAllModels(): ModelConfig[] {
 
 
   try {
-    const modelsData = fs.readFileSync(MODELS_JSON_FILE, 'utf8');
+    const modelsData = fs.readFileSync(USER_MODELS_JSON_FILE, 'utf8');
     const models = JSON.parse(modelsData).models; // Extract models array from wrapped structure
 
     logger.debug(`Loaded ${models?.length || 0} models from ai_models.json`);
     return models;
   } catch (error: any) {
     logger.error(`Failed to load ai_models.json: ${error?.message || error}`);
-    throw new Error(`Failed to load models from ${MODELS_JSON_FILE}: ${error}`);
+    throw new Error(`Failed to load models from ${USER_MODELS_JSON_FILE}: ${error}`);
   }
 }
 
@@ -50,7 +50,7 @@ export function loadAllModels(): ModelConfig[] {
 export function getModelById(modelId: string): ModelConfig | undefined {
   const models = loadAllModels();
   // Resolve AI products to actual model ID if needed
-  const data = JSON.parse(fs.readFileSync(MODELS_JSON_FILE, 'utf8'));
+  const data = JSON.parse(fs.readFileSync(USER_MODELS_JSON_FILE, 'utf8'));
   // search given modelId in aliases first
   const modelAlias = data.aliases?.find((s: any) => s.id === modelId);
 
@@ -81,18 +81,18 @@ export function getModelById(modelId: string): ModelConfig | undefined {
 export function loadAllAIPresets(): Map<string, AIPreset> {
 
   try {
-    if (!fs.existsSync(AI_PRESETS_DIR)) {
-      logger.error(`AIPresets directory not found: ${AI_PRESETS_DIR}`);
-      throw new Error(`AIPresets directory not found: ${AI_PRESETS_DIR}`);
+    if (!fs.existsSync(USER_AI_PRESETS_DIR)) {
+      logger.error(`AIPresets directory not found: ${USER_AI_PRESETS_DIR}`);
+      throw new Error(`AIPresets directory not found: ${USER_AI_PRESETS_DIR}`);
     }
 
     const ai_presets = new Map<string, AIPreset>();   
 
-    const files = fs.readdirSync(AI_PRESETS_DIR);
+    const files = fs.readdirSync(USER_AI_PRESETS_DIR);
     const jsonFiles = files.filter(f => f.endsWith('.json'));
 
     for (const file of jsonFiles) {
-      const ai_presetPath = path.join(AI_PRESETS_DIR, file);
+      const ai_presetPath = path.join(USER_AI_PRESETS_DIR, file);
       const ai_presetName = path.basename(file, '.json');
 
       try {
