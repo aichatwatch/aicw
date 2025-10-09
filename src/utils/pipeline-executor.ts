@@ -5,10 +5,7 @@ import { spawn, ChildProcess } from 'child_process';
 import { logger } from './compact-logger.js';
 import { output } from './output-manager.js';
 import { waitForEnterInInteractiveMode } from './misc-utils.js';
-
-// ============================================================================
-// TYPE DEFINITIONS
-// ============================================================================
+import { showInteractiveProjectSelector } from './interactive-project-selector.js';
 
 export interface PipelineContext {
   currentStep: number;
@@ -21,11 +18,12 @@ export interface ExecutionOptions {
   /** Custom logger instance */
   /** Additional environment variables */
   env?: Record<string, string>;
-  /** Questions file path (for prepare step) */
-  questionsFile?: string;
+  /** Project */
+  project?: string;
 }
 
 export interface ExecutionResult {
+  project?: string;
   success: boolean;
   completedSteps: number;
   totalSteps: number;
@@ -42,8 +40,8 @@ export class PipelineExecutor {
   private project: string;
   private currentChildProcess: ChildProcess | null = null;
 
-  constructor(project: string) {
-    this.project = project;
+  constructor(project?: string) {
+    this.project = project || '';
   }
 
   /**
@@ -66,17 +64,19 @@ export class PipelineExecutor {
     pipeline: PipelineDefinition,
     options: ExecutionOptions = {}
   ): Promise<ExecutionResult> {
-    const { showHints = true, env = {}, questionsFile } = options;
+    const { showHints = true, env = {}, project } = options;
+    if(project) {
+      this.project = project;
+    }
     const startTime = Date.now();
 
-    await output.initialize(pipeline.id, this.project);
+    await output.initialize(pipeline.id, project || this.project);
 
     output.writeLine(`\n🚀 ${pipeline.name}`);
     output.writeLine(`📋 ${pipeline.description}\n`);
 
     // Clean pipeline name for progress display (remove "Project: " prefix if present)
-    const cleanPipelineName = pipeline.name.replace(/^Project:\s*/i, '');
-    logger.startProgress(pipeline.actions.length, `${this.project}: ${cleanPipelineName} (${pipeline.actions.length} steps)`);
+    logger.startProgress(pipeline.actions.length, `${this.project}: ${pipeline.name} (${pipeline.actions.length} steps)`);
 
     for (let i = 0; i < pipeline.actions.length; i++) {
       const action = pipeline.actions[i];
@@ -85,26 +85,36 @@ export class PipelineExecutor {
       // Ensure progress bar line is completed before spawning child process
       process.stdout.write('\n');
 
+      // Check if action needs project and we don't have one
+      if (action.requiresProject && (!this.project || this.project.trim() === '')) {
+        // Transition output to normal state for interactive prompt
+        output.beforeChildProcess();
+        // show project selector
+        const selected = await showInteractiveProjectSelector();
+        // Transition output to normal state for interactive prompt
+        output.afterChildProcess();
+        if (!selected) {
+          throw new Error('Project selection required but cancelled');
+        }
+        this.project = selected;  // Store for subsequent actions
+      }      
+
       const scriptPath = this.getScriptPath(action.cmd);
       const args = [scriptPath, this.project];
-
-      // For prepare-questions step, add questions file if provided
-      if (action.cmd === 'prepare-questions' && questionsFile) {
-        args.push(questionsFile);
-      }
 
       try {
         const success = await this.runInterruptible(args, showHints, {
           currentStep: i + 1,
           totalSteps: pipeline.actions.length,
-        }, env);
+        }, env, action);
 
         if (!success) {
           const error = new Error(`Action failed: ${action.desc}`);
-          logger.error(`\n✗ Pipeline "${pipeline.name}" failed at the action "${action.name}" (${action.desc})`);
+          logger.error(`\n✗ Pipeline "${pipeline.name}" failed at the action "${action.id}" (${action.name}: ${action.desc})`);
           await logger.showSummary();
 
           return {
+            project: this.project,
             success: false,
             completedSteps: i,
             totalSteps: pipeline.actions.length,
@@ -120,6 +130,7 @@ export class PipelineExecutor {
           await waitForEnterInInteractiveMode();
 
           return {
+            project: this.project,
             success: false,
             completedSteps: i,
             totalSteps: pipeline.actions.length,
@@ -136,6 +147,7 @@ export class PipelineExecutor {
           await waitForEnterInInteractiveMode();
 
           return {
+            project: this.project,
             success: false,
             completedSteps: i,
             totalSteps: pipeline.actions.length,
@@ -144,10 +156,11 @@ export class PipelineExecutor {
           };
         }
 
-        logger.error(`\n✗ Pipeline "${pipeline.name}" failed at the action "${action.name}" (${action.desc}) with errors: ${error.message}`);
+        logger.error(`\n✗ Pipeline "${pipeline.name}" failed at the action "${action.id}" (${action.name}: ${action.desc}) with errors: ${error.message}`);
         await logger.showSummary();
 
         return {
+          project: this.project,
           success: false,
           completedSteps: i,
           totalSteps: pipeline.actions.length,
@@ -159,14 +172,14 @@ export class PipelineExecutor {
       logger.updateProgress(i + 1, `${action.desc} - ✓`);
     }
 
-    logger.completeProgress(`${pipeline.name} completed`);
+    logger.completeProgress(`pipeline "${pipeline.name}" completed`);
 
     const duration = Date.now() - startTime;
-    logger.info(`\n✓ ${pipeline.name} completed successfully in ${Math.round(duration / 1000)} seconds!`);
 
     await logger.showSummary();
 
     return {
+      project: this.project,
       success: true,
       completedSteps: pipeline.actions.length,
       totalSteps: pipeline.actions.length,
@@ -189,7 +202,8 @@ export class PipelineExecutor {
     args: string[],
     showHint: boolean,
     pipelineContext: PipelineContext,
-    additionalEnv: Record<string, string> = {}
+    additionalEnv: Record<string, string> = {},
+    action: AppAction
   ): Promise<boolean> {
     return new Promise((resolve, reject) => {
       if (showHint) {
@@ -212,11 +226,46 @@ export class PipelineExecutor {
         AICW_PIPELINE_TOTAL_STEPS: String(pipelineContext.totalSteps),
       };
 
-      this.currentChildProcess = spawn('node', args, { stdio: 'inherit', env });
+      const isPipeRequired = action && action.pipeRequired;
+      if(isPipeRequired) {
+        logger.info(`Action requires pipe (isPipeRequired: ${isPipeRequired})`);
+      }
+
+      // Use pipe for stdout if project-new, otherwise inherit
+      const stdioConfig = isPipeRequired
+      ? ['inherit', 'pipe', 'inherit'] as any
+      : 'inherit';        
+
+      let capturedOutput = '';
+
+      this.currentChildProcess = spawn('node', args, { stdio: stdioConfig, env });
+
+      // If capturing stdout, forward to terminal and capture 
+      if (isPipeRequired && this.currentChildProcess.stdout) {  
+        this.currentChildProcess.stdout.on('data', (data: Buffer) => {
+          const text = data.toString();                       
+          capturedOutput += text;                             
+          process.stdout.write(text);  // Still show to user  
+        });                                                   
+      }                                                       
+     
 
       this.currentChildProcess.on('exit', (code) => {
         this.currentChildProcess = null;
+
         if (code === 0) {
+          // success
+
+          // Extract project name if present
+          if (isPipeRequired && capturedOutput) {
+            // trying to parse if we have something like this:
+            // AICW_OUTPUT_STRING:NewProjectName
+            const match = capturedOutput.match(/AICW_OUTPUT_STRING:(\S+)/);
+            if (match) {
+              this.project = match[1];
+            }
+          }
+
           resolve(true);
         } else if (code === 2) {
           // Exit code 2 = MissingConfigError

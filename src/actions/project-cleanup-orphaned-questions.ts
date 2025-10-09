@@ -25,9 +25,6 @@ import { getModuleNameFromUrl } from '../utils/misc-utils.js';
 
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
-/**
- * Hash function matching prepare-questions.ts
- */
 function hashQuestion(question: string): string {
   // Normalize question for stable hashing:
   // - Convert to lowercase

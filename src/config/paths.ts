@@ -48,7 +48,7 @@ const USER_MODELS_DIR: string = path.join(USER_CONFIG_DIR, 'models');
 // ai models
 export const USER_MODELS_JSON_FILE: string = path.join(USER_MODELS_DIR, 'ai_models.json');
 // presets with ai models
-export const USER_AI_PRESETS_DIR: string = path.join(USER_CONFIG_DIR, 'ai_presets');
+export const USER_AI_PRESETS_DIR: string = path.join(USER_MODELS_DIR, 'ai_presets');
 export const USER_QUESTION_TEMPLATES_DIR: string = path.join(USER_CONFIG_TEMPLATES_DIR, 'questions');
 //============
 

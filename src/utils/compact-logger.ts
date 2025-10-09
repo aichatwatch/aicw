@@ -68,6 +68,10 @@ export class CompactLoggerWrapper {
     this.outputManager.info(message);
   }
 
+  log(message: string): void {
+    this.outputManager.log(message);
+  }
+
   warn(message: string): void {
     this.outputManager.warn(message);
   }

@@ -2,14 +2,18 @@ import path, { dirname } from 'path';
 import { homedir, platform } from 'os';
 import { existsSync, mkdirSync, readdirSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { copySync } from 'fs-extra';
+import pkg from 'fs-extra';
+const { copySync } = pkg;
 import { AGGREGATED_DIR_NAME } from './constants.js';
 import { CompactLogger } from '../utils/compact-logger.js';
-import { DEFAULT_DATA_FOR_USER_DATA_DIR } from './paths.js';
 const logger = CompactLogger.getInstance();
 
+// Define __dirname for ES modules FIRST - needed by getPackageRoot()
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 // default other link type short name
-export const DEFAULT_OTHER_LINK_TYPE_SHORT_NAME = 'oth'; 
+export const DEFAULT_OTHER_LINK_TYPE_SHORT_NAME = 'oth';
 export const DEFAULT_OTHER_LINK_TYPE_LONG_NAME = 'Other';
 
 const DEFAULT_AICW_USER_NAME = 'default-user';
@@ -24,6 +28,16 @@ export const USER_CONFIG_DIR = path.join(USER_DATA_DIR, 'config');
 export const USER_LOGS_DIR = path.join(USER_DATA_DIR, 'logs');
 export const USER_INVALID_OUTPUTS_DIR = path.join(USER_LOGS_DIR, 'invalid');
 
+export const USER_CONFIG_PROMPTS_DIR: string = path.join(USER_CONFIG_DIR, 'prompts');
+export const USER_CONFIG_TEMPLATES_DIR = path.join(USER_CONFIG_DIR, 'templates')
+const USER_MODELS_DIR: string = path.join(USER_CONFIG_DIR, 'models');
+// ai models and ai presets
+export const USER_MODELS_JSON_FILE: string = path.join(USER_MODELS_DIR, 'ai_models.json');
+export const USER_AI_PRESETS_DIR: string = path.join(USER_MODELS_DIR, 'ai_presets');
+// questions templates
+export const USER_QUESTION_TEMPLATES_DIR: string = path.join(USER_CONFIG_TEMPLATES_DIR, 'questions');
+
+
 export const DEFAULT_INDEX_FILE = 'index.html';
 
 const QUESTION_FILE_NAME = 'question.md';
@@ -33,10 +47,6 @@ const QUESTIONS_FILE_NAME = 'questions.md';
  * User data path management for aicw
  * Centralizes all user-specific data storage locations
  */
-
-// Define __dirname for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Get the base user data directory based on platform
 export function getUserDataDir(): string {
@@ -195,16 +205,15 @@ export function initializeUserDirectories(): void {
     USER_PROJECTS_DIR,
     USER_REPORTS_DIR,
     USER_CACHE_DIR,
-    path.join(USER_REPORTS_DIR),
-    path.join(USER_REPORTS_DIR, 'projects')
+    USER_LOGS_DIR,
+    USER_INVALID_OUTPUTS_DIR,
+    path.join(USER_REPORTS_DIR, 'projects'),
+    path.join(USER_CONFIG_DIR, '.credentials')  // for encrypted credentials
   ];
-  
+
   for (const dir of directories) {
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
-    }
-    else {
-      logger.info(`Folder ${dir} already exists, skipping creation.`);
     }
   }
   // copy default data to user folder
@@ -212,71 +221,63 @@ export function initializeUserDirectories(): void {
 }
 
 export function copyDefaultDataToUserConfig(): void {
-    // now get folders from config/default
-  // by scanning for all subfodlers
-  // Synchronously read all subfolders in DEFAULT_DATA_FOR_USER_DATA_DIR
-  const defaultDataFoldersInConfigDefault = readdirSync(DEFAULT_DATA_FOR_USER_DATA_DIR, { withFileTypes: true })
-    .filter(f => f.isDirectory())
-    .map(f => f.name);
-  // now copy all folders from config/default to user config directory
-  for (const folder of defaultDataFoldersInConfigDefault) {
-    const srcFolder = path.join(DEFAULT_DATA_FOR_USER_DATA_DIR, folder);
-    const destFolder = path.join(USER_CONFIG_DIR, folder);
+  logger.info(`Copying default config files to user config directory...`);
+  // Add safety check
+  if (!existsSync(DEFAULT_DATA_FOR_USER_DATA_DIR)) {
+    const msg = `Default config directory not found: ${DEFAULT_DATA_FOR_USER_DATA_DIR}`;
+    logger.error(msg);
+    throw new Error(msg);
+  }  
+  copyDirRecursive(DEFAULT_DATA_FOR_USER_DATA_DIR, USER_CONFIG_DIR);
+}
 
-    // Ensure destination folder exists
-    if (!existsSync(destFolder)) {
-      mkdirSync(destFolder, { recursive: true });
-    }
+function copyDirRecursive(src: string, dest: string): void {
+  const entries = readdirSync(src, { withFileTypes: true });
 
-    // Copy each file individually, only if it does not exist
-    const files = readdirSync(srcFolder, { withFileTypes: true })
-      .filter(f => f.isFile())
-      .map(f => f.name);
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
 
-    for (const file of files) {
-      const srcFile = path.join(srcFolder, file);
-      const destFile = path.join(destFolder, file);
-      if (!existsSync(destFile)) {
-        copySync(srcFile, destFile);
-      } else {
-        logger.warn(`File ${destFile} already exists. Skipping copy.`);
+    if (entry.isDirectory()) {
+      if (!existsSync(destPath)) {
+        mkdirSync(destPath, { recursive: true });
+      }
+      copyDirRecursive(srcPath, destPath);
+    } else if (entry.isFile()) {
+      if (!existsSync(destPath)) {
+        copySync(srcPath, destPath);
       }
     }
   }
 }
 
 export function checkIfUserConfigFolderHasAllRequiredDataFiles(): boolean {
-  // Get all folders in config/default
-  const defaultDataFolders = readdirSync(DEFAULT_DATA_FOR_USER_DATA_DIR, { withFileTypes: true })
-    .filter(f => f.isDirectory())
-    .map(f => f.name);
-
   const missingFiles: string[] = [];
-
-  for (const folder of defaultDataFolders) {
-    const srcFolder = path.join(DEFAULT_DATA_FOR_USER_DATA_DIR, folder);
-    const destFolder = path.join(USER_CONFIG_DIR, folder);
-
-    // Get all files in the default folder
-    const files = readdirSync(srcFolder, { withFileTypes: true })
-      .filter(f => f.isFile())
-      .map(f => f.name);
-
-    for (const file of files) {
-      const destFile = path.join(destFolder, file);
-      if (!existsSync(destFile)) {
-        missingFiles.push(path.relative(USER_CONFIG_DIR, destFile));
-      }
-    }
-  }
+  checkDirRecursive(DEFAULT_DATA_FOR_USER_DATA_DIR, USER_CONFIG_DIR, missingFiles);
 
   if (missingFiles.length > 0) {
-    logger.warn(`Missing required user config files: \n${missingFiles.join('\n')}\nRun setup again to fix this.`);
+    logger.warn(`Missing required user config files: \n${missingFiles.join('\n')}`);
     return false;
   }
 
-  // otherwise return true
   return true;
+}
+
+function checkDirRecursive(srcDir: string, destDir: string, missingFiles: string[]): void {
+  const entries = readdirSync(srcDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const srcPath = path.join(srcDir, entry.name);
+    const destPath = path.join(destDir, entry.name);
+
+    if (entry.isDirectory()) {
+      checkDirRecursive(srcPath, destPath, missingFiles);
+    } else if (entry.isFile()) {
+      if (!existsSync(destPath)) {
+        missingFiles.push(path.relative(USER_CONFIG_DIR, destPath));
+      }
+    }
+  }
 }
 
 // Check if running in development mode (has src directory)
@@ -320,7 +321,7 @@ export function getPackageConfigDir(subFolder: string = ''): string {
   // Try src first (dev mode), then fallback to bundled location
   const srcConfig = path.join(root, 'src', subFolder, 'config');
   const distConfig = path.join(root, subFolder, 'config');
-  
+
   if (existsSync(srcConfig)) {
     return srcConfig;
   } else if (existsSync(distConfig)) {
@@ -329,4 +330,7 @@ export function getPackageConfigDir(subFolder: string = ''): string {
   // Fallback to expected location
   return srcConfig;
 }
+
+// Default data directory for user config files (defined here to avoid circular dependency)
+const DEFAULT_DATA_FOR_USER_DATA_DIR = path.join(getPackageConfigDir(), 'default');
 

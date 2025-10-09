@@ -21,6 +21,11 @@ const assetsToCopy = [
     description: 'Model configurations'
   },
   {
+    from: 'src/config/default',
+    to: 'dist/config/default',
+    description: 'Default user config files'
+  },
+  {
     from: 'src/config/prompts',
     to: 'dist/config/prompts',
     description: 'System prompts'

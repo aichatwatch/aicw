@@ -1,3 +1,5 @@
+# Analyzes market dynamics and key players. Ideal for understanding the competitive landscape and industry structure.
+
 Who are the main players in {{SUBJECT}}?
 What's the market size of {{SUBJECT}}?
 How competitive is the {{SUBJECT}} market?

@@ -2,8 +2,7 @@ import { spawnSync, spawn, ChildProcess } from 'child_process';
 import { existsSync, readFileSync, promises as fs } from 'fs';
 import path, { resolve, join } from 'path';
 import { homedir } from 'os';
-import { selectProject } from './project-selector.js';
-import { getUserProjectQuestionsFile, getPackageRoot, getReportsDisplayPath, getActualReportsPath } from './config/user-paths.js';
+import { getPackageRoot } from './config/user-paths.js';
 import * as readline from 'readline';
 import { loadEnvFile, drawBox, waitForEnterInInteractiveMode } from './utils/misc-utils.js';
 import { logger } from './utils/compact-logger.js';
@@ -12,9 +11,9 @@ import { OUTPUT_DIR, QUESTIONS_DIR, QUESTION_DATA_COMPILED_DIR } from './config/
 import { AGGREGATED_DIR_NAME } from './config/constants.js';
 import { getUpdateNotification, checkForUpdates, getCurrentVersion } from './utils/update-checker.js';
 import { performUpdate, showVersion } from './utils/update-installer.js';
-import { getCliMenuItems, getInvokablePipelines, getActionByCommand, CliMenuItem, getPipeline } from './config/pipelines-and-actions.js';
-import { PipelineExecutor, ExecutionOptions } from './utils/pipeline-executor.js';
-import { validateAndLoadProject } from './utils/project-utils.js';
+import { getCliMenuItems, getActionByCommand, CliMenuItem, getPipeline } from './config/pipelines-and-actions.js';
+import { PipelineExecutor, ExecutionOptions, ExecutionResult } from './utils/pipeline-executor.js';
+//import { validateAndLoadProject } from './utils/project-utils.js';
 import { startServer, stopServer } from './actions/utils/report-serve.js';
 
 // Helper function to get absolute path to script files
@@ -179,93 +178,9 @@ function stopWebServer(): boolean {
   return true;
 }
 
-// Helper function to find the latest date with enriched data
-async function findLatestReportDate(project: string): Promise<string> {
-  const questionsDir = QUESTIONS_DIR(project);
-  
-  try {
-    const questionDirs = await fs.readdir(questionsDir, { withFileTypes: true });
-    
-    // Find the first non-aggregated question directory
-    const firstQuestion = questionDirs
-      .filter(d => d.isDirectory() && d.name !== AGGREGATED_DIR_NAME)
-      .sort()[0];
-    
-    if (!firstQuestion) {
-      return new Date().toISOString().split('T')[0];
-    }
-    
-    // Check for data dates in the first question's data-compiled directory
-    const dataCompiledDir = QUESTION_DATA_COMPILED_DIR(project, firstQuestion.name);
-    
-    try {
-      const dateDirs = await fs.readdir(dataCompiledDir, { withFileTypes: true });
-      const dates = dateDirs
-        .filter(d => d.isDirectory() && /^\d{4}-\d{2}-\d{2}$/.test(d.name))
-        .map(d => d.name)
-        .sort()
-        .reverse();
-      
-      // Check each date to find one with enriched data
-      for (const date of dates) {
-        const dateDir = path.join(dataCompiledDir, date);
-        const files = await fs.readdir(dateDir);
-        const dataFile = files.find(f => f === `${date}-data.js`);
-        if (dataFile) {
-          // Check if the file has actual content (not empty)
-          const filePath = path.join(dateDir, dataFile);
-          const stats = await fs.stat(filePath);
-          if (stats.size > 100) { // File should have substantial content
-            return date;
-          }
-        }
-      }
-    } catch (error) {
-      // No data-compiled directory found
-    }
-  } catch (error) {
-    // Error reading questions directory
-  }
-  
-  // Fallback to current date if no data found
-  return new Date().toISOString().split('T')[0];
-}
-
-// Helper function to check if compiled data exists for a given date
-async function hasCompiledData(project: string, date: string): Promise<boolean> {
-  const questionsDir = QUESTIONS_DIR(project);
-  
-  try {
-    const questionDirs = await fs.readdir(questionsDir, { withFileTypes: true });
-    
-    // Check if at least one question has compiled data
-    for (const dirent of questionDirs) {
-      if (dirent.isDirectory() && dirent.name !== AGGREGATED_DIR_NAME) {
-        const compiledPath = path.join(
-          QUESTION_DATA_COMPILED_DIR(project, dirent.name),
-          date,
-          `${date}-data.js.PROMPT-COMPILED.js`
-        );
-        
-        try {
-          const stats = await fs.stat(compiledPath);
-          if (stats.size > 100) {
-            return true;
-          }
-        } catch (error) {
-          // File doesn't exist, continue checking
-        }
-      }
-    }
-  } catch (error) {
-    // Error reading directory
-  }
-  
-  return false;
-}
-
 function printHeader(): void {
-  output.writeLine(colorize('\n🤖 AI Chat Watch', 'bright'));
+  const version = getCurrentVersion();
+  output.writeLine(colorize(`\n🤖 AI Chat Watch ${version}`, 'bright'));
   output.writeLine(colorize('   Track what AI chats say. More info: https://aichatwatch.com/ \n', 'dim'));
 
   // Show update notification if available
@@ -273,73 +188,6 @@ function printHeader(): void {
   if (updateNotification) {
     output.writeLine(colorize('   ' + updateNotification + '\n', 'yellow'));
   }
-}
-
-// Common wrapper for all pipeline functions when called from interactive menu
-// This ensures consistent behavior and follows DRY principle
-async function executePipeline(
-  pipelineName: string,
-  pipelineFunc: () => Promise<void>
-): Promise<void> {
-  try {
-    // Execute the actual pipeline
-    await pipelineFunc();
-
-    // If running from interactive mode (but not as a pipeline step), wait for user
-    // This ensures user can see the completion message before menu redraws
-    await waitForEnterInInteractiveMode();
-  } catch (error) {
-    // Error handling is already done within individual pipeline functions
-    // Just rethrow to maintain existing behavior
-    throw error;
-  }
-}
-
-async function showReportsFolder(): Promise<void> {
-  const project = await selectProject();
-  if (!project) {
-    return;  // Will return to menu since showInteractiveMenu is called after this function
-  }
-  
-  // Get the actual reports folder path using the proper function
-  const reportsPath = getActualReportsPath(project);
-  const displayPath = getReportsDisplayPath(project);
-  const fileUrl = `file://${reportsPath}`;
-  
-  output.writeLine(colorize('\n📁 Reports Folder Location:', 'green'));
-  output.writeLine(colorize('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'dim'));
-  
-  output.writeLine('\n' + colorize('Path:', 'yellow'));
-  output.writeLine(`  ${displayPath}\n`);
-  
-  output.writeLine(colorize('Full Path:', 'yellow'));
-  output.writeLine(`  ${reportsPath}\n`);
-  
-  output.writeLine(colorize('Clickable Link:', 'yellow'));
-  output.writeLine(`  ${colorize(fileUrl, 'cyan')}\n`);
-  
-  // Platform-specific instructions
-  const platform = process.platform;
-  if (platform === 'darwin') {
-    output.writeLine(colorize('💡 To open on Mac:', 'dim'));
-    output.writeLine('   • Hold ⌘ (Command) and click the link above');
-    output.writeLine('   • Or copy and paste into Finder: Go → Go to Folder');
-  } else if (platform === 'win32') {
-    output.writeLine(colorize('💡 To open on Windows:', 'dim'));
-    output.writeLine('   • Hold Ctrl and click the link above');
-    output.writeLine('   • Or copy and paste into File Explorer');
-  } else {
-    output.writeLine(colorize('💡 To open:', 'dim'));
-    output.writeLine('   • Copy and paste the path into your file manager');
-  }
-  
-  output.writeLine('\n' + colorize('Alternative:', 'dim'));
-  output.writeLine(`   Run this command: ${colorize(`open "${reportsPath}"`, 'bright')}` + ' (Mac)');
-  output.writeLine(`   Run this command: ${colorize(`explorer "${reportsPath}"`, 'bright')}` + ' (Windows)\n');
-  
-  // Wait for user to press enter
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  await new Promise(resolve => rl.question('Press Enter to continue...', () => { rl.close(); resolve(null); }));
 }
 
 async function printHelp(): Promise<void> {
@@ -383,24 +231,6 @@ function printStep(step: number, total: number, description: string): void {
   const progress = `[${step}/${total}]`;
   output.writeLine(`\n${colorize(progress, 'blue')} ${colorize(description, 'bright')}`);
 }
-
-function run(cmd: string[], options: { silent?: boolean } = {}): boolean {
-  
-
-  if (!options.silent) {
-    logger.debug(`→ Running: ${cmd.join(' ')}`);
-  }
-
-  const res = spawnSync('node', cmd, { stdio: 'inherit' });
-  
-  if (res.status !== 0) {
-    logger.error(`\n✗ Command failed with exit code ${res.status}`);
-    return false;
-  }
-  
-  return true;
-}
-
 
 async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuState> {
   if (showHeader) {
@@ -460,28 +290,15 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
   const allMenuItems = getCliMenuItems();
 
   // Organize items by type
-  const pipelines = allMenuItems.filter(item => item.type === 'pipeline');
-  const projectActions = allMenuItems.filter(item => item.type === 'action' && (item.category === 'project' || item.category === 'project-advanced'));
-  const utilityActions = allMenuItems.filter(item => item.type === 'action' && item.category === 'utility');
+  const pipelines = allMenuItems;
 
   // Build menu items map (choice number -> menu item)
   const menuMap = new Map<string, CliMenuItem>();
   let choiceNum = 1;
 
-  // Display Project Actions
-  if (projectActions.length > 0) {
-    output.writeLine('\n' + colorize('📂 Project Actions:', 'yellow'));
-    for (const action of projectActions) {
-      const numStr = String(choiceNum++);
-      menuMap.set(numStr, action);
-      const projectHint = action.requiresProject ? ' <project>' : '';
-      output.writeLine(`${numStr}) ` + colorize(action.name, 'cyan') + `${projectHint} - ${action.description}`);
-    }
-  }
-
   // Display Pipelines
   if (pipelines.length > 0) {
-    output.writeLine('\n' + colorize('➡ Project Pipelines:', 'yellow'));
+    output.writeLine('\n' + colorize('➡ Pipelines:', 'yellow'));
     for (const pipeline of pipelines) {
       const numStr = String(choiceNum++);
       menuMap.set(numStr, pipeline);
@@ -489,18 +306,8 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
     }
   }  
 
-  // Display Utility Actions
-  if (utilityActions.length > 0) {
-    output.writeLine('\n' + colorize('🔧 Utility Actions:', 'yellow'));
-    for (const action of utilityActions) {
-      const numStr = String(choiceNum++);
-      menuMap.set(numStr, action);
-      output.writeLine(`${numStr}) ` + colorize(action.name, 'cyan') + ` - ${action.description}`);
-    }
-  }
-
   // Special menu items
-  output.writeLine('\n' + colorize('⚙️  More Options:', 'yellow'));
+  output.writeLine('\n' + colorize('⚙️  More:', 'yellow'));
 
 
   const helpChoice = String(choiceNum++);
@@ -562,53 +369,11 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
       if (menuItem) {
         try {
           // Handle pipelines
-          if (menuItem.type === 'pipeline') {
-            output.writeLine(colorize(`\n🚀 ${menuItem.name}`, 'green'));
-            output.writeLine(colorize(`📋 ${menuItem.description}\n`, 'dim'));
+          output.writeLine(colorize(`\n🚀 ${menuItem.name}`, 'green'));
+          output.writeLine(colorize(`📋 ${menuItem.description}\n`, 'dim'));
 
-            const project = await selectProject();
-            if (project) {
-              const executor = new PipelineExecutor(project);
-              await executor.execute(menuItem.id);
+          await executePipelineForMenuItem(menuItem.id);
 
-              // Wait for user to press Enter before returning to menu
-              const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-              await new Promise(resolve => rl.question('\nPress Enter to return to menu...', () => { rl.close(); resolve(null); }));
-            }
-          }
-          // Handle actions
-          else if (menuItem.type === 'action') {
-            // Special handling for report server
-            if (menuItem.id === 'report-serve') {
-              output.writeLine(colorize(`\n⚙️  ${menuItem.name}`, 'green'));
-              output.writeLine(colorize(`\n${menuItem.description}`, 'dim'));
-              await startWebServer();
-            } else {
-              let project: string | null = null;
-
-              // Get project if required
-              if (menuItem.requiresProject) {
-                output.writeLine(colorize(`\n📂 ${menuItem.name}`, 'green'));
-                project = await selectProject();
-                if (!project) {
-                  output.writeLine(colorize('No project selected. Operation cancelled.', 'yellow'));
-                  resolve(MenuState.CONTINUE);
-                  return;
-                }
-              } else {
-                output.writeLine(colorize(`\n⚙️  ${menuItem.name}`, 'green'));
-              }
-
-              // Execute action
-              const action = getActionByCommand(menuItem.cliCommand);
-              if (action) {
-                const args = [getScriptPath(`${action.cmd}.js`)];
-                if (project) args.push(project);
-
-                await runMenuOperation(args, menuItem.description);
-              }
-            }
-          }
         } catch (error: any) {
           output.writeLine(colorize(`\n✗ Error: ${error.message}`, 'red'));
         }
@@ -622,6 +387,24 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
       resolve(MenuState.CONTINUE);
     });
   });
+}
+
+async function executePipelineForMenuItem(pipelineId: string, project?: string): Promise<void> {
+  const executor = new PipelineExecutor(''); // empty project means it will show project selector if needed
+
+  const executionOptions: ExecutionOptions = { project: project || '' };
+  const pipeline = getPipeline(pipelineId);
+  const executionResult: ExecutionResult = await executor.execute(pipelineId, executionOptions);
+
+  // Wait for user to press Enter before returning to menu
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  // only run next pipeline if the current pipeline was successful
+  const runNextPipeline = executionResult.success && pipeline.nextPipeline && pipeline.nextPipeline.length > 0;
+  const message = runNextPipeline ? `\nSucesss! press Enter to run next pipeline "${pipeline.nextPipeline}" for project "${executionResult.project}" or Ctrl+C to return to the menu` : '\nPress Enter to return to menu...';
+  await new Promise(resolve => rl.question(message, () => { rl.close(); resolve(null); }));
+  if (runNextPipeline) {
+      await executePipelineForMenuItem(pipeline.nextPipeline, executionResult.project);
+  }
 }
 
 // Main menu loop - runs continuously until user chooses to exit
@@ -717,23 +500,6 @@ async function main(): Promise<void> {
     return;
   }
 
-  // For commands that need a project, allow interactive selection if not provided
-  const noProjectCommands = ['help', 'setup', 'project', 'serve', 'version', 'update'];
-  if (!noProjectCommands.includes(command) && !project) {
-    printHeader();
-    output.writeLine(colorize('Which project would you like to work with?', 'yellow'));
-    const selectedProject = await selectProject();
-    if (!selectedProject) {
-      console.error(colorize('\n✗ No project selected. Come back when you\'re ready!', 'red'));
-      return;
-    }
-    project = selectedProject;
-  }
-
-  if (project) {
-    await validateAndLoadProject(project);  
-  }
-
   // Map command aliases
   const commandAliases: Record<string, string> = {
     'u': 'update',
@@ -751,13 +517,11 @@ async function main(): Promise<void> {
     output.writeLine(colorize(`\n🚀 ${pipeline.name}`, 'green'));
     output.writeLine(colorize(`📋 ${pipeline.description}\n`, 'dim'));
 
-    const questionsFile = args.find(arg => !arg.startsWith('--'));
-
     // Extract --date argument if provided and pass it via environment variable
     const dateIndex = args.indexOf('--date');
     const targetDate = dateIndex !== -1 && args[dateIndex + 1] ? args[dateIndex + 1] : undefined;
 
-    const executorOptions: ExecutionOptions = { questionsFile };
+    const executorOptions: ExecutionOptions = {  };
     if (targetDate) {
       executorOptions.env = { AICW_TARGET_DATE: targetDate };
     }
@@ -767,30 +531,8 @@ async function main(): Promise<void> {
     process.exit(result.success ? 0 : 1);
   }
 
-  // Check if command is a CLI action
-  const action = getActionByCommand(resolvedCommand);
-  if (action) {
-    printHeader();
-    output.writeLine(colorize(`${action.name}`, 'cyan'));
-
-    const scriptArgs = [getScriptPath(`${action.cmd}.js`)];
-    if (action.requiresProject && project) {
-      scriptArgs.push(project);
-    }
-    scriptArgs.push(...args);
-
-    const success = run(scriptArgs);
-    process.exit(success ? 0 : 1);
-  }
-
   // SPECIAL COMMANDS
   switch (resolvedCommand) {
-    case 'open':
-    case 'folder':
-      printHeader();
-      await showReportsFolder();
-      break;
-
     default:
       console.error(colorize(`\n✗ Oops! I don't know the command '${command}'`, 'red'));
       console.error(colorize('Try "aicw help" to see what I can do.\n', 'dim'));

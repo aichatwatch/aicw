@@ -10,9 +10,13 @@
 let interrupted = false;
 
 // Set interrupt flag when SIGINT is received
-process.on('SIGINT', () => {
-  interrupted = true;
-});
+// Only register handler if NOT running as a pipeline child process
+// Pipeline children should exit immediately when interrupted (default SIGINT behavior)
+if (!process.env.AICW_PIPELINE_STEP) {
+  process.on('SIGINT', () => {
+    interrupted = true;
+  });
+}
 
 /**
  * Creates a promise that resolves after the specified delay in milliseconds.

@@ -3,10 +3,11 @@ import path, { join } from 'path';
 import { createInterface } from 'readline';
 import { colorize,  waitForEnterInInteractiveMode,  writeFileAtomic } from '../utils/misc-utils.js';
 import { ModelConfig, loadAllAIPresets, getAIAIPresetWithModels } from '../utils/model-config.js';
-import { ROOT_DIR, USER_QUESTION_TEMPLATES_DIR, PROJECT_DIR } from '../config/paths.js';
+import { ROOT_DIR, PROJECT_DIR } from '../config/paths.js';
 import { getProjectDisplayPath, getPackageRoot, getUserProjectQuestionsFile, getUserProjectConfigFile } from '../config/user-paths.js';
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
+import { USER_QUESTION_TEMPLATES_DIR } from '../config/user-paths.js';
 import { CompactLogger } from '../utils/compact-logger.js';
 const logger = CompactLogger.getInstance();
 
@@ -21,7 +22,7 @@ interface ProjectSetupConfig {
 }
 
 import { validateOrThrow } from '../utils/validation.js';
-import { validateProjectName, sanitizeProjectName } from '../utils/project-utils.js';
+import { validateProjectName, sanitizeProjectName, ModelType } from '../utils/project-utils.js';
 import { DEFAULT_PRESET_NAME } from '../ai-preset-manager.js';
 
 function question(prompt: string): Promise<string> {
@@ -38,36 +39,6 @@ function question(prompt: string): Promise<string> {
   });
 }
 
-async function multilineInput(prompt: string): Promise<string> {
-  logger.info(prompt);
-  logger.info(colorize('(Press Enter twice to finish)', 'dim'));
-  
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-  
-  const lines: string[] = [];
-  let emptyLineCount = 0;
-  
-  return new Promise((resolve) => {
-    rl.on('line', (line) => {
-      if (line === '') {
-        emptyLineCount++;
-        if (emptyLineCount >= 2) {
-          rl.close();
-          resolve(lines.join('\n').trim());
-        } else {
-          lines.push(line);
-        }
-      } else {
-        emptyLineCount = 0;
-        lines.push(line);
-      }
-    });
-  });
-}
-
 interface QuestionTemplate {
   name: string;
   display_name: string;
@@ -77,38 +48,38 @@ interface QuestionTemplate {
 
 async function loadQuestionTemplates(): Promise<QuestionTemplate[]> {
   const templates: QuestionTemplate[] = [];
-  
+
   try {
-    const files = await fs.readdir(USER_QUESTION_TEMPLATES_DIR);
-    const templateFiles = files.filter(f => f.endsWith('.md') && !f.includes('.description.'));
-    
+    const files = await fs.readdir(USER_QUESTION_TEMPLATES_DIR);  
+    const templateFiles = files.filter(f => f.endsWith('.md'));
+
     for (const file of templateFiles) {
       const name = file.replace('.md', '');
-      const display_name = name.split('-').map(word => 
+      const display_name = name.split('-').map(word =>
         word.charAt(0).toUpperCase() + word.slice(1)
       ).join(' ');
-      
-      // Load template questions
+
+      // Load template content
       const questionsPath = join(USER_QUESTION_TEMPLATES_DIR, file);
-      const questionsContent = await fs.readFile(questionsPath, 'utf-8');
-      const questions = questionsContent.split('\n').filter(line => line.trim());
-      
-      // Load description if exists
-      let description = '';
-      try {
-        const descPath = join(USER_QUESTION_TEMPLATES_DIR, `${name}.description.md`);
-        description = await fs.readFile(descPath, 'utf-8').then(d => d.trim());
-      } catch {
-        description = `Questions about ${display_name}`;
-      }
-      
+      const content = await fs.readFile(questionsPath, 'utf-8');
+      const lines = content.split('\n').filter(line => line.trim());
+
+      // Separate description (lines starting with #) from questions
+      const descriptionLines = lines.filter(line => line.trim().startsWith('#'));
+      const questions = lines.filter(line => !line.trim().startsWith('#'));
+
+      // Combine description lines, removing the # prefix
+      const description = descriptionLines.length > 0
+        ? descriptionLines.map(line => line.replace(/^#\s*/, '')).join(' ').trim()
+        : `Questions about ${display_name}`;
+
       templates.push({ name, display_name, description, questions });
     }
   } catch (error) {
     logger.error('Failed to load question templates');
     console.error(error);
   }
-  
+
   return templates;
 }
 
@@ -120,13 +91,13 @@ async function selectQuestionTemplate(): Promise<QuestionTemplate | null> {
     return null;
   }
   
-  logger.info('\n' + colorize('Select a ai_preset with a set of questions:', 'bright'));
-  logger.info(colorize('─'.repeat(50), 'dim'));
+  logger.log('\n' + colorize('Select preset for a set of questions:', 'bright'));
+  logger.log(colorize('─'.repeat(50), 'dim'));
   
   templates.forEach((template, index) => {
-    logger.info(`${colorize(`[${index + 1}]`, 'cyan')} ${colorize(`${template.display_name} (${template.questions.length} questions)`, 'bright')}`);
-    logger.info(`${colorize(template.description, 'dim')}`);
-    if (index < templates.length - 1) logger.info(''); // Add space between templates
+    logger.log(`${colorize(`[${index + 1}]`, 'cyan')} ${colorize(`${template.display_name} (${template.questions.length} questions)`, 'bright')}`);
+    logger.log(`${colorize(template.description, 'dim')}`);
+    if (index < templates.length - 1) logger.log(''); // Add space between templates
   });
   
   let selection: string;
@@ -145,15 +116,15 @@ async function generateQuestionsFromTemplate(template: QuestionTemplate, subject
 }
 
 async function editQuestions(questions: string[]): Promise<string[]> {
-  logger.info('\n' + colorize('📝 Review and edit the generated questions:', 'bright'));
-  logger.info(colorize('(Press Enter to keep a question, or type a new one to replace it)', 'dim'));
-  logger.info(colorize('(Type "add" to add more questions, "done" to finish)', 'dim'));
+  logger.log('\n' + colorize('📝 Review and edit the generated questions:', 'bright'));
+  logger.log(colorize('(Press Enter to keep a question, or type a new one to replace it)', 'dim'));
+  logger.log(colorize('(Type "add" to add more questions, "done" to finish)', 'dim'));
   
   const editedQuestions: string[] = [];
   
   for (let i = 0; i < questions.length; i++) {
-    logger.info(`\n${colorize(`[${i + 1}]`, 'cyan')} ${questions[i]}`);
-    const input = await question('Edit: ');
+    logger.log(`\n${colorize(`[${i + 1}]`, 'cyan')} ${questions[i]}`);
+    const input = await question('Edit (Press Enter to keep as is): ');
     
     if (input.toLowerCase() === 'done') {
       // Keep remaining questions as-is
@@ -190,16 +161,17 @@ async function editQuestions(questions: string[]): Promise<string[]> {
 }
 
 async function selectProjectAIPreset(projectName: string): Promise<{ ai_preset?: string, models?: string[] }> {
-  logger.info(colorize('Select a model ai_preset for your project:', 'yellow'));
-  logger.info('\n' + colorize('Available AIPresets:', 'bright'));
+  logger.log(colorize('Select a preset with AI models for your project:', 'yellow'));
+  logger.log('\n' + colorize('Available presets with AI models presets:', 'bright'));
   
   const ai_presets = loadAllAIPresets();
   const ai_presetList = Array.from(ai_presets.entries());
 
   // Display available ai_presets
   ai_presetList.forEach(([key, ai_preset], index) => {
-    const modelCount = ai_preset.models?.['answer'].length || 0;
-    logger.info(`${index + 1}) ${colorize(ai_preset.name, 'cyan')} - ${ai_preset.description} (${modelCount} models: ${ai_preset.models?.['answer'].join(', ')})`);
+    const modelCount = ai_preset.models?.[ModelType.GET_ANSWER].length || 0;
+    //const modelsNames = ai_preset.models?.[ModelType.GET_ANSWER].join(', ');
+    logger.log(`${index + 1}) ${colorize(ai_preset.name, 'cyan')} - ${ai_preset.description} (${modelCount} models.)`);
   });
 
   const choice = await question('\nSelect option (1-' + (ai_presetList.length + 2) + '): ');
@@ -209,10 +181,10 @@ async function selectProjectAIPreset(projectName: string): Promise<{ ai_preset?:
     // Use selected ai_preset
     const [ai_presetKey, ai_preset] = ai_presetList[choiceNum - 1];
 
-    logger.info('\n' + colorize(`Selected ai_preset "${ai_preset.name}" with:`, 'green'));
-    logger.info(`  - ${ai_preset.models['answer'].length} models for fetching answers`);
+    logger.log('\n' + colorize(`Selected AI models preset "${ai_preset.name}" with:`, 'green'));
+    logger.log(`  - ${ai_preset.models[ModelType.GET_ANSWER].length} models for fetching answers`);
 
-    const confirm = await question('\nUse this ai_preset? (Y/n): ');
+    const confirm = await question('\nUse this AI models preset? (Y/n): ');
     if (confirm.toLowerCase() === 'n') {
       return selectProjectAIPreset(projectName); // Recursive call to try again
     }
@@ -308,11 +280,11 @@ async function generateUniqueProjectName(baseName: string): Promise<string> {
 }
 
 async function main() {
-  logger.info(colorize('\n🚀 AI Search Watch - Smart Project Setup', 'bright'));
-  logger.info(colorize('━'.repeat(50), 'dim'));
+  logger.log(colorize('\n🚀 AI Search Watch - New Project Setup', 'bright'));
+  logger.log(colorize('━'.repeat(50), 'dim'));
   
   // Step 1: Select template first
-  logger.info('\n' + colorize('Step 1: Choose AIPreset with Questions', 'bright'));
+  logger.log('\n' + colorize('Step 1: Choose Template for Questions', 'bright'));
   const template = await selectQuestionTemplate();
   if (!template) {
     logger.error('\n✗ Question template selection failed');
@@ -320,10 +292,10 @@ async function main() {
   }
   
   // Step 2: Get subject for template
-  logger.info('\n' + colorize('Step 2: Enter The Topic To Monitor', 'bright'));
-  logger.info(colorize(`AIPreset: ${template.display_name}`, 'green'));
-  logger.info(colorize('What topic would you like to monitor?', 'dim'));
-  logger.info(colorize('Examples: "Storage APIs", "AI Writing Tools", "Project Management Software", "Electric Vehicles"', 'dim'));
+  logger.log('\n' + colorize('Step 2: Enter The Topic To Monitor', 'bright'));
+  logger.log(colorize(`Questions Preset: ${template.display_name}`, 'green'));
+  logger.log(colorize('What topic would you like to monitor?', 'dim'));
+  logger.log(colorize('Examples: "Storage APIs", "AI Writing Tools", "Project Management Software", "Electric Vehicles"', 'dim'));
   const subject = await question('\nTopic: ');
   
   if (!subject) {
@@ -339,18 +311,18 @@ async function main() {
   const description = `Monitoring ${subject} - ${template.description}`;
   
   // Show auto-generated project info
-  logger.info('\n' + colorize('Project Details:', 'bright'));
-  logger.info(colorize('━'.repeat(50), 'dim'));
-  logger.info(`  ${colorize('Name:', 'yellow')} ${display_name}`);
-  logger.info(`  ${colorize('Folder:', 'yellow')} ${getProjectDisplayPath(projectName)}`);
-  logger.info(`  ${colorize('Type:', 'yellow')} ${template.display_name}`);
-  logger.info(colorize('━'.repeat(50), 'dim'));
+  logger.log('\n' + colorize('Project Details:', 'bright'));
+  logger.log(colorize('━'.repeat(50), 'dim'));
+  logger.log(`  ${colorize('Name:', 'yellow')} ${display_name}`);
+  logger.log(`  ${colorize('Folder:', 'yellow')} ${getProjectDisplayPath(projectName)}`);
+  logger.log(`  ${colorize('Type:', 'yellow')} ${template.display_name}`);
+  logger.log(colorize('━'.repeat(50), 'dim'));
   
   // Generate questions from template
   const generatedQuestions = await generateQuestionsFromTemplate(template, subject);
   
   // Step 3: Review and edit questions
-  logger.info('\n' + colorize('Step 3: Review Questions', 'bright'));
+  logger.log('\n' + colorize('Step 3: Review Questions', 'bright'));
   const finalQuestions = await editQuestions(generatedQuestions);
   
   if (finalQuestions.length === 0) {
@@ -359,7 +331,7 @@ async function main() {
   }
   
   // Step 4: Model selection
-  logger.info('\n' + colorize('Step 4: Select Set of AI Models To Monitor', 'bright'));
+  logger.log('\n' + colorize('Step 4: Select Set of AI Models To Monitor', 'bright'));
   const ai_presetSelection = await selectProjectAIPreset(projectName);
 
   // Save project
@@ -372,9 +344,14 @@ async function main() {
       ai_preset: ai_presetSelection.ai_preset
     });
     
-    logger.success(`\n✓ Project "${display_name}" created successfully!`);
+    logger.success(`\n✓ Project "${display_name}" created successfully! Saved to "${getProjectDisplayPath(projectName)}"`);
   
+    // Output marker for pipeline to capture
+    console.log(`AICW_OUTPUT_STRING:${projectName}`);
+
     await waitForEnterInInteractiveMode();
+
+    return projectName;
 
   } catch (error) {
     logger.error('\n✗ Failed to save project');

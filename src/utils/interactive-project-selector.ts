@@ -1,10 +1,10 @@
 import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { getUserProjectConfigFile, USER_PROJECTS_DIR } from './config/user-paths.js';
+import { getUserProjectConfigFile, USER_PROJECTS_DIR } from '../config/user-paths.js';
 import readline from 'readline';
-import { PipelineCriticalError } from './utils/pipeline-errors.js';
-import { CompactLogger } from './utils/compact-logger.js';
+import { PipelineCriticalError } from './pipeline-errors.js';
+import { CompactLogger } from './compact-logger.js';
 const logger = CompactLogger.getInstance();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -87,7 +87,8 @@ async function getProjects(): Promise<ProjectInfo[]> {
           // Get created date (birthtime)
           created_at = stats.birthtime;
         } catch (e) {
-          throw new Error(`Failed to read questions directory: ${questionsDir}. Error: ${e}`)
+          logger.warn(`No questions directory found for project ${entry.name} in ${questionsDir}. Error: ${e}`);
+          //throw new Error(`Failed to read questions directory: ${questionsDir}. Error: ${e}`)
         }
         
         try {
@@ -226,7 +227,7 @@ function displayProjects(projects: ProjectInfo[]): void {
   logger.info(colorize(`\n💡 Tip: Type the number to select a project, or press Enter to cancel`, 'dim'));
 }
 
-export async function selectProject(): Promise<string | null> {
+export async function showInteractiveProjectSelector(): Promise<string | null> {
   const projects = await getProjects();
   
   if (projects.length === 0) {
@@ -268,7 +269,7 @@ export async function selectProject(): Promise<string | null> {
 
 // Allow running directly for testing
 if (import.meta.url === `file://${process.argv[1]}`) {
-  selectProject().then(project => {
+  showInteractiveProjectSelector().then(project => {
     if (project) {
       logger.info(`\nProject folder name: ${project}`);
     }

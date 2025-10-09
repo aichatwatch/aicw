@@ -21,7 +21,7 @@ export interface AppAction {
   /** Unique identifier */
   id: string;
 
-  /** Script path relative to dist/ (without .js). Example: 'prepare-questions' or 'ee/enrich-calculate-influence' */
+  /** Script path relative to dist/ (without .js). Example: 'prepare-folders' or 'ee/enrich-calculate-influence' */
   cmd: string;
 
   /** Human-readable name */
@@ -44,6 +44,9 @@ export interface AppAction {
 
   /** Optional: Whether CLI command requires a project argument */
   requiresProject?: boolean;
+
+  /* optional: whether the action requires a pipe to return the project name or another string to the pipeline */
+  pipeRequired?: boolean;
 }
 
 /** Complete pipeline definition */
@@ -54,14 +57,14 @@ export interface PipelineDefinition {
   name: string;
   /** Description shown in menu */
   description: string;
-  /** Menu display order (lower = shown first) */
-  order: number;    
   /** Pipeline category used to filter actions */
   category: string;
   /** Actions to execute in order */
   actions: AppAction[];
   /** Optional: CLI command that triggers this pipeline */
   cliCommand?: string;
+  /* optional: next step pipeline to run after this action */
+  nextPipeline?: string;  
 }
 
 // ============================================================================
@@ -78,41 +81,56 @@ export const APP_ACTIONS: AppAction[] = [
   // ========================================================================
 
   {
-    id: 'cleanup-compiled-data',
-    cmd: 'actions/cleanup-compiled-data',
+    id: 'project-new',
+    cmd: 'actions/project-new',
+    name: 'Project: create new project',
+    desc: 'Create a new project with AI-generated questions',
+    pipelines: ['pipeline-project-new'],
+    category: 'project',
+    requiresProject: false,
+    // requires special mode where it returns the project name to the pipeline
+    // because it creates a new project!
+    pipeRequired: true
+  },
+
+  {
+    id: 'project-new-prepare-folders',
+    cmd: 'actions/project-new-prepare-folders',
+    name: 'Prepare Questions',
+    desc: 'Preparing questions from questions.md file',
+    pipelines: ['pipeline-project-new'],
+    category: 'project',
+    requiresProject: true,
+  },
+
+
+  {
+    id: 'project-cleanup-compiled-data',
+    cmd: 'actions/project-cleanup-compiled-data',
     name: 'Cleanup: remove compiled data',
     desc: 'Removing compiled data (excepts answers)',
-    pipelines: ['project-rebuild', 'project-build'],
+    pipelines: ['pipeline-project-rebuild', 'pipeline-project-build'],
     category: 'project',
     requiresProject: true,
   },
 
   {
-    id: 'cleanup-orphaned-questions',
-    cmd: 'actions/cleanup-orphaned-questions',
+    id: 'project-cleanup-orphaned-questions',
+    cmd: 'actions/project-cleanup-orphaned-questions',
     name: 'Cleanup: remove orphaned questions',
     desc: 'Removing orphaned question folders',
-    pipelines: ['project-rebuild', 'project-build'],
+    pipelines: ['pipeline-project-rebuild', 'pipeline-project-build'],
     category: 'project',
     requiresProject: true,
   },
 
-  {
-    id: 'prepare-questions',
-    cmd: 'actions/prepare-questions',
-    name: 'Prepare Questions',
-    desc: 'Preparing questions from markdown',
-    pipelines: ['project-build'],
-    category: 'project',
-    requiresProject: true,
-  },
 
   {
-    id: 'data-file-create',
-    cmd: 'actions/data-file-create',
+    id: 'project-data-file-create',
+    cmd: 'actions/project-data-file-create',
     name: 'Data file: prepare data files',
     desc: 'Data file: prepare data files',
-    pipelines: ['project-build', 'project-rebuild'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
     category: 'project',
     requiresProject: true,
   },  
@@ -122,7 +140,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/fetch-answers-ai',
     name: 'Fetch Answers',
     desc: 'Fetching answers from AI models',
-    pipelines: ['project-build'],
+    pipelines: ['pipeline-project-build'],
     category: 'project',
     requiresProject: true,
   },
@@ -132,7 +150,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/extract-entities-prepare-prompt',
     name: 'Extract entities: prepare prompts',
     desc: 'Extract entities: prepare prompts',
-    pipelines: ['project-build', 'project-rebuild'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
     category: 'project',
     requiresProject: true,
   },  
@@ -142,7 +160,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/extract-entities-ai',
     name: 'Extract Entities: extract entities',
     desc: 'Extract entities: extract entities',
-    pipelines: ['project-build', 'project-rebuild'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
     category: 'project',
     requiresProject: true,
   },
@@ -153,7 +171,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/action-stop',
     name: 'Debug: stop pipeline',
     desc: 'Stopping pipeline',
-    pipelines: ['project-build', 'project-rebuild'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
     category: 'project',
     requiresProject: true,
   },
@@ -163,7 +181,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/extract-links',
     name: 'Extract Links',
     desc: 'Extracting links from original answer files',
-    pipelines: ['project-build', 'project-rebuild'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
     category: 'project',
     requiresProject: true,
   },    
@@ -174,7 +192,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/enrich-links-get-type',
     name: 'Get Links Type',
     desc: 'Getting links type using patterns',
-    pipelines: ['project-build', 'project-rebuild'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
     category: 'project',
     requiresProject: true,
   },
@@ -184,7 +202,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/enrich-links-get-type-ai',
     name: 'AI Link Type',
     desc: 'AI type for unclassified links',
-    pipelines: ['project-build', 'project-rebuild'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
     category: 'project',
     requiresProject: true,
   },
@@ -194,7 +212,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/generate-link-types-array',
     name: 'Generate linkTypes secion in the data',
     desc: 'Generating linkTypes section in the data for use by get-link-type action',
-    pipelines: ['project-build', 'project-rebuild'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
     category: 'project',
     requiresProject: true,
   },
@@ -204,7 +222,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/enrich-calculate-mentions',
     name: 'Calculate Mentions',
     desc: 'Calculating entity mentions',
-    pipelines: ['project-build', 'project-rebuild', 'project-rebuild-report-only'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild', 'pipeline-project-rebuild-report-only'],
     category: 'project',
     requiresProject: true,
   },
@@ -214,7 +232,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/enrich-calculate-appearance-order',
     name: 'Calculate Appearance Order',
     desc: 'Calculating appearance order',
-    pipelines: ['project-build', 'project-rebuild', 'project-rebuild-report-only'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild', 'pipeline-project-rebuild-report-only'],
     category: 'project',
     requiresProject: true,
   },
@@ -225,7 +243,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/enrich-calculate-influence',
     name: 'Calculate Influence',
     desc: 'Calculating weighted influence',
-    pipelines: ['project-build', 'project-rebuild', 'project-rebuild-report-only'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild', 'pipeline-project-rebuild-report-only'],
     category: 'project',
     requiresProject: true,
   },
@@ -235,7 +253,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/enrich-calculate-trends',
     name: 'Calculate Trends',
     desc: 'Calculating historical trends',
-    pipelines: ['project-build', 'project-rebuild', 'project-rebuild-report-only'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild', 'pipeline-project-rebuild-report-only'],
     category: 'project',
     requiresProject: true,
   },
@@ -245,7 +263,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/enrich-link-types-calculate-mentions',
     name: 'Calculate LinkTypes Mentions',
     desc: 'Calculating linkTypes mentions',
-    pipelines: ['project-build', 'project-rebuild', 'project-rebuild-report-only'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild', 'pipeline-project-rebuild-report-only'],
     category: 'project',
     requiresProject: true,
   },
@@ -255,7 +273,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/enrich-link-types-calculate-appearance-order',
     name: 'Calculate LinkTypes Appearance Order',
     desc: 'Calculating linkTypes appearance order',
-    pipelines: ['project-build', 'project-rebuild', 'project-rebuild-report-only'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild', 'pipeline-project-rebuild-report-only'],
     category: 'project',
     requiresProject: true,
   },
@@ -265,7 +283,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/enrich-link-types-calculate-influence',
     name: 'Calculate LinkTypes Influence',
     desc: 'Calculating linkTypes influence',
-    pipelines: ['project-build', 'project-rebuild', 'project-rebuild-report-only'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild', 'pipeline-project-rebuild-report-only'],
     category: 'project',
     requiresProject: true,
   },
@@ -276,7 +294,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/enrich-link-types-calculate-trends',
     name: 'Calculate LinkTypes Trends',
     desc: 'Calculating linkTypes trends',
-    pipelines: ['project-build', 'project-rebuild', 'project-rebuild-report-only'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild', 'pipeline-project-rebuild-report-only'],
     category: 'project',
     requiresProject: true,
   },
@@ -286,7 +304,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/enrich-generate-links-for-entities-ai',
     name: 'Find Entity URLs',
     desc: 'Finding website URLs for entities',
-    pipelines: ['project-build', 'project-rebuild'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
     category: 'project',
     requiresProject: true,
   },
@@ -296,7 +314,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/enrich-generate-similar-for-entities-ai',
     name: 'Generate Similar Terms',
     desc: 'Generating similar terms for better matching',
-    pipelines: ['project-build', 'project-rebuild'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
     category: 'project',
     requiresProject: true,
   },
@@ -306,7 +324,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/enrich-generate-summary-ai',
     name: 'Generate AI Summary',
     desc: 'Generating AI summary',
-    pipelines: ['project-build', 'project-rebuild'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
     category: 'project',
     requiresProject: true,
   },
@@ -316,7 +334,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/report-generate-output-cleanup',
     name: 'Cleanup: remove old report files',
     desc: 'Removing old report files for target date',
-    pipelines: ['project-build', 'project-rebuild', 'project-rebuild-report-only'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild', 'pipeline-project-rebuild-report-only'],
     category: 'project',
     requiresProject: true,
   },
@@ -326,7 +344,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/report-generate-answers-file',
     name: 'Generate Answers File for use by report',
     desc: 'Generating answers file for use by report',
-    pipelines: ['project-build', 'project-rebuild', 'project-rebuild-report-only'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild', 'pipeline-project-rebuild-report-only'],
     category: 'project',
     requiresProject: true
   },
@@ -336,7 +354,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/report-generate',
     name: 'Report: generate',
     desc: 'Generating HTML report',
-    pipelines: ['project-build', 'project-rebuild', 'project-rebuild-report-only'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild', 'pipeline-project-rebuild-report-only'],
     category: 'project',
     requiresProject: true,
   },
@@ -346,7 +364,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/report-generate-project-navigation',
     name: 'Report: generate project navigation',
     desc: 'Generating project navigation',
-    pipelines: ['project-build', 'project-rebuild', 'project-rebuild-report-only'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild', 'pipeline-project-rebuild-report-only'],
     category: 'project',
     requiresProject: true,
   },
@@ -356,41 +374,31 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/report-generate-show-success-message',
     name: 'Report: generate success message',
     desc: 'Generating success message',
-    pipelines: ['project-build', 'project-rebuild', 'project-rebuild-report-only'],
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild', 'pipeline-project-rebuild-report-only'],
     category: 'project',
     requiresProject: true,
   },
 
   // ========================================================================
-  // NON-PIPELINE ACTIONS (Utilities, Setup, etc.)
+  // (Utilities, Setup, etc.)
   // ========================================================================
   {
     id: 'setup',
     cmd: 'setup',
     name: 'Setup: setup API Key',
-    desc: 'Configure API key for accessing AI models',
-    pipelines: [], 
+    desc: 'Configure API keys for accessing AI models',
+    pipelines: ['pipeline-utility-setup-api-key'], 
     category: 'utility',
     requiresProject: false,
   },
 
-  {
-    id: 'project-new',
-    cmd: 'actions/project-new',
-    name: 'Project: create new project',
-    desc: 'Create a new project with AI-generated questions',
-    pipelines: [],
-    category: 'project',
-    requiresProject: false,
-  },
-
+  
   {
     id: 'actions/check-models',
     cmd: 'check-models',
     name: 'Setup: check AI Models',
     desc: 'Test all AI models for deprecation',
-    pipelines: [],
-    
+    pipelines: ['pipeline-utility-check-models'],  
     category: 'utility',
     requiresProject: false,
   },
@@ -400,8 +408,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/utils/report-serve',
     name: 'Reports: run reports server',
     desc: 'Start web server to view reports in browser',
-    pipelines: [],
-    
+    pipelines: ['pipeline-utility-report-serve'],    
     category: 'utility',
     requiresProject: false,
   },
@@ -411,7 +418,7 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/utils/show-user-data-location',
     name: 'Utility: show user data folders location',
     desc: 'Show user data folder location',
-    pipelines: [],    
+    pipelines: ['pipeline-utility-show-user-data-location'],    
     category: 'utility',
     requiresProject: false,
   },  
@@ -431,33 +438,89 @@ export const APP_ACTIONS: AppAction[] = [
 
 // PIPELINE DEFINITIONS
 export const PROJECT_PIPELINES: PipelineDefinition[] = [
+
+  {
+    id: 'pipeline-project-new',
+    name: 'Project: new project',
+    description: 'create a new project',
+    
+    category: 'project',
+    actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-project-new')),
+    nextPipeline: 'pipeline-project-build',
+  },
+
   {
     id: 'pipeline-project-build',
     name: 'Project: full pipeline',
     description: 'get AI answers, analyze and generate report',
-    order: 1,
+    
     category: 'project',
-    actions: APP_ACTIONS.filter(a => a.pipelines.includes('project-build')),
+    actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-project-build')),
   },
 
   {
     id: 'pipeline-project-rebuild',
     name: 'Project: rebuild project',
-    description: 'rebuild report (no re-asking AI for answers)',
-    order: 1,
+    description: 'rebuild report (no re-asking AI for answers)',    
     category: 'project',
-    actions: APP_ACTIONS.filter(a => a.pipelines.includes('project-rebuild')),
+    actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-project-rebuild')),
   },
 
   {
     id: 'pipeline-project-rebuild-report-only',
     name: 'Project: generate report (only)',
     description: 'create html report from existing data, no recalc',
-    order: 2,
+    
     category: 'project',
-    actions: APP_ACTIONS.filter(a => a.pipelines.includes('project-rebuild-report-only')),
+    actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-project-rebuild-report-only')),
   },
 ];
+
+export const UTILITY_PIPELINES: PipelineDefinition[] = [
+
+  {
+    id: 'pipeline-utility-report-serve',
+    name  : 'Utility: report serve',
+    description: 'show user data location',
+    
+    category: 'utility',
+    actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-utility-report-serve')),
+  },
+
+  {
+    id: 'pipeline-utility-show-user-data-location',
+    name: 'Utility: show user data location',
+    description: 'show user data location',
+    
+    category: 'utility',
+    actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-utility-show-user-data-location')),
+  },
+
+  {
+    id: 'pipeline-utility-check-models',
+    name: 'Utility: check AI Models',
+    description: 'check AI Models',
+    
+    category: 'utility',
+    actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-utility-check-models')),
+  },
+
+  {
+    id: 'pipeline-utility-setup-api-key',
+    name: 'Setup: setup API Key',
+    description: 'setup API Key',
+    
+    category: 'utility',
+    actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-utility-setup-api-key')),
+    nextPipeline: 'pipeline-project-new'
+  },  
+];
+
+export const ALL_PIPELINES: PipelineDefinition[] = [
+  ...PROJECT_PIPELINES,
+  ...UTILITY_PIPELINES,
+];
+
 
 
 // ============================================================================
@@ -491,16 +554,7 @@ export function getActionsByTag(tag: string): AppAction[] {
  * Get pipeline by ID
  */
 export function getPipeline(id: string): PipelineDefinition | undefined {
-  return PROJECT_PIPELINES.find(p => p.id === id);
-}
-
-/**
- * Get pipelines by category
- */
-export function getPipelinesByCategory(category: 'utility' | 'project' | 'project-advanced'): PipelineDefinition[] {
-  return PROJECT_PIPELINES
-    .filter(p => p.actions.some(a => a.category === category))
-    .sort((a, b) => a.order - b.order);
+  return ALL_PIPELINES.find(p => p.id === id);
 }
 
 /**
@@ -549,29 +603,15 @@ export function getCliCommands(): AppAction[] {
  * Get all CLI-invokable items (pipelines + actions with cliCommand)
  */
 export interface CliMenuItem {
-  type: 'pipeline' | 'action';
   id: string;
   name: string;
   description: string;
   cliCommand: string;
   category: string;
-  order?: number;
   requiresProject?: boolean;
+  nextPipeline?: string;
 }
 
-/**
- * Get all pipelines that have cliCommand (can be invoked from CLI)
- */
-export function getInvokablePipelines(): PipelineDefinition[] {
-  return PROJECT_PIPELINES.filter(p => p.id);
-}
-
-/**
- * Get all standalone actions with cliCommand (not part of pipelines, can be invoked from CLI)
- */
-export function getInvokableActions(): AppAction[] {
-  return APP_ACTIONS.filter(a => a.id && a.pipelines.length === 0);
-}
 
 /**
  * Get all CLI menu items (pipelines + standalone actions) organized by category
@@ -580,58 +620,18 @@ export function getCliMenuItems(): CliMenuItem[] {
   const items: CliMenuItem[] = [];
 
   // Add invokable pipelines
-  const pipelines = getInvokablePipelines();
+  const pipelines = ALL_PIPELINES; // all pipelines can be invoked from CLI
   for (const pipeline of pipelines) {
     items.push({
-      type: 'pipeline',
       id: pipeline.id,
       name: pipeline.name,
       description: pipeline.description,
       cliCommand: pipeline.id!,
       category: pipeline.category,
-      order: pipeline.order,
       requiresProject: true, // Pipelines always require project
-    });
-  }
-
-  // Add invokable standalone actions
-  const actions = getInvokableActions();
-  for (const action of actions) {
-    items.push({
-      type: 'action',
-      id: action.id,
-      name: action.name,
-      description: action.desc,
-      cliCommand: action.id!,
-      category: action.category,
-      requiresProject: action.requiresProject,
+      nextPipeline: pipeline.nextPipeline,
     });
   }
 
   return items;
-}
-
-/**
- * Get CLI menu items grouped by category
- */
-export function getCliMenuByCategory(): Record<string, CliMenuItem[]> {
-  const items = getCliMenuItems();
-  const grouped: Record<string, CliMenuItem[]> = {
-    utility: [],
-    project: [],
-    'project-advanced': [],
-  };
-
-  for (const item of items) {
-    if (grouped[item.category]) {
-      grouped[item.category].push(item);
-    }
-  }
-
-  // Sort by order within each category
-  for (const category in grouped) {
-    grouped[category].sort((a, b) => (a.order || 999) - (b.order || 999));
-  }
-
-  return grouped;
 }

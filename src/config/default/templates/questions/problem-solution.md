@@ -1,3 +1,5 @@
+# Identifies challenges and their solutions within a domain. Ideal for understanding pain points and how to address them.
+
 What are the biggest challenges in {{SUBJECT}}?
 What problems does {{SUBJECT}} solve?
 What are common mistakes people make with {{SUBJECT}}?

@@ -260,11 +260,15 @@ export async function getTargetDateFromProjectOrEnvironment(project: string): Pr
   //logger.info(`getTargetDateFromProjectOrEnvironment: completeAnswersDates: ${completeAnswersDates}`);
   // raise error if no complete answers at all for the project
   if (!completeAnswersDates || completeAnswersDates.length === 0) { 
+    // if not dates with complete answers at all, we return empty string
+    logger.info(`No complete answer dates found for project ${project}. New project?`);
+    /*
     throw new PipelineCriticalError(
       `No complete answer dates found for project ${project}. Check project.json`,
       'getTargetDateFromProjectOrEnvironment',
       project
     );
+    */
   }
 
   // first parse from args
@@ -315,11 +319,17 @@ export async function getTargetDateFromProjectOrEnvironment(project: string): Pr
   }
 
   if (!finalDate) {
+    // if still no date then we return current date formatted as YYYY-MM-DD
+    finalDate = new Date().toISOString().split('T')[0];
+    logger.info(`No target date found for project ${project}. Returning current date: ${finalDate}`);
+    
+    /*
     throw new PipelineCriticalError(
       `No target date found for project ${project}. Check project.json`,
       'getTargetDateFromProjectOrEnvironment',
       project
     );
+    */
   }
 
   logger.info(`Target date detected as: ${finalDate}`);
@@ -520,7 +530,7 @@ async function getDatesWithCompleteAnswers(project: string): Promise<string[] | 
 
         // we must not have empty dates for any question
         if (completeDatesForQuestion.length === 0) {
-          logger.error(`No complete answer dates found for project ${project} for quuestion "${questionDir.name}" in ${answersDir}`);
+          logger.warn(`No complete answer dates found for project ${project} for question "${questionDir.name}" in ${answersDir}`);
           throw new PipelineCriticalError(
             `No complete answer dates found for project ${project}. Check project.json`,
             'getDatesWithCompleteAnswers',

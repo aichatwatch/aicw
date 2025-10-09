@@ -1,1 +1,0 @@
-Analyzes options and alternatives within a category. Great for competitive analysis and understanding the landscape.

@@ -87,9 +87,11 @@ async function nextAvailableIndex(destDir: string, used = new Set<number>()): Pr
 
 async function main(): Promise<void> {
   const project = await getProjectNameFromCommandLine();
+  // we do NOT validate project for this step which setups new project name
+  /* 
   await validateAndLoadProject(project);
   const targetDate = await getTargetDateFromProjectOrEnvironment(project);
-
+  */
 
   // Use provided path or default location
   const questionsFile: string = getUserProjectQuestionsFile(project);  
@@ -153,6 +155,8 @@ async function main(): Promise<void> {
       await writeFileAtomic(
         getUserProjectQuestionFilePath(project, folderName),
         question);
+      // create answers directory
+      await fs.mkdir(path.join(destDir, folderName, 'answers'), { recursive: true });
       created++;
     }
 

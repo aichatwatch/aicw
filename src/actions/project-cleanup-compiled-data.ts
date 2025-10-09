@@ -1,19 +1,3 @@
-/**
- * Cleanup Compiled Data - Removes processed files from target date only
- *
- * This action prepares for rebuild by cleaning compiled files WITHIN the target date.
- * It preserves historical data needed for trend calculation.
- *
- * What gets deleted:
- * - data-compiled/<target-date>/*.js files (except backups)
- *
- * What is PRESERVED:
- * - data-compiled/<target-date>/backups/ directory
- * - data-compiled/<target-date>/BACKUP-* files
- * - data-compiled/<other-dates>/ (historical data for trends)
- * - answers/ folders (raw AI responses)
- */
-
 import { promises as fs } from 'fs';
 import path from 'path';
 import { DirentLike, QuestionEntry } from '../config/types.js';
@@ -134,13 +118,16 @@ async function cleanupCompiledData(project: string, targetDate: string)
 
 async function main(): Promise<void> {
   const project = await getProjectNameFromCommandLine();
-  await validateAndLoadProject(project);
-  const targetDate = await getTargetDateFromProjectOrEnvironment(project);
-
   // Initialize logger
   await logger.initialize(import.meta.url, project);
 
-  await cleanupCompiledData(project, targetDate);
+  await validateAndLoadProject(project);
+  const targetDate = await getTargetDateFromProjectOrEnvironment(project);
+  if(targetDate) {
+    await cleanupCompiledData(project, targetDate);
+  } else {
+    logger.warn(`No answers for ANY date found for project ${project}, skipping cleanup of compiled data`);
+  }
 
   await logger.showSummary(); 
   await waitForEnterInInteractiveMode();
