@@ -159,11 +159,11 @@ function formatDate(date: Date | string | undefined): string {
 }
 
 function displayProjects(projects: ProjectInfo[]): void {
-  logger.info(colorize('\n📁 Available Projects', 'yellow'));
-  logger.info(colorize('═'.repeat(100), 'dim'));
+  logger.log(colorize('\n📁 Available Projects', 'yellow'));
+  logger.log(colorize('═'.repeat(100), 'dim'));
   
   // Header
-  logger.info(
+  logger.log(
     colorize(' # ', 'dim') +
     colorize('Project Name', 'cyan') + ' '.repeat(23) +
     colorize('Questions', 'cyan') + ' '.repeat(3) +
@@ -171,7 +171,7 @@ function displayProjects(projects: ProjectInfo[]): void {
     colorize('Last Capture', 'cyan') + ' '.repeat(3) +
     colorize('Created', 'cyan')
   );
-  logger.info(colorize('─'.repeat(100), 'dim'));
+  logger.log(colorize('─'.repeat(100), 'dim'));
   
   projects.forEach((project, index) => {
     const num = colorize(`[${(index + 1).toString().padStart(1)}]`, 'bright');
@@ -205,7 +205,7 @@ function displayProjects(projects: ProjectInfo[]): void {
       
     const created = colorize(formatDate(project.created_at), 'dim');
     
-    logger.info(`${num} ${name} ${questions} ${captures} ${lastCapture} ${created}`);
+    logger.log(`${num} ${name} ${questions} ${captures} ${lastCapture} ${created}`);
     
     // Show folder name if different from display name
     if (project.name !== project.display_name) {
@@ -214,8 +214,8 @@ function displayProjects(projects: ProjectInfo[]): void {
     logger.info(colorize(`    └─ AI models ai_preset: ${project.ai_preset || 'N/A'}`, 'dim'));
   });
   
-  logger.info(colorize('═'.repeat(100), 'dim'));
-  logger.info(colorize(`\n💡 Tip: Type the number to select a project, or press Enter to cancel`, 'dim'));
+  logger.log(colorize('═'.repeat(100), 'dim'));
+  logger.log(colorize(`\n💡 Tip: Type the number to select a project, or press Enter to cancel`, 'dim'));
 }
 
 export async function showInteractiveProjectSelector(): Promise<string | null> {

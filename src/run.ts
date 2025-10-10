@@ -13,12 +13,12 @@ import { getUpdateNotification, checkForUpdates, getCurrentVersion } from './uti
 import { performUpdate, showVersion } from './utils/update-installer.js';
 import { getCliMenuItems, getActionByCommand, CliMenuItem, getPipeline } from './config/pipelines-and-actions.js';
 import { PipelineExecutor, ExecutionOptions, ExecutionResult } from './utils/pipeline-executor.js';
-import { startServer, stopServer } from './actions/utils/report-serve.js';
+import { startServer, stopServer, isServerRunning, getServerPort } from './actions/utils/report-serve.js';
 import { initializeUserDirectories } from './config/user-paths.js';
 import { PipelineCriticalError } from './utils/pipeline-errors.js';
 import { getScriptPath, COLORS } from './utils/misc-utils.js';
 import { AICW_GITHUB_URL } from './config/constants.js';
-
+import { WaitForEnterMessageType, openInDefaultBrowser } from './utils/misc-utils.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
 function colorize(text: string, color: keyof typeof COLORS): string {
@@ -106,8 +106,9 @@ function sleep(ms: number): Promise<void> {
 
 // Helper function to start the web server in background
 async function startWebServer(): Promise<void> {
-  if (serverProcess) {
-    output.warn('⚠️  Server is already running');
+  if (isServerRunning()) {
+    const port = getServerPort();
+    output.warn(`⚠️  Server is already running at http://localhost:${port}/`);
     return;
   }
 
@@ -121,27 +122,9 @@ async function startWebServer(): Promise<void> {
     (serverProcess as any).port = port;
 
     // Give server time to fully start then open browser
-    await new Promise<void>(resolve => {
+    await new Promise<void>(async resolve => {
       setTimeout(() => {
-        const url = `http://localhost:${port}`;
-        const platform = process.platform;
-        let openCmd: string;
-
-        if (platform === 'darwin') {
-          spawn('open', [url], { detached: true, stdio: 'ignore' }).unref();
-        } else if (platform === 'win32') {
-          // Windows requires special handling for the 'start' command
-          spawn('cmd', ['/c', 'start', '', url], {
-            detached: true,
-            stdio: 'ignore',
-            shell: false
-          }).unref();
-        } else {
-          // Linux and other Unix-like systems
-          spawn('xdg-open', [url], { detached: true, stdio: 'ignore' }).unref();
-        }
-        output.success(`\n✓ Browser opened at ${url}`);
-        output.writeLine(colorize('Server is running in background..\n', 'dim'));
+        openInDefaultBrowser(`http://localhost:${port}`);
         resolve();
       }, 1500);
     });
@@ -157,13 +140,13 @@ async function startWebServer(): Promise<void> {
 
 // Helper function to stop the web server
 function stopWebServer(): boolean {
-  if (!serverProcess) {
+  if (!isServerRunning()) {
     return false;
   }
 
   stopServer(); // Call real server stop function
   serverProcess = null;
-  output.success('\n✓ Server stopped');
+  output.success('Server stopped');
   return true;
 }
 
@@ -186,7 +169,7 @@ async function printHelp(): Promise<void> {
   const quickStartContent = readFileSync(quickStartPath, 'utf8');
   output.writeLine(quickStartContent);
     // Wait for Enter in interactive mode
-  await waitForEnterInInteractiveMode(true);
+  await waitForEnterInInteractiveMode(WaitForEnterMessageType.PRESS_ENTER_TO_THE_MENU, true);
 }
 
 async function printLicense(): Promise<void> {
@@ -198,7 +181,17 @@ async function printLicense(): Promise<void> {
 
   output.writeLine(colorize('For more information:', 'dim'));
   output.writeLine(`${colorize(AICW_GITHUB_URL, 'blue')}\n`);
-  await waitForEnterInInteractiveMode(true);
+  await waitForEnterInInteractiveMode(WaitForEnterMessageType.PRESS_ENTER_TO_THE_MENU, true);
+}
+
+async function showDemoReportsUrl(): Promise<void> {
+  printHeader();
+  // output LICENSE.md file
+  const demoReportsUrlPath = `https://aichatwatch.com/demo/reports/index.html`
+  output.writeLine(colorize('Explore Latest demo reports here:', 'dim'));
+  output.writeLine(`${colorize(demoReportsUrlPath, 'blue')}\n`);
+  await openInDefaultBrowser(demoReportsUrlPath);
+  await waitForEnterInInteractiveMode(WaitForEnterMessageType.PRESS_ENTER_TO_THE_MENU, true);
 }
 async function checkApiKeysArePresent(): Promise<boolean> {
   // Load environment to check API key
@@ -255,6 +248,10 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
   // Special menu items
   output.writeLine('\n' + colorize('⚙️  More:', 'yellow'));
 
+  const demoReportsChoice = String(choiceNum++);
+  output.writeLine(`${demoReportsChoice}) ` + colorize('View Demo Reports', 'cyan') + ' - View Demo Reports');
+
+
 
   const helpChoice = String(choiceNum++);
   output.writeLine(`${helpChoice}) ` + colorize('Help', 'cyan') + ' - Show Help');
@@ -265,8 +262,8 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
   output.writeLine('0) ' + colorize('Exit', 'cyan') + ' - Exit\n');
 
   // Display server status if running
-  if (serverProcess) {
-    const serverPort = (serverProcess as any).port || 8080;
+  if (isServerRunning()) {
+    const serverPort = getServerPort() || 8080;
     output.writeLine(colorize('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'dim'));
     output.writeLine(colorize('📍 Reports server running at: ', 'green') + colorize(`http://localhost:${serverPort}/`, 'bright'));
     output.writeLine(colorize('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'dim') + '\n');
@@ -284,7 +281,7 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
 
       // Handle exit
       if (choiceStr === '0') {
-        if (serverProcess) {
+        if (isServerRunning()) {
           output.writeLine(colorize('\nStopping web server...', 'dim'));
           stopWebServer();
         }
@@ -305,6 +302,12 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
         return;
       }
 
+      if(choiceStr === demoReportsChoice) {
+        await showDemoReportsUrl();
+        resolve(MenuState.CONTINUE);
+        return;
+      }
+
       // Handle dynamic menu items
       const menuItem = menuMap.get(choiceStr);
 
@@ -316,7 +319,7 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
 
           await executePipelineForMenuItem(menuItem.id);
 
-          await waitForEnterInInteractiveMode(true);
+          await waitForEnterInInteractiveMode(WaitForEnterMessageType.PRESS_ENTER_TO_THE_MENU, true);
 
         } catch (error: any) {
           output.writeLine(colorize(`\n✗ Error: ${error.message}`, 'red'));
@@ -363,10 +366,16 @@ async function executePipelineForMenuItem(pipelineId: string, project?: string):
   const executionResult: ExecutionResult = await executor.execute(pipelineId, executionOptions);
 
   // only run next pipeline if the current pipeline was successful
-  const runNextPipeline = executionResult.success && pipeline.nextPipeline && pipeline.nextPipeline.length > 0;
+  let runNextPipeline = executionResult.success && pipeline.nextPipeline && pipeline.nextPipeline.length > 0;
 
   if (runNextPipeline) {
       // run the next pipeline
+      logger.log('--------------------------------');
+      logger.log(`IMPORTANT: Next we will run the pipeline "${pipeline.nextPipeline}" (parent: ${pipelineId}) for the project "${executionResult.project}"`);
+      logger.log('--------------------------------');
+      runNextPipeline = await waitForEnterInInteractiveMode(WaitForEnterMessageType.PRESS_ENTER_TO_CONTINUE, true);
+  }
+  if (runNextPipeline) {
       const ExecutionResultNext: ExecutionResult = await executePipelineForMenuItem(pipeline.nextPipeline, executionResult.project);
       if (!ExecutionResultNext.success) {
         logger.error(`Failed to run next pipeline ${pipeline.nextPipeline} (parent: ${pipelineId}) for project ${executionResult.project}`);
@@ -399,7 +408,7 @@ async function runMenuLoop(): Promise<void> {
       // This is our safety net - log error and continue
       console.error('\n❌ An error occurred:', error instanceof Error ? error.message : error);
       output.writeLine('\n↩️  Returning to menu...\n');
-      await waitForEnterInInteractiveMode(true);
+      await waitForEnterInInteractiveMode(WaitForEnterMessageType.PRESS_ENTER_TO_THE_MENU, true);
       currentState = MenuState.MAIN;
       isFirstRun = false; // Don't show header after errors
     }
@@ -416,7 +425,7 @@ async function main(): Promise<void> {
       // Kill child process, which will trigger the rejection in runInterruptible
       currentChildProcess.kill('SIGINT');
       // Don't exit - let the error handling return to menu
-    } else if (serverProcess) {
+    } else if (isServerRunning()) {
       // Stop the server if it's running
       stopWebServer();
       output.writeLine(colorize('\n↩️ Server stopped, returning to menu...', 'yellow'));

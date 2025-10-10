@@ -4778,23 +4778,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 let cleaned = summary;
 
-                // 1. Remove broken HTML attributes (title="...", alt="...", data-*="...")
-                cleaned = cleaned.replace(/\s*(title|alt|data-[a-z-]+)="[^"]*">/g, '>');
-
-                // 2. Clean up orphaned closing tags from malformed HTML
-                cleaned = cleaned.replace(/"\s*>/g, '');
-
-                // 3. Replace model IDs with display names
+                // Replace model IDs with display names using simple string replacement
                 // Sort by length descending to replace longer IDs first (avoid partial replacements)
                 const sortedModelIds = Array.from(modelMap.keys()).sort((a, b) => b.length - a.length);
                 for (const modelId of sortedModelIds) {
                     const display_name = modelMap.get(modelId);
-                    // Use word boundaries to avoid partial replacements
+                    // Simple word boundary replacement - works for both text and HTML
                     const regex = new RegExp(`\\b${this.escapeRegExp(modelId)}\\b`, 'g');
                     cleaned = cleaned.replace(regex, display_name);
                 }
 
-                // 4. Clean up excessive whitespace while preserving intentional line breaks
+                // Clean up excessive whitespace while preserving intentional line breaks
                 cleaned = cleaned.replace(/[ \t]+/g, ' '); // Replace multiple spaces/tabs with single space
                 cleaned = cleaned.replace(/\n\s*\n\s*\n/g, '\n\n'); // Max 2 consecutive line breaks
                 cleaned = cleaned.trim();
@@ -4803,29 +4797,76 @@ document.addEventListener('DOMContentLoaded', function () {
             },
 
             // Process summary text to make entity mentions clickable
+            // Uses HTML-aware processing to avoid breaking HTML structure
             processTextForClickableEntities(text) {
                 if (!text) return text;
 
                 // Build searchable entity index from all data arrays
                 const entityIndex = this.buildEntityIndex();
 
-                // Process text to wrap entity mentions with clickable spans
-                let processedText = text;
+                if (Object.keys(entityIndex).length === 0) {
+                    return text; // No entities to process
+                }
+
+                // Use DOMParser to parse HTML properly
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+
+                // Check if parsing failed
+                if (!doc.body) {
+                    console.warn('Failed to parse HTML for entity processing');
+                    return text;
+                }
 
                 // Sort entities by length (longest first) to avoid partial replacements
                 const sortedEntities = Object.keys(entityIndex).sort((a, b) => b.length - a.length);
 
-                for (const entityKey of sortedEntities) {
-                    const entityInfo = entityIndex[entityKey];
-                    // Create regex for word boundary matching (case insensitive)
-                    const regex = new RegExp(`\\b(${this.escapeRegExp(entityInfo.originalValue)})\\b`, 'gi');
+                // Walk through text nodes only
+                const walk = (node) => {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        let textContent = node.textContent;
+                        let modified = false;
 
-                    processedText = processedText.replace(regex, (match) => {
-                        return `<span class="clickable-entity clickable-entity-${entityInfo.type}" data-entity-type="${entityInfo.type}" data-entity-value="${entityInfo.value}" title="Click to view ${entityInfo.originalValue} in ${entityInfo.type} section">${match}</span>`;
-                    });
-                }
+                        // Try to replace each entity in this text node
+                        // Since entities are sorted longest-first, we use the first match and stop
+                        // to avoid matching shorter entities that are substrings
+                        for (const entityKey of sortedEntities) {
+                            const entityInfo = entityIndex[entityKey];
+                            const regex = new RegExp(`\\b(${this.escapeRegExp(entityInfo.originalValue)})\\b`, 'gi');
 
-                return processedText;
+                            if (regex.test(textContent)) {
+                                textContent = textContent.replace(regex, (match) => {
+                                    modified = true;
+                                    return `<span class="clickable-entity clickable-entity-${entityInfo.type}" data-entity-type="${entityInfo.type}" data-entity-value="${entityInfo.value}" title="Click to view ${entityInfo.originalValue} in ${entityInfo.type} section">${match}</span>`;
+                                });
+                                break; // Stop after first match to prevent overlapping replacements
+                            }
+                        }
+
+                        // If we modified the text, replace the text node with parsed HTML
+                        if (modified) {
+                            // Use DocumentFragment for cleaner insertion
+                            const fragment = document.createRange().createContextualFragment(textContent);
+                            node.parentNode.replaceChild(fragment, node);
+                        }
+                    } else if (node.nodeType === Node.ELEMENT_NODE) {
+                        // Skip certain elements where we don't want to make entities clickable
+                        const skipElements = ['CODE', 'PRE', 'SCRIPT', 'STYLE', 'A'];
+                        if (skipElements.includes(node.tagName)) {
+                            return; // Skip this element and its children
+                        }
+
+                        // Process child nodes
+                        // Convert to array to avoid issues with live NodeList during modifications
+                        Array.from(node.childNodes).forEach(child => walk(child));
+                    }
+                };
+
+                // Start walking from body
+                walk(doc.body);
+
+                // Return the processed HTML
+                return doc.body.innerHTML;
             },
 
             // Build searchable index of all entities across all data arrays

@@ -9,6 +9,7 @@ import { MIN_VALID_OUTPUT_DATA_SIZE, USER_CONFIG_CREDENTIALS_FILE } from  '../co
 import { PipelineCriticalError } from './pipeline-errors.js';
 import { CompactLogger } from './compact-logger.js';
 import * as readline from 'readline';
+import { spawn } from 'child_process';
 const logger = CompactLogger.getInstance();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -28,6 +29,27 @@ export const COLORS = {
   magenta: '\x1b[35m'
 };
 
+
+export async function openInDefaultBrowser(url: string): Promise<boolean> {
+  const platform = process.platform;
+  let openCmd: string;
+
+  if (platform === 'darwin') {
+    spawn('open', [url], { detached: true, stdio: 'ignore' }).unref();
+  } else if (platform === 'win32') {
+    // Windows requires special handling for the 'start' command
+    spawn('cmd', ['/c', 'start', '', url], {
+      detached: true,
+      stdio: 'ignore',
+      shell: false
+    }).unref();
+  } else {
+    // Linux and other Unix-like systems
+    spawn('xdg-open', [url], { detached: true, stdio: 'ignore' }).unref();
+  }
+  logger.success(`Browser opened at ${url}`);
+  return true;
+}
 
   /**
    * Get absolute path to a script file
@@ -364,24 +386,56 @@ export function isBackupFileOrFolder(entryName: string, isDirectory: boolean): b
   return false;
 }
 
+export enum WaitForEnterMessageType {
+  PRESS_ENTER_TO_THE_MENU = 'PRESS ENTER TO RETURN TO THE MENU',
+  PRESS_ENTER_TO_CONTINUE = 'PRESS ENTER TO CONTINUE. PRESS CTRL+C OR "Q" TO CANCEL.',  
+}
+
 // Function to wait for Enter key in interactive mode
-export async function waitForEnterInInteractiveMode(forceShow: boolean = false): Promise<void> {
+export async function waitForEnterInInteractiveMode(
+  messageType: WaitForEnterMessageType = WaitForEnterMessageType.PRESS_ENTER_TO_THE_MENU,
+  forceShow: boolean = false
+): Promise<boolean> {
   // Only show prompt if running from interactive mode AND not part of a pipeline
   // When running as part of a pipeline, we want to continue to the next step automatically
   if (process.env.AICW_INTERACTIVE_MODE === 'true' && !process.env.AICW_PIPELINE_STEP || forceShow) {
-    output.writeLine(colorize('\nPRESS ENTER TO RETURN TO THE MENU', 'dim'));
-
+    output.writeLine(colorize(`\n${messageType}`, 'dim'));
     const rl = createCleanReadline();
 
-    await new Promise<void>(resolve => {
-      rl.question('', () => {
-        rl.close();
-        // Pause stdin after closing to prevent buffer accumulation
-        process.stdin.pause();
-        resolve();
+    const input = await new Promise<string>(resolve => {
+      let resolved = false;
+
+      // Handle CTRL+C (SIGINT)
+      const sigintHandler = () => {
+        if (!resolved) {
+          resolved = true;
+          rl.close();
+          process.stdin.pause();
+          process.off('SIGINT', sigintHandler); // Remove handler to avoid memory leaks
+          resolve('^C');
+        }
+      };
+
+      process.on('SIGINT', sigintHandler);
+
+      rl.question('', (answer) => {
+        if (!resolved) {
+          resolved = true;
+          rl.close();
+          process.stdin.pause();
+          process.off('SIGINT', sigintHandler); // Clean up handler
+          resolve(answer);
+        }
       });
     });
+
+    if (input && (input.trim().toLowerCase() === 'q' || input === '^C')) {
+      return false;
+    }
+    return true;
   }
+  // Not interactive, just continue
+  return true;
 }
 
 /**

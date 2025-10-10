@@ -47,6 +47,9 @@ export interface AppAction {
 
   /* optional: whether the action requires a pipe to return the project name or another string to the pipeline */
   requiresConsolePipeReturn?: boolean;
+
+  /** Optional: Run action directly in same process instead of spawning child (for long-running services) */
+  runDirectly?: boolean;
 }
 
 /** Complete pipeline definition */
@@ -100,7 +103,11 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/project-new-prepare-folders',
     name: 'Prepare Questions',
     desc: 'Preparing questions from questions.md file',
-    pipelines: ['pipeline-project-new'],
+    pipelines: [
+      'pipeline-project-new', 
+      'pipeline-project-rebuild', 
+      'pipeline-project-build'
+    ],
     category: 'project',
     requiresProject: true
   },
@@ -410,9 +417,10 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/utils/report-serve',
     name: 'Reports: run reports server',
     desc: 'Start web server to view reports in browser',
-    pipelines: ['pipeline-utility-report-serve'],    
+    pipelines: ['pipeline-utility-report-serve'],
     category: 'utility',
     requiresProject: false,
+    runDirectly: true,
   },
 
   {
@@ -486,8 +494,8 @@ export const UTILITY_PIPELINES: PipelineDefinition[] = [
 
   {
     id: 'pipeline-utility-report-serve',
-    name  : 'Utility: report serve',
-    description: 'show user data location',
+    name  : 'Utility: start reports server',
+    description: 'start web server to view reports in browser',
     
     category: 'utility',
     actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-utility-report-serve')),

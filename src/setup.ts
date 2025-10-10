@@ -361,9 +361,9 @@ async function main() {
     // 4. Save all credentials if there were changes
     if (hasChanges) {
       await saveAllCredentials(updatedCreds);
-      logger.success('\n✓ Setup complete! All API keys saved and encrypted.');
+      logger.success('Setup complete! All API keys saved and encrypted.');
     } else {
-      logger.success('\n✓ Setup complete, run it again to add new keys or change existing.');
+      logger.success('Setup complete, run it again to add new keys or change existing.');
     }
 
     console.log(colorize('\nReturning to main menu...', 'green'));
