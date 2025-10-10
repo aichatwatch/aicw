@@ -5,6 +5,7 @@ const FAVICON_64_TEMPLATE = 'https://www.google.com/s2/favicons?domain={{DOMAIN}
 const FAVICON_128_TEMPLATE = 'https://www.google.com/s2/favicons?domain={{DOMAIN}}&sz=128';
 
 const DEFAULT_GRAPH_NODE_LIMIT = 12; // Default number of top items to show in graphs
+const MIN_CHART_ITEMS = 30; // Maximum number of items to show in charts
 
 const ENTITES_CONFIG = [
     {
@@ -35,9 +36,14 @@ const ENTITES_CONFIG = [
         name: 'links',
         isComputed: false
     },
-    { 
+    {
         // this one is computed
         name: 'linkTypes',
+        isComputed: true
+    },
+    {
+        // this one is computed
+        name: 'linkDomains',
         isComputed: true
     }
 ]
@@ -494,6 +500,102 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         tocPath: 'Links/Graph'
     },
 
+    // linkDomains
+    {
+        title: 'Link Domains',
+        description: 'Domains mentioned and used by AI engines',
+        id: 'table_linkDomains',
+        type: 'table-with-items',
+        sourceArrayName: 'linkDomains',
+        columns: [
+            { type: 'marked', caption: '✔️' },
+            { type: 'influence', caption: 'Voice' },
+            { type: 'appearanceOrder', caption: 'Order' },
+            { type: 'mentions', caption: 'Mentions' },
+            { type: 'value', caption: 'Domain' },
+            { type: 'linkTypeName', caption: 'Type' },
+            { type: 'modelNames', caption: 'AI Models' }
+
+        ],
+        hasSearchFilter: true,
+        searchFilterFields: ['value'],
+        hasModelFilter: true,
+        botFilteredFields: ['bots'],
+        hasAppearanceOrderTrendFilter: true,
+        defaultSortingColumn: '',
+        defaultSortingDirection: 'desc',
+        tocPath: 'Link Domains/Table'
+
+    },
+    {
+        title: 'Link Domains Graph',
+        description: 'Visualization of domains mentioned and used by AI engines',
+        id: 'graph_linkDomains',
+        type: 'graph-with-items',
+        sourceArrayName: 'linkDomains',
+        hasSearchFilter: true,
+        searchFilterFields: ['value'],
+        hasModelFilter: true,
+        botFilteredFields: ['bots'],
+        hasAppearanceOrderTrendFilter: true,
+        hasTrendFilter: true,
+        defaultSortingColumn: 'positive',
+        defaultSortingDirection: 'desc',
+        tocPath: 'Link Domains/Graph'
+
+    },
+    {
+        title: 'Link Domains by Mentions',
+        description: 'Chart of domains by mentions',
+        id: 'chart_linkDomainsByMentions',
+        type: 'chart-with-items',
+        sourceArrayName: 'linkDomains',
+        chartSpecificConfig: {
+            chartType: 'horizontalBar',
+            formatValuesAsPercentage: false
+        },
+        columns: [
+            // first is always the category
+            { type: 'value', caption: 'Domain', chartAxis: 'x' },
+            { type: 'mentions', caption: 'Mentions', chartAxis: 'y' }
+        ],
+        hasSearchFilter: true,
+        searchFilterFields: ['value'],
+        hasModelFilter: true,
+        botFilteredFields: ['bots'],
+        hasAppearanceOrderTrendFilter: true,
+        hasTrendFilter: true,
+        defaultSortingColumn: 'mentions',
+        defaultSortingDirection: 'desc',
+        tocPath: 'Link Domains/Mentions Chart'
+
+    },
+    {
+        title: 'Link Domains by Influence',
+        description: 'Chart of domains by influence',
+        id: 'chart_linkDomainsByInfluence',
+        type: 'chart-with-items',
+        sourceArrayName: 'linkDomains',
+        chartSpecificConfig: {
+            chartType: 'horizontalBar',
+            formatAsPercentage: true
+        },
+        columns: [
+            // first is always the category
+            { type: 'value', caption: 'Domain', chartAxis: 'x' },
+            { type: 'influence', caption: 'Influence', chartAxis: 'y' }
+        ],
+        hasSearchFilter: true,
+        searchFilterFields: ['value'],
+        hasModelFilter: true,
+        botFilteredFields: ['bots'],
+        hasAppearanceOrderTrendFilter: true,
+        hasTrendFilter: true,
+        defaultSortingColumn: '',
+        defaultSortingDirection: 'desc',
+        tocPath: 'Link Domains/Influence Chart'
+    },
+
     // linkTypes
     {
         title: 'Link Types',
@@ -588,8 +690,6 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         defaultSortingDirection: 'desc',
         tocPath: 'Link Types/Influence Chart'
     },
-
-
 
     {
         title: 'Compare',
@@ -6913,6 +7013,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 filteredItems = this.sortByGivenColumn(filteredItems, obj.defaultSortingColumn, obj.defaultSortingDirection);
 
+                // Limit chart items to avoid cluttering
+                if (filteredItems.length > MIN_CHART_ITEMS) {
+                    filteredItems = filteredItems.slice(0, MIN_CHART_ITEMS);
+                }
+
                 // filter out items with values less than minValueToUseOtherwiseRemove (if need to)
                 /*
                 if (obj.minValueToUseOtherwiseRemove !== undefined) {
@@ -7575,6 +7680,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             case 'name':
                             case 'organization':
                             case 'linkType':
+                            case 'linkTypeName':
                             case 'bots':
                             case 'similar':
                                 this.addValueCell(containerId, row, el, column);

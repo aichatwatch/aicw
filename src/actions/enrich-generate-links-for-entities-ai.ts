@@ -24,6 +24,7 @@ const SECTIONS_TO_INCLUDE = [];
 const SECTIONS_TO_EXCLUDE = [
   'links',
   'linkTypes',
+  'linkDomains',
   'keywords' // no links for keywords
 ];
 
