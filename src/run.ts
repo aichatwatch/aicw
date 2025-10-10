@@ -152,8 +152,7 @@ function stopWebServer(): boolean {
 
 function printHeader(): void {
   const version = getCurrentVersion();
-  output.writeLine(colorize(`\n🤖 AI Chat Watch ${version}`, 'bright'));
-  output.writeLine(colorize('   Track what AI chats say. More info: https://aichatwatch.com/ \n', 'dim'));
+  output.writeLine(colorize(`\n🤖 AI Chat Watch ${version} - https://aichatwatch.com/ `, 'bright'));
 
   // Show update notification if available
   const updateNotification = getUpdateNotification();
@@ -214,10 +213,6 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
   if (showHeader) {
     printHeader();
   }
-
-  output.writeLine(colorize('Main Menu', 'bright'));
-  output.writeLine(colorize('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'dim'));
-
   // Show update notification if available
   const updateNotification = getUpdateNotification();
   if (updateNotification) {
@@ -285,7 +280,8 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
           output.writeLine(colorize('\nStopping web server...', 'dim'));
           stopWebServer();
         }
-        output.writeLine(colorize('\nBye! 👋 Thanks for using AI Chat Watch!', 'green'));
+        const version = getCurrentVersion();
+        output.writeLine(colorize(`\nBye! 👋 Thanks for using AI Chat Watch! ${version}`, 'green'));
         resolve(MenuState.EXIT);
         return;
       }
