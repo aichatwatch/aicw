@@ -11,7 +11,8 @@ export const MAIN_SECTIONS = [
   'places',
   'events',
   'links',
-  'linkTypes'
+  'linkTypes',
+  'linkDomains'
 ] as const;
 
 // All categories

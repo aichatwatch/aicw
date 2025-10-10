@@ -227,6 +227,16 @@ export const APP_ACTIONS: AppAction[] = [
   },
 
   {
+    id: 'generate-link-domains-array',
+    cmd: 'actions/generate-link-domains-array',
+    name: 'Generate linkDomains section in the data',
+    desc: 'Generating linkDomains section in the data',
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
+    category: 'project',
+    requiresProject: true,
+  },
+
+  {
     id: 'enrich-calculate-mentions',
     cmd: 'actions/enrich-calculate-mentions',
     name: 'Calculate Mentions',
