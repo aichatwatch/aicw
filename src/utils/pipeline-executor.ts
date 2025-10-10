@@ -100,14 +100,21 @@ export class PipelineExecutor {
         this.project = selected;  // Store for subsequent actions
       }      
 
-      const scriptPath = getScriptPath(action.cmd);
-      const args = [scriptPath, this.project];
-
       try {
-        const success = await this.runInterruptible(args, showHints, {
-          currentStep: i + 1,
-          totalSteps: pipeline.actions.length,
-        }, env, action);
+        let success: boolean;
+
+        // Check if action should run directly in same process
+        if (action.runDirectly) {
+          success = await this.runDirectly(action, env);
+        } else {
+          // Normal child process execution
+          const scriptPath = getScriptPath(action.cmd);
+          const args = [scriptPath, this.project];
+          success = await this.runInterruptible(args, showHints, {
+            currentStep: i + 1,
+            totalSteps: pipeline.actions.length,
+          }, env, action);
+        }
 
         if (!success) {
           const error = new Error(`Action failed: ${action.desc}`);
@@ -187,6 +194,37 @@ export class PipelineExecutor {
       duration,
     };
   }
+  /**
+   * Run an action directly in the same process (for long-running services)
+   */
+  private async runDirectly(
+    action: AppAction,
+    additionalEnv: Record<string, string> = {}
+  ): Promise<boolean> {
+    try {
+      // Set environment variables
+      Object.assign(process.env, additionalEnv);
+
+      // Dynamically import the module
+      const modulePath = path.join(getPackageRoot(), 'dist', `${action.cmd}.js`);
+      const module = await import(modulePath);
+
+      // Call startServer() if it exists
+      if (module.startServer && typeof module.startServer === 'function') {
+        logger.info(`Running ${action.name} directly in same process...`);
+        const result = await module.startServer();
+        logger.success(`${action.name} completed (result: ${result})`);
+        return true;
+      } else {
+        logger.error(`Module ${action.cmd} does not export startServer() function`);
+        return false;
+      }
+    } catch (error: any) {
+      logger.error(`Failed to run ${action.name} directly: ${error.message}`);
+      return false;
+    }
+  }
+
   /**
    * Run a command in an interruptible way
    */

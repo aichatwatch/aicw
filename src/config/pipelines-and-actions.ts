@@ -47,6 +47,9 @@ export interface AppAction {
 
   /* optional: whether the action requires a pipe to return the project name or another string to the pipeline */
   requiresConsolePipeReturn?: boolean;
+
+  /** Optional: Run action directly in same process instead of spawning child (for long-running services) */
+  runDirectly?: boolean;
 }
 
 /** Complete pipeline definition */
@@ -414,9 +417,10 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/utils/report-serve',
     name: 'Reports: run reports server',
     desc: 'Start web server to view reports in browser',
-    pipelines: ['pipeline-utility-report-serve'],    
+    pipelines: ['pipeline-utility-report-serve'],
     category: 'utility',
     requiresProject: false,
+    runDirectly: true,
   },
 
   {

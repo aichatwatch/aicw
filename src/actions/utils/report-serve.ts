@@ -146,6 +146,15 @@ export function stopServer(): void {
   server.close();
 }
 
+export function isServerRunning(): boolean {
+  return server.listening;
+}
+
+export function getServerPort(): number | null {
+  const addr = server.address();
+  return addr && typeof addr === 'object' ? addr.port : null;
+}
+
 // If running directly (not imported)
 if (import.meta.url === `file://${process.argv[1]}`) {
   startServer();

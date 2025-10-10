@@ -13,7 +13,7 @@ import { getUpdateNotification, checkForUpdates, getCurrentVersion } from './uti
 import { performUpdate, showVersion } from './utils/update-installer.js';
 import { getCliMenuItems, getActionByCommand, CliMenuItem, getPipeline } from './config/pipelines-and-actions.js';
 import { PipelineExecutor, ExecutionOptions, ExecutionResult } from './utils/pipeline-executor.js';
-import { startServer, stopServer } from './actions/utils/report-serve.js';
+import { startServer, stopServer, isServerRunning, getServerPort } from './actions/utils/report-serve.js';
 import { initializeUserDirectories } from './config/user-paths.js';
 import { PipelineCriticalError } from './utils/pipeline-errors.js';
 import { getScriptPath, COLORS } from './utils/misc-utils.js';
@@ -106,8 +106,9 @@ function sleep(ms: number): Promise<void> {
 
 // Helper function to start the web server in background
 async function startWebServer(): Promise<void> {
-  if (serverProcess) {
-    output.warn('⚠️  Server is already running');
+  if (isServerRunning()) {
+    const port = getServerPort();
+    output.warn(`⚠️  Server is already running at http://localhost:${port}/`);
     return;
   }
 
@@ -123,7 +124,8 @@ async function startWebServer(): Promise<void> {
     // Give server time to fully start then open browser
     await new Promise<void>(async resolve => {
       setTimeout(() => {
-        openInDefaultBrowser(`http://localhost:${port}`);  
+        openInDefaultBrowser(`http://localhost:${port}`);
+        resolve();
       }, 1500);
     });
 
@@ -138,7 +140,7 @@ async function startWebServer(): Promise<void> {
 
 // Helper function to stop the web server
 function stopWebServer(): boolean {
-  if (!serverProcess) {
+  if (!isServerRunning()) {
     return false;
   }
 
@@ -260,8 +262,8 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
   output.writeLine('0) ' + colorize('Exit', 'cyan') + ' - Exit\n');
 
   // Display server status if running
-  if (serverProcess) {
-    const serverPort = (serverProcess as any).port || 8080;
+  if (isServerRunning()) {
+    const serverPort = getServerPort() || 8080;
     output.writeLine(colorize('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'dim'));
     output.writeLine(colorize('📍 Reports server running at: ', 'green') + colorize(`http://localhost:${serverPort}/`, 'bright'));
     output.writeLine(colorize('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'dim') + '\n');
@@ -279,7 +281,7 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
 
       // Handle exit
       if (choiceStr === '0') {
-        if (serverProcess) {
+        if (isServerRunning()) {
           output.writeLine(colorize('\nStopping web server...', 'dim'));
           stopWebServer();
         }
@@ -423,7 +425,7 @@ async function main(): Promise<void> {
       // Kill child process, which will trigger the rejection in runInterruptible
       currentChildProcess.kill('SIGINT');
       // Don't exit - let the error handling return to menu
-    } else if (serverProcess) {
+    } else if (isServerRunning()) {
       // Stop the server if it's running
       stopWebServer();
       output.writeLine(colorize('\n↩️ Server stopped, returning to menu...', 'yellow'));
