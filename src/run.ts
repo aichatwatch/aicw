@@ -369,7 +369,7 @@ async function executePipelineForMenuItem(pipelineId: string, project?: string):
   if (runNextPipeline) {
       // run the next pipeline
       logger.log('--------------------------------');
-      logger.log(`IMPORTANT: Next we will run a pipeline ${pipeline.nextPipeline} (parent: ${pipelineId}) for project ${executionResult.project}`);
+      logger.log(`IMPORTANT: Next we will run the pipeline "${pipeline.nextPipeline}" (parent: ${pipelineId}) for the project "${executionResult.project}"`);
       logger.log('--------------------------------');
       runNextPipeline = await waitForEnterInInteractiveMode(WaitForEnterMessageType.PRESS_ENTER_TO_CONTINUE, true);
   }

@@ -490,8 +490,8 @@ export const UTILITY_PIPELINES: PipelineDefinition[] = [
 
   {
     id: 'pipeline-utility-report-serve',
-    name  : 'Utility: report serve',
-    description: 'show user data location',
+    name  : 'Utility: start reports server',
+    description: 'start web server to view reports in browser',
     
     category: 'utility',
     actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-utility-report-serve')),

@@ -7,6 +7,7 @@ import { existsSync } from 'fs';
 import { USER_DATA_DIR } from '../../config/user-paths.js';
 import { generateStaticNavigation } from '../../utils/report-projects-navigation-generator.js';
 import { CompactLogger } from '../../utils/compact-logger.js';
+import { openInDefaultBrowser } from '../../utils/misc-utils.js';
 const logger = CompactLogger.getInstance();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -23,10 +24,6 @@ const MIME_TYPES: { [key: string]: string } = {
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon'
 };
-
-// Use centralized user data path detection
-const USER_PATH = USER_DATA_DIR;
-
 // Check if a port is available
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -62,7 +59,7 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
 
     // Try multiple locations for backward compatibility
     const possiblePaths = [
-      join(USER_PATH, 'reports', filePath),
+      join(USER_DATA_DIR, 'reports', filePath),
       join(__dirname, '..', 'data', filePath),
       join(process.cwd(), 'data', filePath)
     ];
@@ -125,8 +122,13 @@ export async function startServer(): Promise<number> {
           logger.info(`⚠️  Port ${DEFAULT_PORT} was busy, using port ${port} instead`);
         }
         logger.info(`📊 Server running at http://localhost:${port}/`);
-        logger.info('\nCopy paste to browser (or CTRL+mouse click to open in your browser):');
-        logger.info(`  http://localhost:${port}/`);
+        // now try to open in default browser
+        // Try to open the browser but catch errors to avoid crashing if it fails
+        openInDefaultBrowser(`http://localhost:${port}/`).catch((err) => {
+          logger.warn(`Could not open browser automatically: ${err?.message || err}`);
+          logger.info('\nCopy-paste to browser (or CTRL+mouse click to open in your browser):');
+          logger.log(`  http://localhost:${port}/`);
+        });
         resolve(port);
       });
 
