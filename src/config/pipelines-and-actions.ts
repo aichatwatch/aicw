@@ -100,7 +100,11 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/project-new-prepare-folders',
     name: 'Prepare Questions',
     desc: 'Preparing questions from questions.md file',
-    pipelines: ['pipeline-project-new'],
+    pipelines: [
+      'pipeline-project-new', 
+      'pipeline-project-rebuild', 
+      'pipeline-project-build'
+    ],
     category: 'project',
     requiresProject: true
   },

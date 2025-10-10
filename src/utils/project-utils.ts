@@ -389,13 +389,19 @@ async function getLatestCompleteAnswersDateFromProjectSettings(project: string):
 
 export async function getProjectNameFromCommandLine(): Promise<string> {
   const args = process.argv.slice(2);
-  const project = args[0];
-  if (!project || project.trim() === '') {
-      // project was NOT found anywhere
+
+  // Handle project names with spaces by joining all args before --date flag
+  // spawn() splits "best lawyer for a startup" into ["best", "lawyer", "for", "a", "startup"]
+  const dateIndex = args.indexOf('--date');
+  const projectArgs = dateIndex !== -1 ? args.slice(0, dateIndex) : args;
+  const project = projectArgs.join(' ').trim();
+
+  if (!project || project === '') {
+    // project was NOT found anywhere
     throw new PipelineCriticalError(
       'Project was not specified! Usage: <actionName> <ProjectName> [--date YYYY-MM-DD]',
       'getProjectNameFromCommandLine'
-    );       
+    );
   }
   return project;
 }

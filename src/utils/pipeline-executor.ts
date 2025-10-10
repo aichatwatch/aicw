@@ -251,10 +251,10 @@ export class PipelineExecutor {
           // Extract project name if present
           if (isPipeRequired && capturedOutput) {
             // trying to parse if we have something like this:
-            // AICW_OUTPUT_STRING:NewProjectName
-            const match = capturedOutput.match(/AICW_OUTPUT_STRING:(\S+)/);
+            // AICW_OUTPUT_STRING:NewProjectName (or "best lawyer for a startup")
+            const match = capturedOutput.match(/AICW_OUTPUT_STRING:(.+)/);
             if (match) {
-              this.project = match[1];
+              this.project = match[1].trim();
             }
           }
 
