@@ -64,7 +64,7 @@
     "openai",
     "anthropic",
     "google",
-    "ai chat watch"    
+    "ai chat watch"
   ],
   "repository": {
     "type": "git",

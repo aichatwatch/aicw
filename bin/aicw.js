@@ -1,14 +1,5 @@
 #!/usr/bin/env node
 
-/*
-   * AI Chat Watch (AICW)
-   * Copyright (c) 2024-present Evgenii Mironichev and Contributors
-   *
-   * This software is licensed under the Elastic License 2.0 (ELv2).
-   * You may not provide the software to third parties as a hosted or
-   * managed service. See LICENSE.md for full terms.
-*/
-
 // Check Node.js version compatibility first
 const nodeVersion = process.version;
 const major = parseInt(nodeVersion.slice(1).split('.')[0], 10);
@@ -103,15 +94,6 @@ process.on('unhandledRejection', (reason, promise) => {
 // Show development mode notice if applicable
 if (process.env.AICW_DEV_MODE === 'true') {
   console.log('\x1b[33m[DEV MODE]\x1b[0m Auto-rebuild is active\n');
-}
-
-// Initialize user directories on first run (moved from post-install)
-import { initializeUserDirectories } from '../dist/config/user-paths.js';
-try {
-  initializeUserDirectories();
-} catch (error) {
-  console.error('Warning: Could not create user directories:', error.message);
-  // Continue anyway - directories will be created as needed
 }
 
 // Silent background check for updates (non-blocking)

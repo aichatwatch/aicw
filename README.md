@@ -3,7 +3,7 @@
 Track who and what is mentioned by ChatGPT, Claude, Gemini, Perplexity and other AIs.
 See who is mentioned first and how often. See which websites are mentioned and cited by AIs. Track trends over time. See influence scores. See how your brand is positioned compared to competitors.
 
-AICW is fully transparent, open-source, runs on your computer and free.
+AICW is free open-source and runs on your computer.
 
 *ELI5 (Explain like I'm 5 years old)?*: *AI Chat Watch is a free app that runs on your computer and asks AIs like ChatGPT to answer a set of questions. Then it reads these answers and telling: which companies, people, places, events are mentioned, in which order and how often. If you run it again after some time, it will also tell how answers changed. Best of all, it's open-source and runs on your computer.*
 
@@ -19,6 +19,14 @@ AICW is fully transparent, open-source, runs on your computer and free.
 
 ## 🚀 Quick Start
 
+# Try it without installation
+
+Run `Terminal` app and paste this command:
+
+```bash
+npx @aichatwatch/aicw
+```
+
 ### Installation (2 minutes)
 
 Run `Terminal` app and paste this command:
@@ -27,7 +35,13 @@ Run `Terminal` app and paste this command:
 npm install -g @aichatwatch/aicw
 ```
 
-Then type `aicw` and press Enter to start AICW (AI Chat Watch) and follow the instructions.
+Then run by typing:
+
+```bash
+aicw
+``` 
+
+And press Enter to start AICW (AI Chat Watch) and follow the instructions.
 
 **Requirements:**
 

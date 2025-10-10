@@ -7,6 +7,7 @@ import crypto from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { USER_CACHE_DIR } from '../config/user-paths.js';
+import { AICW_GITHUB_URL } from '../config/constants.js';
 
 const DEFAULT_REQUEST_TIMEOUT_FOR_AI = 30000;
 
@@ -138,7 +139,7 @@ export function createAiClientInstance(cfg: ModelConfig, overrideApiUrl: string 
     apiKey,
     timeout: DEFAULT_REQUEST_TIMEOUT_FOR_AI, 
     defaultHeaders: {
-      'HTTP-Referer': 'https://github.com/aichatwatch/aicw',
+      'HTTP-Referer': AICW_GITHUB_URL,
       'X-Title': 'AI Chat Watch'
     }
   });

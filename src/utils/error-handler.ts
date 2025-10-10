@@ -3,6 +3,7 @@
  */
 
 import { colorize } from './misc-utils.js';
+import { AICW_GITHUB_URL } from '../config/constants.js';
 
 export enum ErrorCode {
   // Setup errors
@@ -158,7 +159,7 @@ const ERROR_SOLUTIONS: Record<ErrorCode, ErrorSolution> = {
     steps: [
       'Try the operation again',
       'Check the error log for more details',
-      'Report the issue at https://github.com/aichatwatch/aicw/issues'
+      `Report the issue at ${AICW_GITHUB_URL}/issues`
     ]
   }
 };

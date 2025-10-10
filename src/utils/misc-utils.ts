@@ -1,13 +1,14 @@
 import { promises as fs } from 'fs';
-import { join, dirname } from 'path';
+import path, { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { randomBytes } from 'crypto';
-import { isDevMode } from '../config/user-paths.js';
+import { getPackageRoot, isDevMode } from '../config/user-paths.js';
 import { decryptCredentialsFile, isEncryptedCredentials } from './crypto-utils.js';
 import { output } from './output-manager.js';
-import { MIN_VALID_OUTPUT_DATA_SIZE, USER_CONFIG_CREDENTIALS_FILE } from '../config/paths.js';
+import { MIN_VALID_OUTPUT_DATA_SIZE, USER_CONFIG_CREDENTIALS_FILE } from  '../config/paths.js';
 import { PipelineCriticalError } from './pipeline-errors.js';
 import { CompactLogger } from './compact-logger.js';
+import * as readline from 'readline';
 const logger = CompactLogger.getInstance();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -15,7 +16,7 @@ const ROOT_DIR = join(__dirname, '..');
 
 const MAX_TEMPLATE_PREVIEW_LENGTH_FOR_ERROR_MESSAGES = 400;
 
-const COLORS = {
+export const COLORS = {
   reset: '\x1b[0m',
   bright: '\x1b[1m',
   dim: '\x1b[2m',
@@ -28,12 +29,65 @@ const COLORS = {
 };
 
 
+  /**
+   * Get absolute path to a script file
+   */
+export function getScriptPath(scriptName: string): string {
+    const COMPILED_JS_SUBFOLDER = 'dist';
+    const packageRoot = getPackageRoot();
+    return path.join(packageRoot, COMPILED_JS_SUBFOLDER, `${scriptName}.js`);
+}
+
+
 export function getModuleNameFromUrl(url: string): string {
   return url.match(/\/([^/]+)\.(js|ts)$/)?.[1] || 'default';
 }
 
 export function colorize(text: string, color: keyof typeof COLORS): string {
   return `${COLORS[color]}${text}${COLORS.reset}`;
+}
+
+/**
+ * Clear any pending data from stdin buffer to prevent input accumulation
+ * between readline operations
+ */
+export function clearStdinBuffer(): void {
+  if (process.stdin.isTTY) {
+    // Pause stdin to prevent further input buffering
+    process.stdin.pause();
+
+    // Remove all existing data listeners temporarily to drain the buffer
+    const dataListeners = process.stdin.listeners('data');
+    process.stdin.removeAllListeners('data');
+
+    // Set stdin to raw mode temporarily to read any buffered input
+    if (process.stdin.setRawMode) {
+      process.stdin.setRawMode(true);
+      // Read and discard any buffered data
+      process.stdin.read();
+      process.stdin.setRawMode(false);
+    }
+
+    // Restore data listeners
+    dataListeners.forEach(listener => process.stdin.on('data', listener as any));
+  }
+}
+
+/**
+ * Create a clean readline interface with stdin buffer cleared
+ * This prevents input accumulation issues between prompts
+ */
+export function createCleanReadline() {
+  // Clear any pending stdin data before creating the interface
+  clearStdinBuffer();
+
+  // Resume stdin for the readline interface
+  process.stdin.resume();
+
+  return readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
 }
 
 export interface BoxOptions {
@@ -311,21 +365,19 @@ export function isBackupFileOrFolder(entryName: string, isDirectory: boolean): b
 }
 
 // Function to wait for Enter key in interactive mode
-export async function waitForEnterInInteractiveMode(): Promise<void> {
+export async function waitForEnterInInteractiveMode(forceShow: boolean = false): Promise<void> {
   // Only show prompt if running from interactive mode AND not part of a pipeline
   // When running as part of a pipeline, we want to continue to the next step automatically
-  if (process.env.AICW_INTERACTIVE_MODE === 'true' && !process.env.AICW_PIPELINE_STEP) {
+  if (process.env.AICW_INTERACTIVE_MODE === 'true' && !process.env.AICW_PIPELINE_STEP || forceShow) {
     output.writeLine(colorize('\nPRESS ENTER TO RETURN TO THE MENU', 'dim'));
 
-    const readline = await import('readline');
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
+    const rl = createCleanReadline();
 
     await new Promise<void>(resolve => {
       rl.question('', () => {
         rl.close();
+        // Pause stdin after closing to prevent buffer accumulation
+        process.stdin.pause();
         resolve();
       });
     });

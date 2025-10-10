@@ -4,7 +4,7 @@ import path, { resolve, join } from 'path';
 import { homedir } from 'os';
 import { getPackageRoot } from './config/user-paths.js';
 import * as readline from 'readline';
-import { loadEnvFile, drawBox, waitForEnterInInteractiveMode } from './utils/misc-utils.js';
+import { loadEnvFile, drawBox, waitForEnterInInteractiveMode, getModuleNameFromUrl, createCleanReadline } from './utils/misc-utils.js';
 import { logger } from './utils/compact-logger.js';
 import { output } from './utils/output-manager.js';
 import { OUTPUT_DIR, QUESTIONS_DIR, QUESTION_DATA_COMPILED_DIR } from './config/paths.js';
@@ -13,24 +13,13 @@ import { getUpdateNotification, checkForUpdates, getCurrentVersion } from './uti
 import { performUpdate, showVersion } from './utils/update-installer.js';
 import { getCliMenuItems, getActionByCommand, CliMenuItem, getPipeline } from './config/pipelines-and-actions.js';
 import { PipelineExecutor, ExecutionOptions, ExecutionResult } from './utils/pipeline-executor.js';
-//import { validateAndLoadProject } from './utils/project-utils.js';
 import { startServer, stopServer } from './actions/utils/report-serve.js';
+import { initializeUserDirectories } from './config/user-paths.js';
+import { PipelineCriticalError } from './utils/pipeline-errors.js';
+import { getScriptPath, COLORS } from './utils/misc-utils.js';
+import { AICW_GITHUB_URL } from './config/constants.js';
 
-// Helper function to get absolute path to script files
-function getScriptPath(scriptName: string): string {
-  return path.join(getPackageRoot(), scriptName);
-}
-
-const COLORS = {
-  reset: '\x1b[0m',
-  bright: '\x1b[1m',
-  dim: '\x1b[2m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  cyan: '\x1b[36m'
-};
+const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
 function colorize(text: string, color: keyof typeof COLORS): string {
   return `${COLORS[color]}${text}${COLORS.reset}`;
@@ -158,8 +147,8 @@ async function startWebServer(): Promise<void> {
     });
 
     // Wait for user to press Enter before returning to menu
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    await new Promise(resolve => rl.question('\nReports server is running in background. Press Enter to return to menu...', () => { rl.close(); resolve(null); }));
+    const rl = createCleanReadline();
+    await new Promise(resolve => rl.question('\nReports server is running in background. Press Enter to return to menu...', () => { rl.close(); process.stdin.pause(); resolve(null); }));
   } catch (error) {
     output.error(`❌ Failed to start server: ${error}`);
     serverProcess = null;
@@ -197,7 +186,7 @@ async function printHelp(): Promise<void> {
   const quickStartContent = readFileSync(quickStartPath, 'utf8');
   output.writeLine(quickStartContent);
     // Wait for Enter in interactive mode
-  await waitForEnterInInteractiveMode();
+  await waitForEnterInInteractiveMode(true);
 }
 
 async function printLicense(): Promise<void> {
@@ -208,72 +197,29 @@ async function printLicense(): Promise<void> {
   output.writeLine(licenseContent);
 
   output.writeLine(colorize('For more information:', 'dim'));
-  output.writeLine(`${colorize('https://github.com/aichatwatch/aicw', 'blue')}\n`);
-  await waitForEnterInInteractiveMode();
+  output.writeLine(`${colorize(AICW_GITHUB_URL, 'blue')}\n`);
+  await waitForEnterInInteractiveMode(true);
 }
-
-function checkEnvironment(): { isValid: boolean; errors: string[] } {
-  const errors: string[] = [];
-  
-  // Check for API keys
-  if (!process.env.OPENROUTER_API_KEY && !process.env.OPENAI_API_KEY) {
-    errors.push('No API key found. Please set OPENROUTER_API_KEY or OPENAI_API_KEY environment variable.');
-  }
-  
-  // No need to check directory when installed as npm package
-  
-  return { isValid: errors.length === 0, errors };
-}
-
-
-
-function printStep(step: number, total: number, description: string): void {
-  const progress = `[${step}/${total}]`;
-  output.writeLine(`\n${colorize(progress, 'blue')} ${colorize(description, 'bright')}`);
-}
-
-async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuState> {
-  if (showHeader) {
-    printHeader();
-  }
-
+async function checkApiKeysArePresent(): Promise<boolean> {
   // Load environment to check API key
   await loadEnvFile();
   const hasApiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
 
   if (!hasApiKey) {
-    output.writeLine(colorize('⚠️  No API key detected. Please set up your API key first.\n', 'yellow'));
-    output.writeLine('1) ' + colorize('Setup API Key (Required)', 'bright'));
-    output.writeLine('2) Exit\n');
+    output.writeLine('--------------------------------');
+    output.writeLine(colorize('⚠️  No API keys were set! Please run "Setup: setup API Key" first and try again.\n', 'yellow'));
+    output.writeLine('--------------------------------');
+    return false;
+  }  
+  else { 
+    return true
+  };
 
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
+}
 
-    return new Promise((resolve) => {
-      rl.question('Enter your choice (1-2): ', async (choice) => {
-        rl.close();
-
-        switch (choice.trim()) {
-          case '1':
-            await runMenuOperation(
-              [getScriptPath('setup.js')],
-              'Starting API key setup...'
-            );
-            // Always return to menu whether successful or cancelled
-            resolve(MenuState.CONTINUE);
-            break;
-          case '2':
-            output.writeLine('Goodbye!');
-            resolve(MenuState.EXIT);
-            break;
-          default:
-            console.error(colorize('\n✗ Invalid choice\n', 'red'));
-            resolve(MenuState.CONTINUE);
-        }
-      });
-    });
+async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuState> {
+  if (showHeader) {
+    printHeader();
   }
 
   output.writeLine(colorize('Main Menu', 'bright'));
@@ -327,14 +273,12 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
   }
 
   const maxChoice = choiceNum - 1;
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
+  const rl = createCleanReadline();
 
   return new Promise((resolve) => {
     rl.question(`Enter your choice (0-${maxChoice}): `, async (choice) => {
       rl.close();
+      process.stdin.pause();
 
       const choiceStr = choice.trim();
 
@@ -349,15 +293,13 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
         return;
       }
 
-      if(choiceStr === helpChoice) {
-        process.env.AICW_INTERACTIVE_MODE = 'true';
+      if(choiceStr === helpChoice) {        
         await printHelp();
         resolve(MenuState.CONTINUE);
         return;
       }
 
       if(choiceStr === licenseChoice) {
-        process.env.AICW_INTERACTIVE_MODE = 'true';
         await printLicense();
         resolve(MenuState.CONTINUE);
         return;
@@ -374,6 +316,8 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
 
           await executePipelineForMenuItem(menuItem.id);
 
+          await waitForEnterInInteractiveMode(true);
+
         } catch (error: any) {
           output.writeLine(colorize(`\n✗ Error: ${error.message}`, 'red'));
         }
@@ -389,21 +333,49 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
   });
 }
 
-async function executePipelineForMenuItem(pipelineId: string, project?: string): Promise<void> {
-  const executor = new PipelineExecutor(''); // empty project means it will show project selector if needed
+async function executePipelineForMenuItem(pipelineId: string, project?: string): Promise<ExecutionResult> {
 
-  const executionOptions: ExecutionOptions = { project: project || '' };
+  // Initialize user directories on first run (moved from post-install)
+  try {
+    initializeUserDirectories();  
+  } catch (error) {
+    logger.error(`Warning: Could not create user directories: ${error.message}`);
+    throw new PipelineCriticalError('Could not create user directories', 
+      CURRENT_MODULE_NAME,
+      error
+    );
+  }
+
   const pipeline = getPipeline(pipelineId);
+
+  if(pipeline.requiresApiKeys) {
+    // for command line mode before executing a pipeline always check for api keys
+    // check if requried API keys are set
+    if (!await checkApiKeysArePresent()) {
+      // if no api keys are set, wait for user input and return back to the caller
+      return { success: false, completedSteps: 0, totalSteps: 0, duration: 1 } as ExecutionResult;
+    }
+  }
+
+  const executor = new PipelineExecutor(''); // empty project means it will show project selector if needed
+  const executionOptions: ExecutionOptions = { project: project || '' };
+  // run the pipeline
   const executionResult: ExecutionResult = await executor.execute(pipelineId, executionOptions);
 
-  // Wait for user to press Enter before returning to menu
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   // only run next pipeline if the current pipeline was successful
   const runNextPipeline = executionResult.success && pipeline.nextPipeline && pipeline.nextPipeline.length > 0;
-  const message = runNextPipeline ? `\nSucesss! press Enter to run next pipeline "${pipeline.nextPipeline}" for project "${executionResult.project}" or Ctrl+C to return to the menu` : '\nPress Enter to return to menu...';
-  await new Promise(resolve => rl.question(message, () => { rl.close(); resolve(null); }));
+
   if (runNextPipeline) {
-      await executePipelineForMenuItem(pipeline.nextPipeline, executionResult.project);
+      // run the next pipeline
+      const ExecutionResultNext: ExecutionResult = await executePipelineForMenuItem(pipeline.nextPipeline, executionResult.project);
+      if (!ExecutionResultNext.success) {
+        logger.error(`Failed to run next pipeline ${pipeline.nextPipeline} (parent: ${pipelineId}) for project ${executionResult.project}`);
+      }
+      return ExecutionResultNext;
+  }
+  else {
+    // if no pipeline to run next, wait for user input and return back to the caller
+    return executionResult;
   }
 }
 
@@ -427,7 +399,7 @@ async function runMenuLoop(): Promise<void> {
       // This is our safety net - log error and continue
       console.error('\n❌ An error occurred:', error instanceof Error ? error.message : error);
       output.writeLine('\n↩️  Returning to menu...\n');
-      await waitForEnterInInteractiveMode();
+      await waitForEnterInInteractiveMode(true);
       currentState = MenuState.MAIN;
       isFirstRun = false; // Don't show header after errors
     }
@@ -490,16 +462,6 @@ async function main(): Promise<void> {
   }
   // Load environment variables before checking environment
   await loadEnvFile();
-
-  // Check environment
-  const envCheck = checkEnvironment();
-  if (!envCheck.isValid && command !== 'help' && command !== 'serve') {
-    console.error(colorize('\n✗ Environment check failed:', 'red'));
-    envCheck.errors.forEach(error => console.error(`  • ${error}`));
-    console.error(colorize('\nRun "aicw setup" to configure the CLI.\n', 'dim'));
-    return;
-  }
-
   // Map command aliases
   const commandAliases: Record<string, string> = {
     'u': 'update',
@@ -524,6 +486,12 @@ async function main(): Promise<void> {
     const executorOptions: ExecutionOptions = {  };
     if (targetDate) {
       executorOptions.env = { AICW_TARGET_DATE: targetDate };
+    }
+
+    // for command line mode before executing a pipeline always check for api keys
+    // check if requried API keys are set
+    if (!await checkApiKeysArePresent()) {
+      process.exit(1);
     }
 
     const executor = new PipelineExecutor(project);

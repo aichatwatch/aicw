@@ -4,6 +4,7 @@ import { getAllScriptPaths, getCliCommands } from '../config/pipelines-and-actio
 import { getPackageRoot } from '../config/user-paths.js';
 import { CompactLogger } from './compact-logger.js';
 const logger = CompactLogger.getInstance();
+import { COLORS } from './misc-utils.js';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -174,13 +175,6 @@ function groupByDirectory(results: ScriptValidationResult[]): Record<string, Scr
  * Print validation report to console with colors
  */
 export function printReport(report: ScriptsValidationReport, options: { verbose?: boolean } = {}): void {
-  const COLORS = {
-    reset: '\x1b[0m',
-    red: '\x1b[31m',
-    green: '\x1b[32m',
-    yellow: '\x1b[33m',
-    dim: '\x1b[2m',
-  };
 
   if (report.allExistingScriptsAreValid) {
     logger.info(`${COLORS.green}✓ All ${report.total} scripts verified successfully${COLORS.reset}`);
