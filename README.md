@@ -157,9 +157,8 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 🤝 Support
 
-### Community (Self-Hosted)
-- 💬 [GitHub Discussions](https://github.com/aichatwatch/aicw/discussions)
-- 🐛 [Issues](https://github.com/aichatwatch/aicw/issues)
+### Create an Issue if you have any questions or problems
+- [Issues](https://github.com/aichatwatch/aicw/issues)
 
 ---
 
@@ -168,11 +167,13 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 **Elastic License v2 (ELv2)** - See [LICENSE.md](LICENSE.md)
 
 **In plain English:**
-- ✅ **Run on your computer for any purpose** - Personal use, commercial use, business use - completely **free** with no limits
+- ✅ **Run on your computer for any purpose** - Personal use, commercial use, business use - completely **free** with no limits. 
 - ✅ Use, modify, and distribute freely
 - ✅ View and audit all source code
 - ✅ **You control all costs** - Only pay for AI API usage through OpenRouter/OpenAI/Perplexity as you consume it
 - ❌ Cannot offer AICW as a hosted service to others
-- ❌ Cannot circumvent license key functionality
 
-**The only restriction:** You cannot sell it as SaaS/cloud service. For a cloud-hosted version of AICW, please use [aichatwatch.com/cloud](https://aichatwatch.com/cloud).
+
+# Contacts
+
+- [Website](https://aichatwatch.com)
