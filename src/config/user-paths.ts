@@ -25,6 +25,8 @@ export const USER_PROJECTS_DIR = path.join(USER_DATA_DIR, 'projects');
 export const USER_REPORTS_DIR = path.join(USER_DATA_DIR, 'reports');
 export const USER_CACHE_DIR = path.join(USER_DATA_DIR, 'cache');
 export const USER_CONFIG_DIR = path.join(USER_DATA_DIR, 'config');
+export const USER_CONFIG_CREDENTIALS_DIR = path.join(USER_CONFIG_DIR, '.credentials');
+export const USER_CONFIG_CREDENTIALS_FILE = path.join(USER_CONFIG_CREDENTIALS_DIR, 'credentials.json');
 export const USER_LOGS_DIR = path.join(USER_DATA_DIR, 'logs');
 export const USER_INVALID_OUTPUTS_DIR = path.join(USER_LOGS_DIR, 'invalid');
 
@@ -208,7 +210,7 @@ export function initializeUserDirectories(): void {
     USER_LOGS_DIR,
     USER_INVALID_OUTPUTS_DIR,
     path.join(USER_REPORTS_DIR, 'projects'),
-    path.join(USER_CONFIG_DIR, '.credentials')  // for encrypted credentials
+    USER_CONFIG_CREDENTIALS_DIR  // for encrypted credentials
   ];
 
   for (const dir of directories) {
@@ -289,9 +291,9 @@ export function isDevMode(): boolean {
 
 // Get package root directory (for accessing bundled resources)
 export function getPackageRoot(): string {
-  // In dev: /Users/.../aicw/dist -> /Users/.../aicw
-  // In npm: /usr/local/lib/node_modules/aicw/dist -> /usr/local/lib/node_modules/aicw
-  return path.join(__dirname, '..');
+  // In dev: /Users/.../aicw/dist/config -> /Users/.../aicw
+  // In npm: /usr/local/lib/node_modules/aicw/dist/config -> /usr/local/lib/node_modules/aicw
+  return path.join(__dirname, '..', '..');
 }
 
 export function getProjectNameFromProjectFolder(project: string): string {

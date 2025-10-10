@@ -3,6 +3,7 @@ import { realpathSync } from 'fs';
 import { getPackageRoot } from '../config/user-paths.js';
 import { getPackageName, getCurrentVersion, checkForUpdates } from '../utils/update-checker.js';
 import { CompactLogger } from './compact-logger.js';
+import { createCleanReadline } from './misc-utils.js';
 const logger = CompactLogger.getInstance();
 /**
  * Check if package is installed via npm link (development mode)
@@ -119,14 +120,11 @@ export async function performUpdate(): Promise<boolean> {
  */
 async function confirmUpdate(): Promise<boolean> {
   return new Promise((resolve) => {
-    const readline = require('readline');
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
+    const rl = createCleanReadline();
 
     rl.question('Update now? (y/n): ', (answer: string) => {
       rl.close();
+      process.stdin.pause();
       resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
     });
   });

@@ -6,6 +6,7 @@ import { logger } from './compact-logger.js';
 import { output } from './output-manager.js';
 import { waitForEnterInInteractiveMode } from './misc-utils.js';
 import { showInteractiveProjectSelector } from './interactive-project-selector.js';
+import { getScriptPath } from './misc-utils.js';
 
 export interface PipelineContext {
   currentStep: number;
@@ -99,7 +100,7 @@ export class PipelineExecutor {
         this.project = selected;  // Store for subsequent actions
       }      
 
-      const scriptPath = this.getScriptPath(action.cmd);
+      const scriptPath = getScriptPath(action.cmd);
       const args = [scriptPath, this.project];
 
       try {
@@ -186,15 +187,6 @@ export class PipelineExecutor {
       duration,
     };
   }
-
-  /**
-   * Get absolute path to a script file
-   */
-  private getScriptPath(scriptName: string): string {
-    const packageRoot = getPackageRoot();
-    return path.join(packageRoot, `${scriptName}.js`);
-  }
-
   /**
    * Run a command in an interruptible way
    */
@@ -226,7 +218,7 @@ export class PipelineExecutor {
         AICW_PIPELINE_TOTAL_STEPS: String(pipelineContext.totalSteps),
       };
 
-      const isPipeRequired = action && action.pipeRequired;
+      const isPipeRequired = action && action.requiresConsolePipeReturn;
       if(isPipeRequired) {
         logger.info(`Action requires pipe (isPipeRequired: ${isPipeRequired})`);
       }

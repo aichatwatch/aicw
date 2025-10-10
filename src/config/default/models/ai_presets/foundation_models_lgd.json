@@ -1,6 +1,6 @@
 {
     "name": "Foundation Models LGD",
-    "description": "Foundation LLM models LGD (Llama, Gemini, Deepseek) (via OpenRouter, free models). Uses paid o4-mini for analysis",
+    "description": "Foundation LLMs (Llama, Gemini, Deepseek)(via OpenRouter, free) + o4-mini for analysis(paid)",
     "models": {
         "get_answer": [
             "or_meta_llama_3_3_70b",

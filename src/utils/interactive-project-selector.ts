@@ -6,6 +6,7 @@ import readline from 'readline';
 import { PipelineCriticalError } from './pipeline-errors.js';
 import { CompactLogger } from './compact-logger.js';
 const logger = CompactLogger.getInstance();
+import { COLORS, createCleanReadline } from './misc-utils.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -20,16 +21,6 @@ interface ProjectInfo {
   captures_total?: number;
 }
 
-const COLORS = {
-  reset: '\x1b[0m',
-  bright: '\x1b[1m',
-  dim: '\x1b[2m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  cyan: '\x1b[36m'
-};
 
 function colorize(text: string, color: keyof typeof COLORS): string {
   return `${COLORS[color]}${text}${COLORS.reset}`;
@@ -237,15 +228,13 @@ export async function showInteractiveProjectSelector(): Promise<string | null> {
   }
   
   displayProjects(projects);
-  
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-  
+
+  const rl = createCleanReadline();
+
   return new Promise((resolve) => {
     rl.question(colorize('\nSelect project by number (or press Enter to cancel): ', 'yellow'), (answer) => {
       rl.close();
+      process.stdin.pause();
       
       const input = answer.trim();
       if (!input) {

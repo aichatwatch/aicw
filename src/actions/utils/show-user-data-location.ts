@@ -18,7 +18,7 @@ const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 export async function showUserDataLocation(): Promise<void> {
   // output user data folder location
   logger.info('Location of your data on this computer:');
-  logger.info(USER_DATA_DIR);
+  output.writeLine(`\n${colorize(USER_DATA_DIR, 'green')}\n`);
 
   // Show custom user name if configured
   if (process.env.AICW_USER_NAME) {

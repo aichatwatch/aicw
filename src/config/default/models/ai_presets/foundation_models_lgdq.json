@@ -1,6 +1,6 @@
 {
     "name": "Foundation Models",
-    "description": "Foundation LLM models (Llama, Qwen, Deepseek) (via OpenRouter, free models). Uses paid o4-mini for analysis",
+    "description": "Foundation LLMs (Llama, Qwen, Deepseek)(via OpenRouter, free) + o4-mini for analysis(paid)",
     "models": {
         "get_answer": [
             "or_meta_llama_3_3_70b",

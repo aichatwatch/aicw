@@ -91,7 +91,7 @@ async function selectQuestionTemplate(): Promise<QuestionTemplate | null> {
     return null;
   }
   
-  logger.log('\n' + colorize('Select preset for a set of questions:', 'bright'));
+  logger.log('\n' + colorize('Select preset (you can customize it later):', 'bright'));
   logger.log(colorize('─'.repeat(50), 'dim'));
   
   templates.forEach((template, index) => {
@@ -171,10 +171,10 @@ async function selectProjectAIPreset(projectName: string): Promise<{ ai_preset?:
   ai_presetList.forEach(([key, ai_preset], index) => {
     const modelCount = ai_preset.models?.[ModelType.GET_ANSWER].length || 0;
     //const modelsNames = ai_preset.models?.[ModelType.GET_ANSWER].join(', ');
-    logger.log(`${index + 1}) ${colorize(ai_preset.name, 'cyan')} - ${ai_preset.description} (${modelCount} models.)`);
+    logger.log(`${index + 1}) ${colorize(ai_preset.name, 'cyan')} (${modelCount} AIs)- ${ai_preset.description}`);
   });
 
-  const choice = await question('\nSelect option (1-' + (ai_presetList.length + 2) + '): ');
+  const choice = await question('\nSelect option (1-' + (ai_presetList.length) + '): ');
   const choiceNum = parseInt(choice);
 
   if (choiceNum >= 1 && choiceNum <= ai_presetList.length) {
@@ -284,7 +284,7 @@ async function main() {
   logger.log(colorize('━'.repeat(50), 'dim'));
   
   // Step 1: Select template first
-  logger.log('\n' + colorize('Step 1: Choose Template for Questions', 'bright'));
+  logger.log('\n' + colorize('Step 1: Choose Set for Questions', 'bright'));
   const template = await selectQuestionTemplate();
   if (!template) {
     logger.error('\n✗ Question template selection failed');
@@ -292,7 +292,7 @@ async function main() {
   }
   
   // Step 2: Get subject for template
-  logger.log('\n' + colorize('Step 2: Enter The Topic To Monitor', 'bright'));
+  logger.log('\n' + colorize('Step 2: Enter The Topic/Subject', 'bright'));
   logger.log(colorize(`Questions Preset: ${template.display_name}`, 'green'));
   logger.log(colorize('What topic would you like to monitor?', 'dim'));
   logger.log(colorize('Examples: "Storage APIs", "AI Writing Tools", "Project Management Software", "Electric Vehicles"', 'dim'));

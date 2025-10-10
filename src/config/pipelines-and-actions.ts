@@ -46,7 +46,7 @@ export interface AppAction {
   requiresProject?: boolean;
 
   /* optional: whether the action requires a pipe to return the project name or another string to the pipeline */
-  pipeRequired?: boolean;
+  requiresConsolePipeReturn?: boolean;
 }
 
 /** Complete pipeline definition */
@@ -65,6 +65,8 @@ export interface PipelineDefinition {
   cliCommand?: string;
   /* optional: next step pipeline to run after this action */
   nextPipeline?: string;  
+  /** Optional: whether the pipeline requires full configuration */
+  requiresApiKeys?: boolean;
 }
 
 // ============================================================================
@@ -90,7 +92,7 @@ export const APP_ACTIONS: AppAction[] = [
     requiresProject: false,
     // requires special mode where it returns the project name to the pipeline
     // because it creates a new project!
-    pipeRequired: true
+    requiresConsolePipeReturn: true
   },
 
   {
@@ -100,7 +102,7 @@ export const APP_ACTIONS: AppAction[] = [
     desc: 'Preparing questions from questions.md file',
     pipelines: ['pipeline-project-new'],
     category: 'project',
-    requiresProject: true,
+    requiresProject: true
   },
 
 
@@ -447,6 +449,7 @@ export const PROJECT_PIPELINES: PipelineDefinition[] = [
     category: 'project',
     actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-project-new')),
     nextPipeline: 'pipeline-project-build',
+    requiresApiKeys: false
   },
 
   {
@@ -456,6 +459,7 @@ export const PROJECT_PIPELINES: PipelineDefinition[] = [
     
     category: 'project',
     actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-project-build')),
+    requiresApiKeys: true
   },
 
   {
@@ -464,6 +468,7 @@ export const PROJECT_PIPELINES: PipelineDefinition[] = [
     description: 'rebuild report (no re-asking AI for answers)',    
     category: 'project',
     actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-project-rebuild')),
+    requiresApiKeys: true
   },
 
   {
@@ -473,6 +478,7 @@ export const PROJECT_PIPELINES: PipelineDefinition[] = [
     
     category: 'project',
     actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-project-rebuild-report-only')),
+    requiresApiKeys: true
   },
 ];
 
@@ -512,7 +518,8 @@ export const UTILITY_PIPELINES: PipelineDefinition[] = [
     
     category: 'utility',
     actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-utility-setup-api-key')),
-    nextPipeline: 'pipeline-project-new'
+    nextPipeline: 'pipeline-project-new',
+    requiresApiKeys: true
   },  
 ];
 
