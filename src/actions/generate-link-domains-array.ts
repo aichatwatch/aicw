@@ -33,6 +33,7 @@ function createLinkDomainsFromLinks(links: any[]): any[] {
         type: 'linkDomain',
         code: domain,
         value: domain,
+        link: 'https://' + domain,
         linkType: linkType,
         linkTypeName: linkTypeName
       });

@@ -186,7 +186,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
             { type: 'value', caption: 'Event' },
-            { type: 'link', caption: 'Website' },
+            { type: 'link', caption: 'Link' },
             { type: 'modelNames', caption: 'AI Models' }
 
         ],
@@ -209,7 +209,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         hasSearchFilter: true,
         columns: [
             { type: 'value', caption: 'Event' },
-            { type: 'link', caption: 'Website' },
+            { type: 'link', caption: 'Link' },
         ],
         searchFilterFields: ['value', 'link'],
         hasModelFilter: true,
@@ -278,7 +278,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
             { type: 'value', caption: 'Organization' },
-            { type: 'link', caption: 'Website' },            
+            { type: 'link', caption: 'Link' },            
             { type: 'modelNames', caption: 'AI Models' }
 
         ],
@@ -324,7 +324,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
             { type: 'value', caption: 'Person' },
-            { type: 'link', caption: 'Website' },
+            { type: 'link', caption: 'Link' },
             { type: 'modelNames', caption: 'AI Models' }
 
         ],
@@ -347,7 +347,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         hasSearchFilter: true,
         columns: [
             { type: 'value', caption: 'Person' },
-            { type: 'link', caption: 'Website' },
+            { type: 'link', caption: 'Link' },
         ],
         searchFilterFields: ['value', 'link'],
         hasModelFilter: true,
@@ -371,7 +371,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
             { type: 'value', caption: 'Place' },
-            { type: 'link', caption: 'Website' },            
+            { type: 'link', caption: 'Link' },            
             { type: 'modelNames', caption: 'AI Models' }
 
         ],
@@ -394,7 +394,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         hasSearchFilter: true,
         columns: [
             { type: 'value', caption: 'Place' },
-            { type: 'link', caption: 'Website' },
+            { type: 'link', caption: 'Link' },
         ],
         searchFilterFields: ['value', 'link'],
         hasModelFilter: true,
@@ -418,7 +418,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
             { type: 'value', caption: 'Product' },
-            { type: 'link', caption: 'Website' },            
+            { type: 'link', caption: 'Link' },            
             { type: 'modelNames', caption: 'AI Models' }
 
         ],
@@ -440,7 +440,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         hasSearchFilter: true,
         columns: [
             { type: 'value', caption: 'Product' },
-            { type: 'link', caption: 'Website' },
+            { type: 'link', caption: 'Link' },
         ],
         searchFilterFields: ['value', 'link'],
         hasModelFilter: true,
@@ -464,7 +464,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
             //{type: 'value', caption: 'Value'},
-            { type: 'link', caption: 'Website' },
+            { type: 'link', caption: 'Link' },
             { type: 'linkType', caption: 'Type' },            
             { type: 'modelNames', caption: 'AI Models' }
 
@@ -485,7 +485,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         type: 'graph-with-items',
         sourceArrayName: 'links',
         columns: [
-            { type: 'link', caption: 'Website' },
+            { type: 'link', caption: 'Link' },
 
             { type: 'influence', caption: 'Voice' },
 
@@ -512,7 +512,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'value', caption: 'Domain' },
+            { type: 'link', caption: 'Domain' },
             { type: 'linkTypeName', caption: 'Type' },
             { type: 'modelNames', caption: 'AI Models' }
 
