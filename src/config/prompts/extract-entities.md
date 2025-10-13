@@ -56,7 +56,7 @@ Do NOT include this instruction in the output!
 "organizations": [
 /* INSTRUCTION: Analyze each answer from the `ANSWERS_FROM_BOTS` section individually. 
 
-1. For each answer, identify any company or organization or legal entity that are explicitly mentioned. Find the company or organization name and its website URL from the answer. If company or organization has no website URL then use your knowlegde but if you don't know it then use an empty string "".
+1. For each answer, identify all company/organization or legal entities names that are explicitly mentioned.
 
 2. Format each verified entry as follows:
    [
@@ -141,11 +141,13 @@ IMPORTANT:
 
 }
 
-
 # `ANSWERS_FROM_BOTS` section:
 
 Listed below are the answers provided by different online AI chats for the following question: `{{REPORT_QUESTION}}`.
 
-Each bot's answer is in a single `ANSWER` section:
+Each bot's answer is in a single `ANSWER` section and looks like this:
+```
+ANSWER FROM `brave_search`: 
+```
 
 {{ANSWERS}}
