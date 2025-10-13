@@ -83,6 +83,21 @@ function stringToFlexibleRegExp(str: string): RegExp {
 }
 
 /**
+ * Mask URLs in markdown links [text](url) with # symbols of same length
+ * This prevents counting entity names that appear in URL slugs while preserving
+ * character positions for accurate appearanceOrder and excerpt extraction
+ */
+function maskMarkdownLinkUrls(text: string): string {
+  // Match markdown links: [text](url)
+  // Captures: [1] = display text, [2] = url
+  return text.replace(/(\[[^\]]+\])\(([^\)]+)\)/g, (match, displayText, url) => {
+    // Replace URL with same number of # symbols to preserve character positions
+    const maskedUrl = '#'.repeat(url.length);
+    return `${displayText}(${maskedUrl})`;
+  });
+}
+
+/**
  * Count mentions of a term in answer text
  */
 function countMentionsInAnswer(
@@ -95,6 +110,11 @@ function countMentionsInAnswer(
 
   // Check if this looks like a URL/domain
   const isUrl = lowerTerm.includes('.') && !lowerTerm.includes(' ');
+
+  // If searching for non-URL entity, mask markdown link URLs to avoid false matches
+  // in URL slugs (e.g., "vahan-chakhalyan" in https://linkedin.com/in/vahan-chakhalyan/)
+  const textToSearch = isUrl ? answerText : maskMarkdownLinkUrls(answerText);
+  const lowerTextToSearch = textToSearch.toLowerCase();
 
   let count = 0;
   let firstAppearanceOrder = -1;
@@ -173,7 +193,7 @@ function countMentionsInAnswer(
     try {
       const searchRegex = stringToFlexibleRegExp(lowerTerm);
       let match;
-      while ((match = searchRegex.exec(lowerAnswer)) !== null) {
+      while ((match = searchRegex.exec(lowerTextToSearch)) !== null) {
         matches.push(match);
       }
       regexSuccess = true;
@@ -183,7 +203,7 @@ function countMentionsInAnswer(
 
       // Use case-insensitive indexOf (both strings are already lowercase)
       let searchIndex = 0;
-      while ((searchIndex = lowerAnswer.indexOf(lowerTerm, searchIndex)) !== -1) {
+      while ((searchIndex = lowerTextToSearch.indexOf(lowerTerm, searchIndex)) !== -1) {
         // Create a proper RegExpMatchArray-compatible object
         const matchArray = [answerText.substr(searchIndex, lowerTerm.length)] as RegExpMatchArray;
         matchArray.index = searchIndex;
@@ -199,7 +219,7 @@ function countMentionsInAnswer(
       try {
         const possessivePattern = new RegExp(`\\b${escapeRegExp(lowerTerm)}'s\\b`, 'gi');
         let possessiveMatch;
-        while ((possessiveMatch = possessivePattern.exec(answerText)) !== null) {
+        while ((possessiveMatch = possessivePattern.exec(textToSearch)) !== null) {
           const alreadyCaptured = matches.some(m =>
             m.index !== undefined &&
             possessiveMatch.index !== undefined &&
