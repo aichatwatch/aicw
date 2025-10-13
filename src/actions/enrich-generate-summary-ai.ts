@@ -10,7 +10,7 @@ import { QUESTIONS_DIR,
   PROJECT_DIR, 
   CAPTURE_DIR } from '../config/paths.js';
 import { AGGREGATED_DIR_NAME } from '../config/constants.js';
-import { replaceMacrosInTemplate,  waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
+import { replaceMacrosInTemplate,  waitForEnterInInteractiveMode, formatSingleAnswer } from '../utils/misc-utils.js';
 import { removeNonProjectModels } from '../utils/project-utils.js';
 import { logger } from '../utils/compact-logger.js';
 import { callAIWithRetry, createAiClientInstance } from '../utils/ai-caller.js';
@@ -45,7 +45,7 @@ async function buildAnswersSection(project: string, question: string, date: stri
       const answerFile = path.join(answersDir, botDir.name, 'answer.md');
       if (existsSync(answerFile)) {
         const content = await fs.readFile(answerFile, 'utf-8');
-        section += `\n-------\n# ANSWER FROM \`${botDir.name}\`\n------\n\n${content}\n`;
+        section += await formatSingleAnswer(botDir.name, content);
       }
     }
   } catch (error) {

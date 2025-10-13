@@ -295,8 +295,36 @@ async function verifyTemplateHasUnreplacedMustachioMacrosInside(prompt:string){
   const macros = prompt.match(REGEX_MACROS);
 
   throw new PipelineCriticalError(
-    `!! Input string has macros that are not replaced:\n\n${macros.join('\n')}\n. Template was:\n\n${prompt.trim().substring(0, MAX_TEMPLATE_PREVIEW_LENGTH_FOR_ERROR_MESSAGES)}...`, 
+    `!! Input string has macros that are not replaced:\n\n${macros.join('\n')}\n. Template was:\n\n${prompt.trim().substring(0, MAX_TEMPLATE_PREVIEW_LENGTH_FOR_ERROR_MESSAGES)}...`,
     'verifyTemplateHasUnreplacedMustachioMacrosInside'
+  );
+}
+
+/**
+ * Format a single bot answer using the shared template.
+ * Template is loaded once and cached for performance.
+ *
+ * @param botId - The bot/model identifier (e.g., "perplexity_with_search_latest")
+ * @param answerContent - The answer text content from the bot
+ * @returns Formatted answer string with separators and bot identifier
+ */
+let singleAnswerTemplateCache: string | null = null;
+
+export async function formatSingleAnswer(botId: string, answerContent: string): Promise<string> {
+  // Load template on first call and cache it
+  if (singleAnswerTemplateCache === null) {
+    const { SINGLE_ANSWER_TEMPLATE_PATH } = await import('../config/paths.js');
+    singleAnswerTemplateCache = await fs.readFile(SINGLE_ANSWER_TEMPLATE_PATH, 'utf-8');
+  }
+
+  // Replace placeholders
+  return await replaceMacrosInTemplate(
+    singleAnswerTemplateCache,
+    {
+      '{{MODEL_ID}}': botId,
+      '{{ANSWER_CONTENT}}': answerContent
+    },
+    false // Don't verify macros since the template is static and trusted
   );
 }
 

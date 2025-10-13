@@ -4,7 +4,7 @@ import path from 'path';
 import { QuestionEntry } from '../config/types.js';
 import { EXTRACT_ENTITIES_PROMPT_TEMPLATE_PATH, QUESTIONS_DIR, CAPTURE_DIR, REPORT_DIR, QUESTION_DATA_COMPILED_DATE_DIR, MIN_VALID_OUTPUT_DATA_SIZE } from '../config/paths.js';
 import { logger } from '../utils/compact-logger.js';
-import { replaceMacrosInTemplate, waitForEnterInInteractiveMode, writeFileAtomic } from '../utils/misc-utils.js';
+import { replaceMacrosInTemplate, waitForEnterInInteractiveMode, writeFileAtomic, formatSingleAnswer } from '../utils/misc-utils.js';
 import { isValidOutputFile } from '../utils/misc-utils.js';
 import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, loadProjectModelConfigs, removeNonProjectModels, validateAndLoadProject } from '../utils/project-utils.js';
 import { readQuestions } from '../utils/project-utils.js';
@@ -92,7 +92,7 @@ export async function extractEntitiesPreparePrompt(project: string, targetDate: 
       const answerPath = path.join(answersBase, answerDate, bot, 'answer.md');
       try {
         const text = await fs.readFile(answerPath, 'utf-8');
-        answersSection += `\n-------\n# ANSWER FROM FROM \`${bot}\`\n------\n\n${text}\n`;
+        answersSection += await formatSingleAnswer(bot, text);
       } catch (error) {
         // Skip if answer file doesn't exist
         logger.debug(`Skipping ${bot} - no answer file found`);

@@ -66,6 +66,7 @@ export const ENRICH_GENERATE_SUMMARY_AGGREGATE_PROMPT_PATH: string = path.join(P
 
 // Report template paths
 export const EXTRACT_ENTITIES_PROMPT_TEMPLATE_PATH: string = path.join(PROMPTS_DIR, 'extract-entities.md');
+export const SINGLE_ANSWER_TEMPLATE_PATH: string = path.join(PROMPTS_DIR, 'shared', 'single-answer.md');
 export const REPORT_HTML_TEMPLATE_DIR: string = path.join(REPORT_TEMPLATES_DIR, 'html', 'projects', 'project', 'question');
 
 // Standard data file patterns
