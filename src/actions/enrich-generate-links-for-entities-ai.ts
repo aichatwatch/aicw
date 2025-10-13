@@ -11,7 +11,7 @@ import { getProjectNameFromCommandLine } from '../utils/project-utils.js';
 import { isValidLink } from '../utils/validate-links.js';
 import { ModelType } from '../utils/project-utils.js';
 import { ModelConfig } from '../utils/model-config.js';
-import { collectEntitiesForSection, needsToEnrichAttribute, getTotalInSection } from '../utils/enrich-entity-utils.js';
+import { collectEntitiesForSection, needsToEnrichAttribute, getTotalInSection, extractLinksFromMarkdownInAnswers } from '../utils/enrich-entity-utils.js';
 import { MAIN_SECTIONS } from '../config/entities.js';
 import { getEnrichmentPromptPath } from '../utils/enrich-prompt-discovery.js';
 // get action name for the current module
@@ -49,6 +49,8 @@ interface Entity {
  */
 async function processEntityLinksForFile(
   project: string,
+  questionFolder: string,
+  targetDate: string,
   inputFile: string,
   outputFile: string
 ): Promise<void> {
@@ -70,6 +72,8 @@ async function processEntityLinksForFile(
 
     const { updatedCount, emptyResponseCount } = await processSectionLinks(
       project,
+      questionFolder,
+      targetDate,
       data,
       sectionName,
       modelToUse
@@ -101,6 +105,8 @@ async function processEntityLinksForFile(
  */
 async function processSectionLinks(
   project: string,
+  questionFolder: string,
+  targetDate: string,
   data: any,
   sectionName: string,
   modelToUse: ModelConfig
@@ -122,11 +128,33 @@ async function processSectionLinks(
 
   // Collect entities from this section that need links
   const entitiesRaw = collectEntitiesForSection(data, sectionName, ATTRIBUTE_NAME);
-  // will return only entities with predicted values
+
+  // STEP 1: Try to extract links from markdown in original answers (highest priority)
+  const entitiesWithMarkdownLinks = await extractLinksFromMarkdownInAnswers(
+    entitiesRaw,
+    project,
+    questionFolder,
+    targetDate
+  );
+
+  if (entitiesWithMarkdownLinks && entitiesWithMarkdownLinks.length > 0) {
+    logger.info(`  └─ Section '${sectionName}': ${entitiesWithMarkdownLinks.length} entities "link" values were extracted from markdown in answers`);
+    entitiesWithMarkdownLinks.forEach((entity: any) => {
+      // updating the original item with extracted markdown link
+      data[sectionName][entity.originalIndex][ATTRIBUTE_NAME] = entity[ATTRIBUTE_NAME];
+    });
+  }
+
+  // Filter out entities that already have markdown links
+  const entitiesAfterMarkdown = entitiesRaw.filter((entity: any) =>
+    !entitiesWithMarkdownLinks.some((e: any) => e.id === entity.id)
+  );
+
+  // STEP 2: Try domain-based prediction (e.g., entityname.com)
   const entitiesWithPredictedLinks = predictAttributeValueForEntities(
-      data,
-      entitiesRaw,
-      ATTRIBUTE_NAME
+    data,
+    entitiesAfterMarkdown,
+    ATTRIBUTE_NAME
   );
 
   if(entitiesWithPredictedLinks && entitiesWithPredictedLinks.length > 0){
@@ -137,8 +165,8 @@ async function processSectionLinks(
     });
   }
 
-  // once again filter and now exclude entites which are present in entitesWithPredictedLInks
-  const entities = entitiesRaw.filter((entity: any) => !entitiesWithPredictedLinks.some((e: any) => e.id === entity.id));
+  // STEP 3: Filter entities that still need AI enrichment (no markdown link, no domain prediction)
+  const entities = entitiesAfterMarkdown.filter((entity: any) => !entitiesWithPredictedLinks.some((e: any) => e.id === entity.id));
   const totalInSection = getTotalInSection(data, sectionName);
 
   if (totalInSection === 0) {
@@ -273,7 +301,7 @@ export async function enrichGenerateLinks(project: string, targetDate: string): 
     }
 
     try {
-      await processEntityLinksForFile(project, files.inputPath, files.outputPath);
+      await processEntityLinksForFile(project, question.folder, targetDate, files.inputPath, files.outputPath);
       processedCount++;
 
       logger.updateProgress(currentIndex, `${question.folder} - ✓`);

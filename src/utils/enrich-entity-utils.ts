@@ -3,9 +3,12 @@
  * Used by both link generation and similar term generation
  */
 
+import { promises as fs } from 'fs';
+import path from 'path';
 import { logger } from './compact-logger.js';
 import { extractDomainFromUrl } from '../utils/url-utils.js';
 import { PipelineCriticalError } from './pipeline-errors.js';
+import { GET_ANSWERS_DIR_FOR_QUESTION } from '../config/paths.js';
 /**
  * Entity interface for enrichment operations
  */
@@ -208,4 +211,104 @@ export function getTotalInSection(data: any, sectionName: string): number {
     return 0;
   }
   return data[sectionName].length;
+}
+
+/**
+ * Helper function to escape special regex characters in entity names
+ */
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Extract links from markdown syntax in original answer files
+ * Searches for patterns like: [Entity Name](https://example.com)
+ * This provides the highest confidence links since they come directly from bot answers
+ *
+ * @param entities - Array of entities that need links
+ * @param project - Project name
+ * @param questionFolder - Question folder name
+ * @param targetDate - Target date for answers
+ * @returns Array of entities with links extracted from markdown
+ */
+export async function extractLinksFromMarkdownInAnswers(
+  entities: Entity[],
+  project: string,
+  questionFolder: string,
+  targetDate: string
+): Promise<Entity[]> {
+  const result: Entity[] = [];
+
+  // Get answers directory for this question and date
+  const answersDir = path.join(
+    GET_ANSWERS_DIR_FOR_QUESTION(project, questionFolder),
+    targetDate
+  );
+
+  // Check if answers directory exists
+  try {
+    await fs.access(answersDir);
+  } catch (error) {
+    logger.debug(`No answers directory found at ${answersDir}`);
+    return result;
+  }
+
+  // Load all answer files
+  const answerTexts = new Map<string, string>();
+  try {
+    const botDirs = await fs.readdir(answersDir, { withFileTypes: true });
+
+    for (const botDir of botDirs) {
+      if (!botDir.isDirectory()) continue;
+
+      const answerFile = path.join(answersDir, botDir.name, 'answer.md');
+      try {
+        const content = await fs.readFile(answerFile, 'utf-8');
+        answerTexts.set(botDir.name, content);
+      } catch (error) {
+        logger.debug(`Could not read answer file: ${answerFile}`);
+      }
+    }
+  } catch (error) {
+    logger.debug(`Could not read answers directory: ${answersDir}`);
+    return result;
+  }
+
+  if (answerTexts.size === 0) {
+    logger.debug(`No answer files found in ${answersDir}`);
+    return result;
+  }
+
+  // Search for markdown links for each entity
+  for (const entity of entities) {
+    if (entity.link) continue; // Already has a link
+
+    // Try to find markdown link in any answer
+    for (const [botId, answerText] of answerTexts) {
+      // Escape special regex characters in entity name
+      const escapedName = escapeRegExp(entity.value);
+
+      // Regex to find: [text containing entity name](url)
+      // Case insensitive, allows text before/after entity name in the link text
+      const markdownLinkRegex = new RegExp(
+        `\\[([^\\]]*${escapedName}[^\\]]*)\\]\\(([^\\)]+)\\)`,
+        'i'
+      );
+
+      const match = answerText.match(markdownLinkRegex);
+      if (match) {
+        const url = match[2].trim();
+
+        // Validate that we got a proper URL
+        if (url && url.startsWith('http')) {
+          entity.link = url;
+          result.push(entity);
+          logger.info(`Extracted markdown link for "${entity.value}" from ${botId}: ${url}`);
+          break; // Found a link, move to next entity
+        }
+      }
+    }
+  }
+
+  return result;
 }

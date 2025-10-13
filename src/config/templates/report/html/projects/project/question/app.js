@@ -5045,7 +5045,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             },
 
-            showExcerptPopup(item) {
+            showExcerptPopup(item, highlightField = 'value') {
+                // Determine if value is a link?
+                const isLink = item[highlightField].toLowerCase().match(/http|www/);                
+                const searchTerm = isLink ? this.cleanAndMinimizeUrl(item[highlightField].toLowerCase()) : item[highlightField];
+                if (!searchTerm || searchTerm.length === 0) {
+                    console.error(`No search term found for item ${highlightField}, item: ${JSON.stringify(item)}`);
+                    return;
+                }
+
                 // Create or update the excerpt popup
                 let popup = document.getElementById('excerpt-popup');
                 if (!popup) {
@@ -5097,7 +5105,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     .filter(([modelId, excerpts]) => {
                         if (!excerpts || excerpts.length === 0) return false;
                         // Check if at least one excerpt actually contains the search term
-                        const searchRegex = new RegExp(this.escapeRegExp(item.value || ''), 'gi');
+                        const searchRegex = new RegExp(this.escapeRegExp(searchTerm), 'gi');
                         return excerpts.some(exc => searchRegex.test(exc.excerpt || ''));
                     })
                     .sort(([modelIdA, excerptsA], [modelIdB, excerptsB]) => {
@@ -5108,7 +5116,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // If no models have valid excerpts, don't show popup
                 if (sortedModels.length === 0) {
-                    console.warn('No valid excerpts found for item:', item.value);
+                    console.warn(`No valid excerpts were found for item ${item[highlightField]}, item: ${JSON.stringify(item)}`);
                     return;
                 }
 
@@ -5125,7 +5133,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             </svg>
                         </button>
                         <div class="p-6 pb-0 flex-shrink-0">
-                            <h3 class="text-xl font-semibold mb-2">Context from AI Models: <mark class="bg-yellow-200 dark:bg-yellow-600 px-1 rounded">${this.escapeHtml(item.value || '')}</mark></h3>
+                            <h3 class="text-xl font-semibold mb-2">Showing excerpts for: <mark class="bg-yellow-200 dark:bg-yellow-600 px-1 rounded">${this.escapeHtml(searchTerm || '')}</mark></h3>
                             ${this.selectedVersion && window[this.selectedVersion] && window[this.selectedVersion].report_question ? `
                                 <div class="text-sm text-gray-600 dark:text-gray-400 mb-4">
                                     Question: <span class="font-medium">${this.escapeHtml(window[this.selectedVersion].report_question)}</span>
@@ -5184,7 +5192,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const excerptsByQuestion = {};
                         excerpts.forEach(excerpt => {
                             // Check if the excerpt actually contains the search term
-                            const searchRegex = new RegExp(this.escapeRegExp(item.value || ''), 'gi');
+                            const searchRegex = new RegExp(this.escapeRegExp(searchTerm), 'gi');
                             if (searchRegex.test(excerpt.excerpt || '')) {
                                 const questionKey = excerpt.question || 'default';
                                 if (!excerptsByQuestion[questionKey]) {
@@ -5234,7 +5242,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             // Filter excerpts to only include those that actually contain the term
                             const validExcerpts = questionExcerpts.filter(exc => {
                                 // Check if the excerpt actually contains the search term
-                                const searchRegex = new RegExp(this.escapeRegExp(item.value || ''), 'gi');
+                                const searchRegex = new RegExp(this.escapeRegExp(searchTerm), 'gi');
                                 return searchRegex.test(exc.excerpt || '');
                             });
 
@@ -5259,7 +5267,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                                         if (fullAnswerText) {
                                             // Create a case-insensitive regex to count occurrences
-                                            const searchRegex = new RegExp(this.escapeRegExp(item.value || ''), 'gi');
+                                            const searchRegex = new RegExp(this.escapeRegExp(searchTerm), 'gi');
                                             const matches = fullAnswerText.match(searchRegex);
                                             occurrenceCount = matches ? matches.length : 0;
                                             countFound = true;
@@ -5277,7 +5285,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 }
 
                                 // First highlight the main item with related terms
-                                let highlightedExcerpt = this.highlightWithRelatedTerms(excerpt.excerpt, item.value || '', relatedItems);
+                                let highlightedExcerpt = this.highlightWithRelatedTerms(excerpt.excerpt, searchTerm, relatedItems);
 
                                 // Then highlight all selected brands (including the main item if it's a brand)
                                 this.selectesItems.forEach(brand => {
@@ -7883,7 +7891,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             <button
                                 class="preview-icon-btn group"
                                 title="View context from AI models"
-                                onclick="window.app.showExcerptPopup(${JSON.stringify(el).replace(/"/g, '&quot;')})"
+                                onclick="window.app.showExcerptPopup(${JSON.stringify(el).replace(/"/g, '&quot;')}, 'link')"
                             >
                                 <i class="fas fa-search group-hover-visible"></i>
                             </button>
@@ -8002,7 +8010,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 ${addPreviewExcerpt ? `<button
                                     class="preview-icon-btn group-hover-visible"
                                     title="View context from AI models"
-                                    onclick="window.app.showExcerptPopup(${JSON.stringify(el).replace(/"/g, '&quot;')})"
+                                    onclick="window.app.showExcerptPopup(${JSON.stringify(el).replace(/"/g, '&quot;')}, '${column.type}')"
                                     ><i class="fas fa-search"></i
                                 ></button>` : ''}
                             </span>
