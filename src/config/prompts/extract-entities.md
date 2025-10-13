@@ -18,7 +18,7 @@ output = {
 
 /* INSTRUCTION: You will need to extract list of keywords, organizations, concepts, persons, products, locations and sources from the bot answers below. Keep track of any issues with data quality or completeness. For each section (summary, organizations, concepts, persons, products, locations, sources), follow these guidelines:
 
-1. When extractting data use ONLY the information provided in the bot answers from the `ANSWERS_FROM_BOTS` section. Do not include any information from other parts of the prompt in this list. 
+1. When extractting data use ONLY the information provided in the bot answers from the `ANSWERS` section. Do not include any information from other parts of the prompt in this list. 
 
 2. Only extract information that is explicitly mentioned in the bot answers. Do not infer or assume any information.
 
@@ -32,7 +32,7 @@ Additional instructions for each section will follow. Do NOT include this instru
 */
 
 "products": [
-/* INSTRUCTION: Analyze each answer from the `ANSWERS_FROM_BOTS` section individually. 
+/* INSTRUCTION: Analyze each answer from the `ANSWERS` section individually. 
 
 1. For each answer, identify any and all products that are explicitly mentioned and list them in the output array as the following: 
 
@@ -54,7 +54,7 @@ Do NOT include this instruction in the output!
 ],
 
 "organizations": [
-/* INSTRUCTION: Analyze each answer from the `ANSWERS_FROM_BOTS` section individually. 
+/* INSTRUCTION: Analyze each answer from the `ANSWERS` section individually. 
 
 1. For each answer, identify all company/organization or legal entities names that are explicitly mentioned.
 
@@ -127,7 +127,7 @@ IMPORTANT:
 
 "keywords": [
 /*
-INSTRUCTION: Review answers from `ANSWERS_FROM_BOTS` section and extract up to 50 keywords, actions, concepts, ideas and phrases from bot responses following the rules explained previously.
+INSTRUCTION: Review answers from `ANSWERS` section and extract up to 50 keywords, actions, concepts, ideas and phrases from bot responses following the rules explained previously.
 
 OUTPUT FORMAT:
 
@@ -141,13 +141,14 @@ IMPORTANT:
 
 }
 
-# `ANSWERS_FROM_BOTS` section:
+# `ANSWERS` section:
 
-Listed below are the answers provided by different online AI chats for the following question: `{{REPORT_QUESTION}}`.
+Listed below are the answers from different AI models for the following question: `{{REPORT_QUESTION}}`.
 
-Each bot's answer is in a single `ANSWER` section and looks like this:
-```
-ANSWER FROM `brave_search`: 
-```
+Each bot's answer is in a separate `<answer model_id="...">...</answer>` section and looks like this:
+
+<answer model_id="brave_search">
+markdown text of the answer from brave_search will be here
+</answer model_id="brave_search">
 
 {{ANSWERS}}
