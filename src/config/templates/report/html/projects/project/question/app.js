@@ -6,6 +6,7 @@ const FAVICON_128_TEMPLATE = 'https://www.google.com/s2/favicons?domain={{DOMAIN
 
 const DEFAULT_GRAPH_NODE_LIMIT = 12; // Default number of top items to show in graphs
 const MIN_CHART_ITEMS = 12; // Maximum number of items to show in charts (link types, domains)
+const TOP_INFLUENCERS_COUNT_PER_SECTION = 3; // Number of top influencers to show from each entity category
 
 const ENTITES_CONFIG = [
     {
@@ -169,6 +170,14 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         botFilteredFields: [],
         hasAppearanceOrderTrendFilter: true,
         tocPath: 'AI Summary'
+    },
+
+    {
+        title: 'Top Influencers / Compare',
+        id: 'compare_items',
+        type: 'item-comparison-dashboard',
+        tocPath: 'Top Influencers',
+        description: 'Top performers across all categories or compare selected items side by side'
     },
 
     // Sections ordered to match left navigation menu
@@ -701,14 +710,6 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
 
     },
     // link domains - end
-
-    {
-        title: 'Compare',
-        id: 'compare_items',
-        type: 'item-comparison-dashboard',
-        tocPath: 'Compare',
-        description: 'Compare multiple items side by side'
-    },
 
 
 ];
@@ -3374,9 +3375,42 @@ Vue.component('item-comparison-dashboard', {
     },
     computed: {
         showComparison() {
-            return this.$root.selectesItems.length > 1;
+            // Show if manually selected 2+ items OR if we have auto-populated top influencers
+            return this.$root.selectesItems.length > 1 || (this.$root.selectesItems.length === 0 && this.topInfluencers.length > 0);
+        },
+        topInfluencers() {
+            // Get top influencers from each entity category
+            const topItems = [];
+
+            ENTITES_ALL.forEach(entityType => {
+                const items = this.$root[entityType];
+                if (items && Array.isArray(items) && items.length > 0) {
+                    // Sort by influence and take top N
+                    const sortedItems = [...items]
+                        .filter(item => item.influence > 0) // Only items with influence
+                        .sort((a, b) => (b.influence || 0) - (a.influence || 0))
+                        .slice(0, TOP_INFLUENCERS_COUNT_PER_SECTION);
+
+                    // Add entityType to each item for proper navigation
+                    sortedItems.forEach(item => {
+                        topItems.push({
+                            ...item,
+                            entityType: entityType.replace(/s$/, '') // Singular form
+                        });
+                    });
+                }
+            });
+
+            // Sort all top items by influence and limit to 7 total
+            return topItems
+                .sort((a, b) => (b.influence || 0) - (a.influence || 0))
+                .slice(0, 7);
         },
         comparisonBrands() {
+            // If no manual selection, show top influencers
+            if (this.$root.selectesItems.length === 0) {
+                return this.topInfluencers;
+            }
             return this.$root.selectesItems.slice(0, 5); // Limit to 5 brands for comparison
         },
 
@@ -3509,13 +3543,26 @@ Vue.component('item-comparison-dashboard', {
     template: `
     <base-section-component :obj="obj">
         <div class="item-comparison-dashboard">
-            <h2 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Compare Items</h2>
-            
-            <!-- Brand Selector -->
-            <brand-selector :obj="obj"></brand-selector>
-            
-            <!-- Help Message when no brands selected -->
-            <div v-if="$root.selectesItems.length === 0" class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <h2 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">
+                <span v-if="$root.selectesItems.length === 0">Top Influencers</span>
+                <span v-else>Compare Items</span>
+            </h2>
+
+            <!-- Top Influencers Info when auto-populated -->
+            <div v-if="$root.selectesItems.length === 0 && topInfluencers.length > 0" class="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <p class="text-sm text-purple-800 dark:text-purple-200 font-medium">Showing top performers across all categories</p>
+                        <p class="text-sm text-purple-600 dark:text-purple-300 mt-1">These are the highest-influence items from each section. Click any item to jump to its section, or select specific items above to compare them side by side.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Message when no data available -->
+            <div v-if="$root.selectesItems.length === 0 && topInfluencers.length === 0" class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <div class="flex items-start gap-3">
                     <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -3543,7 +3590,7 @@ Vue.component('item-comparison-dashboard', {
                     <thead>
                         <tr class="border-b border-gray-200 dark:border-gray-700">
                             <th @click="sortBy('name')" class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
-                                Brand{{ getSortIndicator('name') }}
+                                Item{{ getSortIndicator('name') }}
                             </th>
                             <th @click="sortBy('type')" class="text-center py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
                                 Type{{ getSortIndicator('type') }}

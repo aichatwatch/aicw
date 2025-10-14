@@ -21,7 +21,7 @@ unacceptable behavior to aichatwatch@gmail.com.
 2. Navigate to the repository: `cd aicw`
 3. Install dependencies: `npm install`
 4. Build the project: `npm run build`
-5. Link the project: `npm link`
+5. Link the project: `npm run link:local`
 6. Run the project: `npm aicw`
 
 ```

@@ -24,6 +24,7 @@ interface ProjectSetupConfig {
 import { validateOrThrow } from '../utils/validation.js';
 import { validateProjectName, sanitizeProjectName, ModelType } from '../utils/project-utils.js';
 import { DEFAULT_PRESET_NAME } from '../ai-preset-manager.js';
+import { PipelineCriticalError } from '../utils/pipeline-errors.js';
 
 function question(prompt: string): Promise<string> {
   const rl = createInterface({
@@ -87,8 +88,10 @@ async function selectQuestionTemplate(): Promise<QuestionTemplate | null> {
   const templates = await loadQuestionTemplates();
 
   if (templates.length === 0) {
-    logger.error('No question templates found');
-    return null;
+    throw new PipelineCriticalError(
+      'No question templates found. Check that template files exist in the templates directory.',
+      CURRENT_MODULE_NAME
+    );
   }
 
   // Outer loop to allow returning to template selection after preview
@@ -103,11 +106,22 @@ async function selectQuestionTemplate(): Promise<QuestionTemplate | null> {
     });
 
     // Get user selection with option to return to main menu
-    const selection = await question('\nSelect template to preview (1-' + templates.length + ' or Enter to return): ');
+    const selection = await question('\nSelect template to preview (1-' + templates.length + ', 999 for custom, or Enter to return): ');
 
     // Handle Enter key - return to main menu
     if (selection.trim() === '') {
       return null;
+    }
+
+    // Handle 999 - empty template for custom questions
+    if (selection.trim() === '999') {
+      logger.log(colorize('\n✓ Custom Questions template selected', 'green'));
+      return {
+        name: 'custom',
+        display_name: 'Custom Questions',
+        description: 'Create your own custom questions',
+        questions: []
+      };
     }
 
     const num = parseInt(selection);
@@ -145,6 +159,32 @@ async function selectQuestionTemplate(): Promise<QuestionTemplate | null> {
 }
 
 async function generateQuestionsFromTemplate(template: QuestionTemplate, subject: string): Promise<string[]> {
+  // Handle empty template (custom questions)
+  if (template.questions.length === 0) {
+    logger.log('\n' + colorize('📝 Let\'s create your questions!', 'bright'));
+    logger.log(colorize('Recommended: 3-5 questions minimum for best insights', 'dim'));
+    logger.log(colorize('Type \'done\' when finished', 'dim'));
+
+    const questions: string[] = [];
+    let questionNumber = 1;
+
+    while (true) {
+      const q = await question(`\nQuestion ${questionNumber}: `);
+
+      if (q.toLowerCase() === 'done') {
+        break;
+      }
+
+      if (q.trim()) {
+        questions.push(q.trim());
+        questionNumber++;
+      }
+    }
+
+    return questions;
+  }
+
+  // Normal template - replace {{SUBJECT}} placeholder
   return template.questions.map(q => q.replace(/{{SUBJECT}}/g, subject));
 }
 
@@ -320,8 +360,8 @@ async function main() {
   logger.log('\n' + colorize('Step 1: Choose Set for Questions', 'bright'));
   const template = await selectQuestionTemplate();
   if (!template) {
-    logger.error('\n✗ Question template selection failed');
-    process.exit(1);
+    logger.log(colorize('\n✓ Project creation cancelled', 'dim'));
+    process.exit(0);
   }
   
   // Step 2: Get subject for template

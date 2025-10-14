@@ -1,13 +1,27 @@
 # AI Chat Watch (AICW)
 
 Track who and what is mentioned by ChatGPT, Claude, Gemini, Perplexity and other AIs.
-See who is mentioned first and how often. See which websites are mentioned and cited by AIs. Track trends over time. See influence scores. See how your brand is positioned compared to competitors.
-
-AICW is free open-source and runs on your computer.
+See who is mentioned first and how often. See which websites are mentioned and cited by AIs. Track trends over time. See influence scores. See how your brand is positioned compared to competitors. AICW is **free open-source and runs on your computer**. Explore sample reports: https://aichatwatch.com/demo/reports/
 
 *ELI5 (Explain like I'm 5 years old)?*: *AI Chat Watch is a free app that runs on your computer and asks AIs like ChatGPT to answer a set of questions. Then it reads these answers and telling: which companies, people, places, events are mentioned, in which order and how often. If you run it again after some time, it will also tell how answers changed. Best of all, it's open-source and runs on your computer.*
 
-## **Sample Reports**: https://aichatwatch.com/demo/reports/
+---
+
+## 📑 Table of Contents
+
+- [Sample Reports](#sample-reports)
+- [Features](#features)
+- [🚀 Quick Start](#-quick-start)
+- [🎬 AICW in Action](#-aicw-in-action)
+- [📊 All Sample Reports](#-all-sample-reports)
+- [💾 Data Storage](#-data-storage)
+- [🛠️ Development & Contributing](#️-development--contributing)
+- [📊 Pipeline Architecture](#-pipeline-architecture) ⭐ _NEW_
+- [🤝 Support](#-support)
+- [📄 License](#-license)
+- [Contacts](#contacts)
+
+---
 
 ## Features:
 
@@ -145,6 +159,141 @@ aicw
 ```
 
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+---
+
+## 📊 Pipeline Architecture
+
+_Last updated: 2025-10-14_
+
+AICW uses a multi-stage pipeline to transform AI responses into actionable insights. Here's the complete build pipeline flow:
+
+```mermaid
+flowchart TD
+    Start([Start]) --> Setup{Select Pipeline}
+
+    Setup -->|New Project| NewProject[Project: Create New]
+    Setup -->|Build| PrepFolders[Prepare Folders]
+    Setup -->|Rebuild| PrepFolders
+
+    NewProject --> PrepFolders
+
+    subgraph Setup["🔧 Setup Phase"]
+        PrepFolders[Prepare Question Folders]
+        CleanupCompiled[Cleanup: Remove Old Data]
+        CleanupOrphaned[Cleanup: Remove Orphaned Questions]
+        DataFileCreate[Create Data Files]
+    end
+
+    PrepFolders --> CleanupCompiled
+    CleanupCompiled --> CleanupOrphaned
+    CleanupOrphaned --> DataFileCreate
+
+    DataFileCreate --> CheckPipeline{Which Pipeline?}
+    CheckPipeline -->|Full Build| FetchAnswers
+    CheckPipeline -->|Rebuild| ExtractPrompt
+
+    subgraph DataCollection["📥 Data Collection"]
+        FetchAnswers[Fetch Answers from AI Models]
+    end
+
+    FetchAnswers --> ExtractPrompt
+
+    subgraph EntityExtraction["🔍 Entity Extraction"]
+        ExtractPrompt[Prepare Entity Extraction Prompts]
+        ExtractEntities[Extract Entities using AI]
+        ExtractLinks[Extract Links from Answers]
+    end
+
+    ExtractPrompt --> ExtractEntities
+    ExtractEntities --> ExtractLinks
+
+    subgraph LinkProcessing["🔗 Link Processing"]
+        GetLinkType[Classify Links by Pattern]
+        GetLinkTypeAI[AI Classification for Unclassified Links]
+        GenLinkTypes[Generate LinkTypes Array]
+        GenLinkDomains[Generate LinkDomains Array]
+    end
+
+    ExtractLinks --> GetLinkType
+    GetLinkType --> GetLinkTypeAI
+    GetLinkTypeAI --> GenLinkTypes
+    GenLinkTypes --> GenLinkDomains
+
+    subgraph Enrichment["✨ Enrichment & Calculations"]
+        CalcMentions[Calculate Mentions]
+        CalcAppearance[Calculate Appearance Order]
+        CalcInfluence[Calculate Influence Scores]
+        CalcTrends[Calculate Historical Trends]
+
+        LinkTypesMentions[Calculate LinkTypes Mentions]
+        LinkTypesAppearance[Calculate LinkTypes Appearance]
+        LinkTypesInfluence[Calculate LinkTypes Influence]
+        LinkTypesTrends[Calculate LinkTypes Trends]
+
+        GenLinks[Generate Entity URLs using AI]
+        GenSimilar[Generate Similar Terms using AI]
+        GenSummary[Generate AI Summary]
+    end
+
+    GenLinkDomains --> CalcMentions
+    CalcMentions --> CalcAppearance
+    CalcAppearance --> CalcInfluence
+    CalcInfluence --> CalcTrends
+
+    CalcTrends --> LinkTypesMentions
+    LinkTypesMentions --> LinkTypesAppearance
+    LinkTypesAppearance --> LinkTypesInfluence
+    LinkTypesInfluence --> LinkTypesTrends
+
+    LinkTypesTrends --> GenLinks
+    GenLinks --> GenSimilar
+    GenSimilar --> GenSummary
+
+    subgraph ReportGeneration["📊 Report Generation"]
+        CleanupReports[Cleanup: Remove Old Reports]
+        GenAnswersFile[Generate Answers File]
+        GenReport[Generate HTML Reports]
+        GenNavigation[Generate Project Navigation]
+        ShowSuccess[Show Success Message]
+    end
+
+    GenSummary --> CleanupReports
+    CleanupReports --> GenAnswersFile
+    GenAnswersFile --> GenReport
+    GenReport --> GenNavigation
+    GenNavigation --> ShowSuccess
+
+    ShowSuccess --> End([End])
+
+    style Start fill:#90EE90
+    style End fill:#90EE90
+    style Setup fill:#87CEEB
+    style DataCollection fill:#98FB98
+    style EntityExtraction fill:#FFD700
+    style LinkProcessing fill:#FFA500
+    style Enrichment fill:#DDA0DD
+    style ReportGeneration fill:#87CEFA
+    style NewProject fill:#FFB6C1
+```
+
+### Pipeline Types
+
+1. **pipeline-project-new**: Create a new project with questions → Auto-runs pipeline-project-build
+2. **pipeline-project-build**: Complete pipeline - Fetch fresh AI answers, extract entities, enrich data, generate reports
+3. **pipeline-project-rebuild**: Rebuild from existing answers - Skip fetch step, reprocess everything else
+4. **pipeline-project-rebuild-report-only**: Generate reports only - Use existing enriched data, regenerate HTML
+
+### Key Stages
+
+- **Setup Phase** (cyan): Prepares project structure and cleans old data
+- **Data Collection** (green): Queries AI models for answers (skipped in rebuild)
+- **Entity Extraction** (yellow): Identifies companies, products, people, places, events
+- **Link Processing** (orange): Classifies URLs and domains by type
+- **Enrichment** (purple): Calculates metrics, trends, and generates AI insights
+- **Report Generation** (blue): Creates interactive HTML reports with visualizations
+
+---
 
 ## 🤝 Support
 
