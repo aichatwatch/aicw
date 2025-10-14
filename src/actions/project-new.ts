@@ -102,11 +102,11 @@ async function selectQuestionTemplate(): Promise<QuestionTemplate | null> {
     templates.forEach((template, index) => {
       logger.log(`${colorize(`[${index + 1}]`, 'cyan')} ${colorize(`${template.display_name} (${template.questions.length} questions)`, 'bright')}`);
       logger.log(`${colorize(template.description, 'dim')}`);
-      if (index < templates.length - 1) logger.log(''); // Add space between templates
+      //if (index < templates.length - 1) logger.log(''); // Add space between templates
     });
 
     // Get user selection with option to return to main menu
-    const selection = await question('\nSelect template to preview (1-' + templates.length + ', 999 for custom, or Enter to return): ');
+    const selection = await question('\nSelect preset with questions to preview (1-' + templates.length + ', 999 for your custom set, or Enter to return): ');
 
     // Handle Enter key - return to main menu
     if (selection.trim() === '') {
