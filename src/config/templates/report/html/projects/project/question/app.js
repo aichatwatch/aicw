@@ -184,7 +184,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
     // Top Influencers - begin
     {
         title: 'Top Influencers',
-        id: 'top_dashboard',
+        id: 'top_influencers',
         type: 'top-influencers',
         tocPath: 'Top Influencers',
         description: 'Top performers across all categories or compare selected items side by side'
@@ -3614,7 +3614,11 @@ Vue.component('top-influencers', {
                                 >{{ metric.value }}</span>                                
                             </td>
                             <td class="text-center py-3 px-4 text-sm text-gray-600 dark:text-gray-400 capitalize">
-                                {{ metric.type }}
+                                <span 
+                                    :class="['comparison-term-clickable', $root.getHighlightClass(metric.id)]"
+                                    @click="scrollToEntitySection(metric.type)"
+                                    :title="'Click to scroll to ' + metric.type + ' section'"
+                                >{{ metric.type }}</span>
                             </td>
                             <td class="text-center py-3 px-4">
                                 <div class="relative">
