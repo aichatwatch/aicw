@@ -4,7 +4,8 @@ import { QuestionEntry } from '../config/types.js';
 import { OpenAI } from 'openai';
 import { ModelConfig, RETRY_CONFIG, getAIAIPresetWithModels, getAIPreset, getAIPresetNames } from '../utils/model-config.js';
 import { formatFileSize, colorize, writeFileAtomic, waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
-import { PROJECT_DIR, QUESTIONS_DIR, CAPTURE_DIR, SYSTEM_PROMPT_PATH, MIN_VALID_ANSWER_SIZE } from '../config/paths.js';
+import { PROJECT_DIR, QUESTIONS_DIR, CAPTURE_DIR, MIN_VALID_ANSWER_SIZE } from '../config/paths.js';
+import { USER_SYSTEM_PROMPT_FILE_PATH } from '../config/user-paths.js';
 import { callAIWithRetry, createAiClientInstance } from '../utils/ai-caller.js';
 import { interruptibleDelay as delay, isInterrupted } from '../utils/delay.js';
 import { isUrlLikeTitle } from '../utils/url-utils.js';
@@ -49,7 +50,7 @@ const getDefaultRequestDelay = () => {
 
 async function loadSystemPrompt(): Promise<string> {
   try {
-    const systemPrompt = await fs.readFile(SYSTEM_PROMPT_PATH, 'utf-8');
+    const systemPrompt = await fs.readFile(USER_SYSTEM_PROMPT_FILE_PATH, 'utf-8');
     return systemPrompt.trim();
   } catch (error) {
     // If system prompt file doesn't exist, return empty string

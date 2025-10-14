@@ -4951,7 +4951,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             if (regex.test(textContent)) {
                                 textContent = textContent.replace(regex, (match) => {
                                     modified = true;
-                                    return `<span class="clickable-entity clickable-entity-${entityInfo.type}" data-entity-type="${entityInfo.type}" data-entity-value="${entityInfo.value}" title="Click to view ${entityInfo.originalValue} in ${entityInfo.type} section">${match}</span>`;
+                                    return `<span class="clickable-entity" data-entity-type="${entityInfo.type}" data-entity-value="${entityInfo.value}" title="Click to view ${entityInfo.originalValue} in ${entityInfo.type} section">${match}</span>`;
                                 });
                                 break; // Stop after first match to prevent overlapping replacements
                             }
