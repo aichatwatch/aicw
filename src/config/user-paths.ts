@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import pkg from 'fs-extra';
 const { copySync } = pkg;
-import { AGGREGATED_DIR_NAME } from './constants.js';
+import { AGGREGATED_DIR_NAME, USE_PACKAGE_CONFIG } from './constants.js';
 import { CompactLogger } from '../utils/compact-logger.js';
 const logger = CompactLogger.getInstance();
 
@@ -21,23 +21,29 @@ const DEFAULT_AICW_USER_NAME = 'default-user';
 // User data directory (delegate to user-paths for consistency)
 // User data subdirectories
 export const USER_DATA_DIR = getUserDataDir();
+export const USER_CONFIG_DIR = path.join(USER_DATA_DIR, 'config');
 export const USER_PROJECTS_DIR = path.join(USER_DATA_DIR, 'projects');
 export const USER_REPORTS_DIR = path.join(USER_DATA_DIR, 'reports');
 export const USER_CACHE_DIR = path.join(USER_DATA_DIR, 'cache');
-export const USER_CONFIG_DIR = path.join(USER_DATA_DIR, 'config');
 export const USER_CONFIG_CREDENTIALS_DIR = path.join(USER_CONFIG_DIR, '.credentials');
 export const USER_CONFIG_CREDENTIALS_FILE = path.join(USER_CONFIG_CREDENTIALS_DIR, 'credentials.json');
 export const USER_LOGS_DIR = path.join(USER_DATA_DIR, 'logs');
 export const USER_INVALID_OUTPUTS_DIR = path.join(USER_LOGS_DIR, 'invalid');
 
-export const USER_CONFIG_PROMPTS_DIR: string = path.join(USER_CONFIG_DIR, 'prompts');
-export const USER_CONFIG_TEMPLATES_DIR = path.join(USER_CONFIG_DIR, 'templates')
-const USER_MODELS_DIR: string = path.join(USER_CONFIG_DIR, 'models');
-// ai models and ai presets
-export const USER_MODELS_JSON_FILE: string = path.join(USER_MODELS_DIR, 'ai_models.json');
-export const USER_AI_PRESETS_DIR: string = path.join(USER_MODELS_DIR, 'ai_presets');
-// questions templates
-export const USER_QUESTION_TEMPLATES_DIR: string = path.join(USER_CONFIG_TEMPLATES_DIR, 'questions');
+
+// Default data directory for user config files (defined here to avoid circular dependency)
+const DEFAULT_CONFIG_FOR_USER_DATA_DIR = path.join(getPackageConfigDir(), 'default');
+
+// dynamic path resolution functions that respect USE_PACKAGE_CONFIG
+export const USER_CONFIG_PROMPTS_DIR: string = path.join(getConfigDirDependingOnEnvironment(), 'prompts');
+export const USER_CONFIG_TEMPLATES_DIR: string = path.join(getConfigDirDependingOnEnvironment(), 'templates');
+// ai models
+export const USER_MODELS_JSON_FILE: string = path.join(getConfigDirDependingOnEnvironment(), 'models', 'ai_models.json');
+// presets with ai models
+export const USER_AI_PRESETS_DIR: string = path.join(getConfigDirDependingOnEnvironment(), 'models', 'ai_presets');
+export const USER_QUESTION_TEMPLATES_DIR: string = path.join(getConfigDirDependingOnEnvironment(), 'templates', 'questions');
+export const USER_SYSTEM_PROMPT_FILE_PATH: string = path.join(getConfigDirDependingOnEnvironment(), 'prompts', 'answers', 'system-prompt.md');
+//============
 
 
 export const DEFAULT_INDEX_FILE = 'index.html';
@@ -218,19 +224,24 @@ export function initializeUserDirectories(): void {
       mkdirSync(dir, { recursive: true });
     }
   }
-  // copy default data to user folder
-  copyDefaultDataToUserConfig();
+
+  // copy default data to user folder only if USE_PACKAGE_CONFIG is false
+  if (USE_PACKAGE_CONFIG) {
+    logger.info(`Skipping config defaults copy - using configs directly from package. Set AICW_USE_PACKAGE_CONFIG=false to disable)`);
+  } else {
+    copyDefaultDataToUserConfig();
+  }
 }
 
 export function copyDefaultDataToUserConfig(): void {
   logger.info(`Copying default config files to user config directory...`);
   // Add safety check
-  if (!existsSync(DEFAULT_DATA_FOR_USER_DATA_DIR)) {
-    const msg = `Default config directory not found: ${DEFAULT_DATA_FOR_USER_DATA_DIR}`;
+  if (!existsSync(DEFAULT_CONFIG_FOR_USER_DATA_DIR)) {
+    const msg = `Default config directory not found: ${DEFAULT_CONFIG_FOR_USER_DATA_DIR}`;
     logger.error(msg);
     throw new Error(msg);
   }  
-  copyDirRecursive(DEFAULT_DATA_FOR_USER_DATA_DIR, USER_CONFIG_DIR);
+  copyDirRecursive(DEFAULT_CONFIG_FOR_USER_DATA_DIR, USER_CONFIG_DIR);
 }
 
 function copyDirRecursive(src: string, dest: string): void {
@@ -254,8 +265,14 @@ function copyDirRecursive(src: string, dest: string): void {
 }
 
 export function checkIfUserConfigFolderHasAllRequiredDataFiles(): boolean {
+  // If using package configs directly, skip this check as files don't need to be in user folder
+  if (USE_PACKAGE_CONFIG) {
+    logger.debug(`Skipping user config folder check - using package configs (Set AICW_USE_PACKAGE_CONFIG=false to disable)`);
+    return true;
+  }
+
   const missingFiles: string[] = [];
-  checkDirRecursive(DEFAULT_DATA_FOR_USER_DATA_DIR, USER_CONFIG_DIR, missingFiles);
+  checkDirRecursive(DEFAULT_CONFIG_FOR_USER_DATA_DIR, USER_CONFIG_DIR, missingFiles);
 
   if (missingFiles.length > 0) {
     logger.warn(`Missing required user config files: \n${missingFiles.join('\n')}`);
@@ -333,6 +350,19 @@ export function getPackageConfigDir(subFolder: string = ''): string {
   return srcConfig;
 }
 
-// Default data directory for user config files (defined here to avoid circular dependency)
-const DEFAULT_DATA_FOR_USER_DATA_DIR = path.join(getPackageConfigDir(), 'default');
 
+/**
+ * Config path resolution functions
+ * These functions return either user data folder paths or package paths
+ * based on the USE_PACKAGE_CONFIG constant
+ */
+
+
+function getConfigDirDependingOnEnvironment(): string {
+  if (USE_PACKAGE_CONFIG) {
+    logger.debug(`using package config directory`);
+    return DEFAULT_CONFIG_FOR_USER_DATA_DIR;
+  }
+  logger.debug(`using user config directory`);
+  return USER_CONFIG_DIR;
+}

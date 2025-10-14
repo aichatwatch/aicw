@@ -24,6 +24,7 @@ interface ProjectSetupConfig {
 import { validateOrThrow } from '../utils/validation.js';
 import { validateProjectName, sanitizeProjectName, ModelType } from '../utils/project-utils.js';
 import { DEFAULT_PRESET_NAME } from '../ai-preset-manager.js';
+import { PipelineCriticalError } from '../utils/pipeline-errors.js';
 
 function question(prompt: string): Promise<string> {
   const rl = createInterface({
@@ -85,33 +86,105 @@ async function loadQuestionTemplates(): Promise<QuestionTemplate[]> {
 
 async function selectQuestionTemplate(): Promise<QuestionTemplate | null> {
   const templates = await loadQuestionTemplates();
-  
+
   if (templates.length === 0) {
-    logger.error('No question templates found');
-    return null;
+    throw new PipelineCriticalError(
+      'No question templates found. Check that template files exist in the templates directory.',
+      CURRENT_MODULE_NAME
+    );
   }
-  
-  logger.log('\n' + colorize('Select preset (you can customize it later):', 'bright'));
-  logger.log(colorize('─'.repeat(50), 'dim'));
-  
-  templates.forEach((template, index) => {
-    logger.log(`${colorize(`[${index + 1}]`, 'cyan')} ${colorize(`${template.display_name} (${template.questions.length} questions)`, 'bright')}`);
-    logger.log(`${colorize(template.description, 'dim')}`);
-    if (index < templates.length - 1) logger.log(''); // Add space between templates
-  });
-  
-  let selection: string;
-  do {
-    selection = await question('\nSelect template (1-' + templates.length + '): ');
-    const num = parseInt(selection);
-    if (num >= 1 && num <= templates.length) {
-      return templates[num - 1];
+
+  // Outer loop to allow returning to template selection after preview
+  while (true) {
+    logger.log('\n' + colorize('Select preset (you can customize it later):', 'bright'));
+    logger.log(colorize('─'.repeat(50), 'dim'));
+
+    templates.forEach((template, index) => {
+      logger.log(`${colorize(`[${index + 1}]`, 'cyan')} ${colorize(`${template.display_name} (${template.questions.length} questions)`, 'bright')}`);
+      logger.log(`${colorize(template.description, 'dim')}`);
+      //if (index < templates.length - 1) logger.log(''); // Add space between templates
+    });
+
+    // Get user selection with option to return to main menu
+    const selection = await question('\nSelect preset with questions to preview (1-' + templates.length + ', 999 for your custom set, or Enter to return): ');
+
+    // Handle Enter key - return to main menu
+    if (selection.trim() === '') {
+      return null;
     }
-    logger.error('Invalid selection. Please try again.');
-  } while (true);
+
+    // Handle 999 - empty template for custom questions
+    if (selection.trim() === '999') {
+      logger.log(colorize('\n✓ Custom Questions template selected', 'green'));
+      return {
+        name: 'custom',
+        display_name: 'Custom Questions',
+        description: 'Create your own custom questions',
+        questions: []
+      };
+    }
+
+    const num = parseInt(selection);
+
+    // Validate selection
+    if (isNaN(num) || num < 1 || num > templates.length) {
+      logger.error('Invalid selection. Please try again.');
+      continue;
+    }
+
+    // Show preview of selected template
+    const selectedTemplate = templates[num - 1];
+
+    logger.log('\n' + colorize('─'.repeat(50), 'dim'));
+    logger.log(colorize(`📋 Preview: ${selectedTemplate.display_name}`, 'bright'));
+    logger.log(colorize(`${selectedTemplate.description}`, 'dim'));
+    logger.log('\n' + colorize('Questions:', 'yellow'));
+
+    selectedTemplate.questions.forEach((q, i) => {
+      logger.log(`  ${colorize(`${i + 1}.`, 'cyan')} ${q}`);
+    });
+
+    logger.log('\n' + colorize('─'.repeat(50), 'dim'));
+
+    // Ask for confirmation (N is default)
+    const confirm = await question('\nDo you want to use this template? (y/N): ');
+
+    if (confirm.toLowerCase() === 'y') {
+      return selectedTemplate;
+    }
+
+    // If 'n', Enter, or anything else, loop back to selection
+    logger.log(colorize('\nReturning to template selection...', 'dim'));
+  }
 }
 
 async function generateQuestionsFromTemplate(template: QuestionTemplate, subject: string): Promise<string[]> {
+  // Handle empty template (custom questions)
+  if (template.questions.length === 0) {
+    logger.log('\n' + colorize('📝 Let\'s create your questions!', 'bright'));
+    logger.log(colorize('Recommended: 3-5 questions minimum for best insights', 'dim'));
+    logger.log(colorize('Type \'done\' when finished', 'dim'));
+
+    const questions: string[] = [];
+    let questionNumber = 1;
+
+    while (true) {
+      const q = await question(`\nQuestion ${questionNumber}: `);
+
+      if (q.toLowerCase() === 'done') {
+        break;
+      }
+
+      if (q.trim()) {
+        questions.push(q.trim());
+        questionNumber++;
+      }
+    }
+
+    return questions;
+  }
+
+  // Normal template - replace {{SUBJECT}} placeholder
   return template.questions.map(q => q.replace(/{{SUBJECT}}/g, subject));
 }
 
@@ -287,8 +360,8 @@ async function main() {
   logger.log('\n' + colorize('Step 1: Choose Set for Questions', 'bright'));
   const template = await selectQuestionTemplate();
   if (!template) {
-    logger.error('\n✗ Question template selection failed');
-    process.exit(1);
+    logger.log(colorize('\n✓ Project creation cancelled', 'dim'));
+    process.exit(0);
   }
   
   // Step 2: Get subject for template

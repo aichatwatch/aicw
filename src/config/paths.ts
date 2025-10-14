@@ -1,7 +1,7 @@
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { 
-  getUserProjectDir, 
+import {
+  getUserProjectDir,
   getUserProjectQuestionsDir,
   getUserProjectReportsDir,
   getUserProjectOutputDir,
@@ -14,9 +14,7 @@ import {
   getPackageTemplatesDir,
   isDevMode,
   USER_DATA_DIR,
-  getUserProjectQuestionsFile,
-  getUserProjectQuestionFilePath,
-  getUserProjectAnswersDirForQuestion
+  getUserProjectAnswersDirForQuestion,
 } from './user-paths.js';
 
 
@@ -42,23 +40,8 @@ export const USER_CONFIG_CREDENTIALS_DIR: string = path.join(USER_CONFIG_DIR, '.
 export const USER_CONFIG_CREDENTIALS_FILE: string = path.join(USER_CONFIG_CREDENTIALS_DIR, 'credentials.json');
 
 
-export const USER_CONFIG_PROMPTS_DIR: string = path.join(USER_CONFIG_DIR, 'prompts');
-export const USER_CONFIG_TEMPLATES_DIR = path.join(USER_CONFIG_DIR, 'templates')
-const USER_MODELS_DIR: string = path.join(USER_CONFIG_DIR, 'models');
-// ai models
-export const USER_MODELS_JSON_FILE: string = path.join(USER_MODELS_DIR, 'ai_models.json');
-// presets with ai models
-export const USER_AI_PRESETS_DIR: string = path.join(USER_MODELS_DIR, 'ai_presets');
-export const USER_QUESTION_TEMPLATES_DIR: string = path.join(USER_CONFIG_TEMPLATES_DIR, 'questions');
-//============
-
-
 export const REPORT_TEMPLATES_DIR: string = path.join(TEMPLATES_DIR, 'report');
 
-
-
-
-export const SYSTEM_PROMPT_PATH: string = path.join(USER_CONFIG_PROMPTS_DIR, 'answers', 'system-prompt.md');
 
 
 export const ENRICH_GENERATE_SUMMARY_PROMPT_PATH: string = path.join(PROMPTS_DIR, 'enrich-generate-summary.md');

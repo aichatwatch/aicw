@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { USER_AI_PRESETS_DIR, USER_MODELS_JSON_FILE } from './config/paths.js';
+import { USER_AI_PRESETS_DIR, USER_MODELS_JSON_FILE } from './config/user-paths.js';
 import { ModelConfig } from './utils/model-config.js';
 import { logger } from './utils/compact-logger.js';
 import { PipelineCriticalError } from './utils/pipeline-errors.js';
