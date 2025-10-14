@@ -6,7 +6,7 @@ const FAVICON_128_TEMPLATE = 'https://www.google.com/s2/favicons?domain={{DOMAIN
 
 const DEFAULT_GRAPH_NODE_LIMIT = 12; // Default number of top items to show in graphs
 const MIN_CHART_ITEMS = 12; // Maximum number of items to show in charts (link types, domains)
-const TOP_INFLUENCERS_COUNT_PER_SECTION = 3; // Number of top influencers to show from each entity category
+const TOP_INFLUENCERS_COUNT_PER_SECTION = 1; // max of top influencers to show from each entity category
 
 const ENTITES_CONFIG = [
     {
@@ -59,7 +59,11 @@ const ENTITES_ALL = ENTITES_CONFIG.map(entity => entity.name);
 const COLUMNS_WITH_PREVIEW_EXCERPT = ['value'];
 
 function getEntityTableSectionId(entityType) {
-    return `table_${entityType}` || null;
+    // adding "s" to the end of the entity type to make it plural
+    let entityTypePlural = entityType + 's';
+    // removing doubled "ss" at the end in case it was already plural
+    entityTypePlural = entityTypePlural.replace(/ss$/, 's');
+    return `parent_div_for_tabbed_${entityTypePlural}` || null;
 }
 
 // Simple event bus for component communication
@@ -181,7 +185,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
     {
         title: 'Top Influencers',
         id: 'top_dashboard',
-        type: 'top-dashboard',
+        type: 'top-influencers',
         tocPath: 'Top Influencers',
         description: 'Top performers across all categories or compare selected items side by side'
     },
@@ -1236,22 +1240,18 @@ Vue.component('about-report', {
     extends: baseProps,
     data() {
         return {
-            tocExpanded: localStorage.getItem('tocExpanded') !== 'false', // Default to true
-            modelsExpanded: localStorage.getItem('modelsExpanded') === 'true', // Default to false
-            dataExpanded: localStorage.getItem('dataExpanded') === 'true', // Default to false
+            tocSectionExpanded: localStorage.getItem('tocSectionExpanded') !== 'false', // Default to true
+            dataSectionExpanded: localStorage.getItem('dataSectionExpanded') === 'false', // Default to false
             questionsExpanded: true, // Default to expanded for easy access
             questionSearch: '' // Search query for questions
         }
     },
     watch: {
-        tocExpanded(val) {
-            localStorage.setItem('tocExpanded', val);
+        tocSectionExpanded(val) {
+            localStorage.setItem('tocSectionExpanded', val);
         },
-        modelsExpanded(val) {
-            localStorage.setItem('modelsExpanded', val);
-        },
-        dataExpanded(val) {
-            localStorage.setItem('dataExpanded', val);
+        dataSectionExpanded(val) {
+            localStorage.setItem('dataSectionExpanded', val);
         }
     },
     template: `
@@ -1357,7 +1357,7 @@ Vue.component('about-report', {
       <!-- Table of Contents Section -->
       <div class="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg mb-6">
             <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center justify-between">
-                <button @click="tocExpanded = !tocExpanded"
+                <button @click="tocSectionExpanded = !tocSectionExpanded"
                         class="flex items-center gap-2">
                     <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -1368,15 +1368,15 @@ Vue.component('about-report', {
                 <div class="flex items-center gap-3">
 
                     <!-- Expand/Collapse Icon -->
-                    <button @click="tocExpanded = !tocExpanded">
-                        <svg class="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform" :class="tocExpanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button @click="tocSectionExpanded = !tocSectionExpanded">
+                        <svg class="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform" :class="tocSectionExpanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
                 </div>
             </div>
 
-            <div v-show="tocExpanded" class="p-4 relative">
+            <div v-show="tocSectionExpanded" class="p-4 relative">
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     <div v-for="(items, groupName) in groupedOptionsWithCounts" :key="groupName"
                          class="border-l-4 border-gray-200 pl-3">
@@ -1460,22 +1460,23 @@ Vue.component('about-report', {
             </div>
       </div>
 
-      <!-- AI Models Section -->
-      <div class="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg mb-6">
-            <button @click="modelsExpanded = !modelsExpanded"
+      <!-- Data Coverage Section -->
+      <div class="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg">
+            <button @click="dataSectionExpanded = !dataSectionExpanded"
                     class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v1a1 1 0 001 1h4a1 1 0 001-1v-1m3-2V8a2 2 0 00-2-2H8a2 2 0 00-2 2v6m0 0a2 2 0 002 2h8a2 2 0 002-2m-6-6v6" />
                     </svg>
-                    <span class="font-semibold text-gray-700 dark:text-gray-200">AI Models Used ({{ $root.bots.length }})</span>
+                    <span class="font-semibold text-gray-700 dark:text-gray-200">AI Models & Data Coverage Details</span>
                 </div>
-                <svg class="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform" :class="modelsExpanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform" :class="dataSectionExpanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
             </button>
 
-            <div v-show="modelsExpanded" class="p-4">
+            <div v-show="dataSectionExpanded" class="p-4">
+
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     <div v-for="bot in $root.bots" :key="bot.id"
                          class="flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -1496,25 +1497,7 @@ Vue.component('about-report', {
                         </div>
                     </div>
                 </div>
-            </div>
-      </div>
 
-      <!-- Data Coverage Section -->
-      <div class="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg">
-            <button @click="dataExpanded = !dataExpanded"
-                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v1a1 1 0 001 1h4a1 1 0 001-1v-1m3-2V8a2 2 0 00-2-2H8a2 2 0 00-2 2v6m0 0a2 2 0 002 2h8a2 2 0 002-2m-6-6v6" />
-                    </svg>
-                    <span class="font-semibold text-gray-700 dark:text-gray-200">Data Coverage Details</span>
-                </div>
-                <svg class="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform" :class="dataExpanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-            </button>
-
-            <div v-show="dataExpanded" class="p-4">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div v-if="$root.totalCounts.products > 0">
                         <div class="text-xs text-gray-500 dark:text-gray-400 uppercase">Products</div>
@@ -3147,9 +3130,6 @@ Vue.component('brand-selector', {
     extends: baseProps,
     template: `
     <div class="brand-selector mb-6">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Selected items with top influence
-        </label>
         <div class="relative">
             <!-- Search Input -->
             <div class="relative">
@@ -3159,7 +3139,7 @@ Vue.component('brand-selector', {
                     @input="onSearchInput"
                     @keydown="handleKeydown"
                     type="text"
-                    placeholder="Type to search items..."
+                    placeholder="Type to search and select items..."
                     class="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                 <button 
@@ -3173,15 +3153,13 @@ Vue.component('brand-selector', {
             </div>
             
             <!-- Selected Brands Pills -->
-            <div v-if="$root.selectesItems.length > 0" class="mt-2 flex flex-wrap gap-2">
+            <div v-if="$root.selectedItems.length > 0" class="mt-2 flex flex-wrap gap-2">
                 <div 
-                    v-for="(brand, index) in $root.selectesItems" 
+                    v-for="(brand, index) in $root.selectedItems" 
                     :key="\`selected-\${brand.entityType}-\${brand.value}\`"
                     :class="[
                         'inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm',
-                        index === 0 
-                            ? 'bg-blue-600 dark:bg-blue-700 text-white' 
-                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                        'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                     ]"
                 >                
                     <span>{{ brand.value }}</span>
@@ -3235,12 +3213,12 @@ Vue.component('brand-selector', {
         
         <!-- Comparison Mode Indicator -->
         <!--
-        <p v-if="$root.selectesItems.length > 1" class="mt-2 text-sm text-blue-600 dark:text-blue-400">
+        <p v-if="$root.selectedItems.length > 1" class="mt-2 text-sm text-blue-600 dark:text-blue-400">
 
             <svg class="inline w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
             </svg>
-            Important items mode active • Highlighting {{ $root.selectesItems.length }} items
+            Important items mode active • Highlighting {{ $root.selectedItems.length }} items
         </p>
         -->
     </div>
@@ -3276,7 +3254,7 @@ Vue.component('brand-selector', {
     methods: {
         initializeSelection() {
             // Skip initialization if brands are already selected (e.g., from parent component)
-            if (this.$root.selectesItems.length > 0) {
+            if (this.$root.selectedItems.length > 0) {
                 return;
             }
 
@@ -3289,7 +3267,7 @@ Vue.component('brand-selector', {
                         const entityValue = valueParts.join('-');
                         const entity = this.$root[entityType]?.find(item => item.value === entityValue);
                         if (entity && !this.isSelected(entity)) {
-                            this.$root.selectesItems.push({
+                            this.$root.selectedItems.push({
                                 ...entity,
                                 entityType: entityType
                             });
@@ -3333,18 +3311,18 @@ Vue.component('brand-selector', {
         },
         selectBrand(entity) {
             if (!this.isSelected(entity)) {
-                this.$root.selectesItems.push({
+                this.$root.selectedItems.push({
                     ...entity,
                     entityType: entity.entityType
                 });
                 this.saveBrandSelection();
             } else {
                 // Remove if already selected
-                const index = this.$root.selectesItems.findIndex(b =>
+                const index = this.$root.selectedItems.findIndex(b =>
                     b.entityType === entity.entityType && b.value === entity.value
                 );
                 if (index > -1) {
-                    this.$root.selectesItems.splice(index, 1);
+                    this.$root.selectedItems.splice(index, 1);
                     this.saveBrandSelection();
                 }
             }
@@ -3352,16 +3330,16 @@ Vue.component('brand-selector', {
             this.highlightedIndex = -1;
         },
         removeBrand(index) {
-            this.$root.selectesItems.splice(index, 1);
+            this.$root.selectedItems.splice(index, 1);
             this.saveBrandSelection();
         },
         isSelected(entity) {
-            return this.$root.selectesItems.some(b =>
+            return this.$root.selectedItems.some(b =>
                 b.entityType === entity.entityType && b.value === entity.value
             );
         },
         saveBrandSelection() {
-            const brandIds = this.$root.selectesItems.map(b => `${b.entityType}-${b.value}`);
+            const brandIds = this.$root.selectedItems.map(b => `${b.entityType}-${b.value}`);
             localStorage.setItem('selectedBrandIds', JSON.stringify(brandIds));
         },
         handleClickOutside(event) {
@@ -3373,8 +3351,8 @@ Vue.component('brand-selector', {
 });
 
 
-Vue.component('top-dashboard', {
-    name: 'top-dashboard',
+Vue.component('top-influencers', {
+    name: 'top-influencers',
     extends: baseProps,
     data() {
         return {
@@ -3383,15 +3361,18 @@ Vue.component('top-dashboard', {
         };
     },
     mounted() {
-        // Auto-populate with top influencers on load
-        if (this.$root.selectesItems.length === 0 && this.topInfluencers.length > 0) {
-            this.$root.selectesItems = [...this.topInfluencers];
+        // Auto-populate with top influencers on load if no selected
+        if (this.$root.selectedItems.length === 0 && this.topInfluencers.length > 0) {
+            // push top influencers to selectedItems to select by default
+            this.topInfluencers.forEach(item => {
+                this.$root.selectedItems.push(item);
+            });            
         }
     },
     computed: {
         showComparison() {
             // Show if manually selected 2+ items OR if we have auto-populated top influencers
-            return this.$root.selectesItems.length > 1 || (this.$root.selectesItems.length === 0 && this.topInfluencers.length > 0);
+            return this.$root.selectedItems.length >= 1 || (this.$root.selectedItems.length === 0 && this.topInfluencers.length > 0);
         },
         topInfluencers() {
             // Get top influencers from each entity category
@@ -3423,10 +3404,10 @@ Vue.component('top-dashboard', {
         },
         comparisonBrands() {
             // If no manual selection, show top influencers
-            if (this.$root.selectesItems.length === 0) {
+            if (this.$root.selectedItems.length === 0) {
                 return this.topInfluencers;
             }
-            return this.$root.selectesItems.slice(0, 5); // Limit to 5 brands for comparison
+            return this.$root.selectedItems; // Limit to 5 brands for comparison
         },
 
         comparisonMetrics() {
@@ -3532,10 +3513,7 @@ Vue.component('top-dashboard', {
             return change >= 0 ? 'text-green-600' : 'text-red-600';
         },
         scrollToEntitySection(entityType) {
-            const sectionId = getEntityTableSectionId(entityType);
-            if (sectionId && typeof scrollToSection === 'function') {
-                scrollToSection(sectionId);
-            }
+            this.$root.scrollToElement(getEntityTableSectionId(entityType));
         },
         sortBy(column) {
             if (this.sortColumn === column) {
@@ -3559,18 +3537,12 @@ Vue.component('top-dashboard', {
         }
     },
     template: `
-    <base-section-component :obj="obj">
-        <div class="top-dashboard">
-            <h2 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">
-                <span v-if="$root.selectesItems.length === 0">Top Influencers</span>
-                <span v-else>Top Influencers</span>
-            </h2>
-
-            <!-- Brand Selector -->
+    <base-section-component :obj="obj" :section-title="'Top Influencers'">
+        <div class="top-influencers">
             <brand-selector :obj="obj"></brand-selector>
 
             <!-- Top Influencers Info when auto-populated -->
-            <div v-if="$root.selectesItems.length === 0 && topInfluencers.length > 0" class="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+            <div v-if="$root.selectedItems.length === 0 && topInfluencers.length > 0" class="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
                 <div class="flex items-start gap-3">
                     <svg class="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -3583,7 +3555,7 @@ Vue.component('top-dashboard', {
             </div>
 
             <!-- Help Message when no data available -->
-            <div v-if="$root.selectesItems.length === 0 && topInfluencers.length === 0" class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div v-if="$root.selectedItems.length === 0 && topInfluencers.length === 0" class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <div class="flex items-start gap-3">
                     <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -3593,17 +3565,7 @@ Vue.component('top-dashboard', {
                         <p class="text-sm text-blue-600 dark:text-blue-300 mt-1">Choose one item to compare with top influencers.</p>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Comparison Status -->
-            <div v-if="$root.selectesItems.length === 1" class="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                <div class="flex items-center gap-2 text-amber-700 dark:text-amber-300">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                    </svg>
-                    <span class="font-medium">Select 2+ items to enable comparison</span>
-                </div>
-            </div>            
+            </div>             
             
             <!-- Comparison Table -->
             <div v-if="showComparison" class="overflow-x-auto">
@@ -3769,15 +3731,14 @@ Vue.component('top-dashboard', {
                         <div v-for="(metric, index) in mentionsSortedMetrics" :key="'mentions-' + metric.id" class="flex items-center">
                             <div class="w-32 text-sm text-gray-600 dark:text-gray-400 truncate" :title="metric.value">
                                 <span 
-                                    :class="['comparison-term-clickable', $root.getHighlightClass(metric.value)]"
+                                    :class="['comparison-term-clickable']"
                                     @click="scrollToEntitySection(metric.type)"
                                     :title="'Click to scroll to ' + metric.type + ' section'"
                                 >{{ metric.value }}</span>
-                                <span v-if="comparisonBrands[0] && metric.value === comparisonBrands[0].value" class="text-xs text-blue-600 dark:text-blue-400 ml-1">(Primary)</span>
                             </div>
                             <div class="flex-1 ml-3">
                                 <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-6 relative">
-                                    <div :class="comparisonBrands[0] && metric.value === comparisonBrands[0].value ? 'bg-blue-600 dark:bg-blue-500' : 'bg-gray-500 dark:bg-gray-400'" 
+                                    <div :class="'bg-gray-500 dark:bg-gray-400'" 
                                         class="h-6 rounded-full flex items-center justify-end pr-2" 
                                         :style="\`width: \${(metric.mentions / maxMentions) * 100}%\`">
                                         <span class="text-xs text-white font-medium">{{ metric.mentions }}</span>
@@ -3796,15 +3757,14 @@ Vue.component('top-dashboard', {
                         <div v-for="(metric, index) in influenceSortedMetrics" :key="'influence-' + metric.id" class="flex items-center">
                             <div class="w-32 text-sm text-gray-600 dark:text-gray-400 truncate" :title="metric.value">
                                 <span 
-                                    :class="['comparison-term-clickable', $root.getHighlightClass(metric.value)]"
+                                    :class="['comparison-term-clickable']"
                                     @click="scrollToEntitySection(metric.type)"
                                     :title="'Click to scroll to ' + metric.type + ' section'"
                                 >{{ metric.value }}</span>
-                                <span v-if="comparisonBrands[0] && metric.value === comparisonBrands[0].value" class="text-xs text-blue-600 dark:text-blue-400 ml-1">(Primary)</span>
                             </div>
                             <div class="flex-1 ml-3">
                                 <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-6 relative">
-                                    <div :class="comparisonBrands[0] && metric.value === comparisonBrands[0].value ? 'bg-blue-600 dark:bg-blue-500' : 'bg-purple-500 dark:bg-purple-400'" 
+                                    <div :class="'bg-purple-500 dark:bg-purple-400'" 
                                         class="h-6 rounded-full flex items-center justify-end pr-2" 
                                         :style="\`width: \${(metric.influence / maxInfluence) * 100}%\`">
                                         <span class="text-xs text-white font-medium">{{ metric.influence.toFixed(1) }}%</span>
@@ -3827,11 +3787,11 @@ Vue.component('competitive-analysis', {
     extends: baseProps,
     computed: {
         topCompetitors() {
-            if (!this.$root.selectesItems.length) {
+            if (!this.$root.selectedItems.length) {
                 return [];
             }
 
-            const brand = this.$root.selectesItems[0];
+            const brand = this.$root.selectedItems[0];
             const brandType = brand.entityType;
 
             // Get entities from the same category as the selected brand
@@ -3861,7 +3821,7 @@ Vue.component('competitive-analysis', {
             });
         },
         brandMetrics() {
-            if (!this.$root.selectesItems.length) {
+            if (!this.$root.selectedItems.length) {
                 return {
                     name: 'Select an item',
                     mentions: 0,
@@ -3871,7 +3831,7 @@ Vue.component('competitive-analysis', {
                 };
             }
 
-            const brand = this.$root.selectesItems[0];
+            const brand = this.$root.selectedItems[0];
 
             // Handle influence value - check if it's already a percentage (>1) or decimal (0-1)
             let influenceValue = brand.influence || 0;
@@ -4262,7 +4222,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 selectedPromptFilter: 'all', // for filtering by prompt in aggregate view
 
                 // Dynamic brand selection
-                selectesItems: [], // Array of selected brand objects
+                selectedItems: [], // Array of selected brand objects
                 itemSearchQuery: '', // Search query for brand selector
                 showBrandDropdown: false, // Control dropdown visibility
                 defaultBrand: null // Store the original brand from brand.md for reference
@@ -4582,19 +4542,16 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (item.value) {
                             entities.push({
                                 ...item,
-                                entityType: arrayName,
-                                entityTypeLabel: arrayName.charAt(0).toUpperCase() + arrayName.slice(1).replace(/s$/, ''), // Remove plural
-                                display_name: `${item.value} (${arrayName.charAt(0).toUpperCase() + arrayName.slice(1).replace(/s$/, '')}) - ${item.mentions || 0} mentions`
+                                entityType: item.type,
+                                entityTypeLabel: item.type,
+                                display_name: `${item.value} (${item.type}) - ${item.mentions || 0} mentions`
                             });
                         }
                     });
                 });
 
                 // Sort by influence descending
-
                 return entities.sort((a, b) => (b.influence || 0) - (a.influence || 0));
-
-                return entities.sort((a, b) => (b.mentions || 0) - (a.mentions || 0));
             },
 
             getVisualScalingFactorForGraph() {
@@ -5082,8 +5039,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.debug('Navigating to entity:', entityType, entityValue);
 
                 // Map entity type to section ID using existing map
-                const pluralType = entityType === 'linkType' ? 'linkTypes' : entityType + 's';
-                const sectionId = getEntityTableSectionId(pluralType);
+                const sectionId = getEntityTableSectionId(entityType);
 
                 // First scroll to the section
                 this.scrollToElement(sectionId);
@@ -5369,7 +5325,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 let highlightedExcerpt = this.highlightWithRelatedTerms(excerpt.excerpt, searchTerm, relatedItems);
 
                                 // Then highlight all selected brands (including the main item if it's a brand)
-                                this.selectesItems.forEach(brand => {
+                                this.selectedItems.forEach(brand => {
                                     if (brand.value) {
                                         // Use a separate function to highlight brands with the brand-highlight class
                                         highlightedExcerpt = this.highlightBrandInExcerpt(highlightedExcerpt, brand.value);
@@ -6172,18 +6128,18 @@ document.addEventListener('DOMContentLoaded', function () {
                             const entity = this[entityType]?.find(item => item.value === entityValue);
                             if (entity) {
                                 // Check if this brand is already selected to avoid duplicates
-                                const isAlreadySelected = this.selectesItems.some(b =>
+                                const isAlreadySelected = this.selectedItems.some(b =>
                                     b.entityType === entityType && b.value === entityValue
                                 );
                                 if (!isAlreadySelected) {
-                                    this.selectesItems.push({
+                                    this.selectedItems.push({
                                         ...entity,
                                         entityType: entityType
                                     });
                                 }
                             }
                         });
-                        if (this.selectesItems.length > 0) return;
+                        if (this.selectedItems.length > 0) return;
                     } catch (e) {
                         console.warn('Failed to restore brand selection');
                     }
@@ -6200,11 +6156,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         const foundItem = items.find(item => item.isBrand === true);
                         if (foundItem) {
                             // Check if this brand is already selected to avoid duplicates
-                            const isAlreadySelected = this.selectesItems.some(b =>
+                            const isAlreadySelected = this.selectedItems.some(b =>
                                 b.entityType === arrayName && b.value === foundItem.value
                             );
                             if (!isAlreadySelected) {
-                                this.selectesItems.push({
+                                this.selectedItems.push({
                                     ...foundItem,
                                     entityType: arrayName
                                 });
@@ -6221,11 +6177,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     const entity = this[topEntity.entityType]?.find(item => item.value === topEntity.value);
                     if (entity) {
                         // Check if this brand is already selected to avoid duplicates
-                        const isAlreadySelected = this.selectesItems.some(b =>
+                        const isAlreadySelected = this.selectedItems.some(b =>
                             b.entityType === topEntity.entityType && b.value === entity.value
                         );
                         if (!isAlreadySelected) {
-                            this.selectesItems.push({
+                            this.selectedItems.push({
                                 ...entity,
                                 entityType: topEntity.entityType
                             });
@@ -7518,8 +7474,8 @@ document.addEventListener('DOMContentLoaded', function () {
             },
 
             isEntitySelected(entityValue) {
-                // Check if an entity is in the selectesItems array
-                return this.selectesItems.some(brand => brand.value === entityValue);
+                // Check if an entity is in the selectedItems array
+                return this.selectedItems.some(brand => brand.value === entityValue);
             },
 
             getHighlightClass(entityValue) {

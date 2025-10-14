@@ -307,6 +307,25 @@ export const APP_ACTIONS: AppAction[] = [
     requiresProject: true,
   },
 
+  {
+    id: 'enrich-link-domains-calculate-mentions',
+    cmd: 'actions/enrich-link-domains-calculate-mentions',
+    name: 'Calculate LinkDomains Mentions',
+    desc: 'Calculating linkDomains mentions',
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
+    category: 'project',
+    requiresProject: true,
+  },
+
+  {
+    id: 'enrich-link-domains-calculate-influence',
+    cmd: 'actions/enrich-link-domains-calculate-influence',
+    name: 'Calculate LinkDomains Influence',
+    desc: 'Calculating linkDomains influence',
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
+    category: 'project',
+    requiresProject: true,
+  },  
   
   {
     id: 'enrich-link-types-calculate-trends',
