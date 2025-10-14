@@ -157,6 +157,9 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         tocPath: '',
     },
 
+    // AI Summary - begin
+    // turned off on 2025 oct 14 as it was replaced with "Top Influencers" block
+    /*
     {
         title: 'AI Summary',
         description: 'AI summary of the report',
@@ -171,14 +174,18 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         hasAppearanceOrderTrendFilter: true,
         tocPath: 'AI Summary'
     },
+    */
+    // AI Summary - end
 
+    // Top Influencers - begin
     {
-        title: 'Top Influencers / Compare',
-        id: 'compare_items',
-        type: 'item-comparison-dashboard',
+        title: 'Top Influencers',
+        id: 'top_dashboard',
+        type: 'top-dashboard',
         tocPath: 'Top Influencers',
         description: 'Top performers across all categories or compare selected items side by side'
     },
+    // Top Influencers - end
 
     // Sections ordered to match left navigation menu
 
@@ -3141,18 +3148,18 @@ Vue.component('brand-selector', {
     template: `
     <div class="brand-selector mb-6">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            You may select 1 or more important items to highlight everywhere:
+            Selected items with top influence
         </label>
         <div class="relative">
             <!-- Search Input -->
             <div class="relative">
                 <input 
-                    v-model="$root.brandSearchQuery"
+                    v-model="$root.itemSearchQuery"
                     @focus="$root.showBrandDropdown = true"
                     @input="onSearchInput"
                     @keydown="handleKeydown"
                     type="text"
-                    placeholder="Type to search brands..."
+                    placeholder="Type to search items..."
                     class="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                 <button 
@@ -3176,8 +3183,7 @@ Vue.component('brand-selector', {
                             ? 'bg-blue-600 dark:bg-blue-700 text-white' 
                             : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                     ]"
-                >
-                    <span v-if="index === 0" class="font-bold text-xs uppercase mr-1">Primary:</span>
+                >                
                     <span>{{ brand.value }}</span>
                     <button 
                         @click="removeBrand(index)"
@@ -3228,12 +3234,15 @@ Vue.component('brand-selector', {
         </div>
         
         <!-- Comparison Mode Indicator -->
+        <!--
         <p v-if="$root.selectesItems.length > 1" class="mt-2 text-sm text-blue-600 dark:text-blue-400">
+
             <svg class="inline w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
             </svg>
             Important items mode active • Highlighting {{ $root.selectesItems.length }} items
         </p>
+        -->
     </div>
     `,
     data() {
@@ -3243,7 +3252,7 @@ Vue.component('brand-selector', {
     },
     computed: {
         filteredEntities() {
-            const query = this.$root.brandSearchQuery.toLowerCase();
+            const query = this.$root.itemSearchQuery.toLowerCase();
             if (!query) {
                 return this.$root.getAllEntities.slice(0, 50); // Show top 50 when no search
             }
@@ -3339,7 +3348,7 @@ Vue.component('brand-selector', {
                     this.saveBrandSelection();
                 }
             }
-            this.$root.brandSearchQuery = '';
+            this.$root.itemSearchQuery = '';
             this.highlightedIndex = -1;
         },
         removeBrand(index) {
@@ -3364,14 +3373,20 @@ Vue.component('brand-selector', {
 });
 
 
-Vue.component('item-comparison-dashboard', {
-    name: 'item-comparison-dashboard',
+Vue.component('top-dashboard', {
+    name: 'top-dashboard',
     extends: baseProps,
     data() {
         return {
             sortColumn: null,
             sortDirection: 'desc' // 'asc' or 'desc'
         };
+    },
+    mounted() {
+        // Auto-populate with top influencers on load
+        if (this.$root.selectesItems.length === 0 && this.topInfluencers.length > 0) {
+            this.$root.selectesItems = [...this.topInfluencers];
+        }
     },
     computed: {
         showComparison() {
@@ -3433,8 +3448,11 @@ Vue.component('item-comparison-dashboard', {
                 }
                 // If it's already > 1, it's already a percentage
 
+                const val = brand.value || brand.link;
+
                 return {
-                    name: brand.value,
+                    id: `${brand.entityType}-${val}`.replace(/s$/, '_'),
+                    value: val,
                     type: brand.entityType,
                     mentions: brand.mentions || 0,
                     influence: influenceValue,
@@ -3468,7 +3486,7 @@ Vue.component('item-comparison-dashboard', {
                 let bVal = b[this.sortColumn];
 
                 // Handle special cases
-                if (this.sortColumn === 'name' || this.sortColumn === 'type') {
+                if (this.sortColumn === 'value' || this.sortColumn === 'type') {
                     aVal = aVal.toLowerCase();
                     bVal = bVal.toLowerCase();
                 }
@@ -3542,11 +3560,14 @@ Vue.component('item-comparison-dashboard', {
     },
     template: `
     <base-section-component :obj="obj">
-        <div class="item-comparison-dashboard">
+        <div class="top-dashboard">
             <h2 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">
                 <span v-if="$root.selectesItems.length === 0">Top Influencers</span>
-                <span v-else>Compare Items</span>
+                <span v-else>Top Influencers</span>
             </h2>
+
+            <!-- Brand Selector -->
+            <brand-selector :obj="obj"></brand-selector>
 
             <!-- Top Influencers Info when auto-populated -->
             <div v-if="$root.selectesItems.length === 0 && topInfluencers.length > 0" class="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
@@ -3569,7 +3590,7 @@ Vue.component('item-comparison-dashboard', {
                     </svg>
                     <div>
                         <p class="text-sm text-blue-800 dark:text-blue-200 font-medium">Select items to analyze and compare</p>
-                        <p class="text-sm text-blue-600 dark:text-blue-300 mt-1">Choose one primary item and up to 4 additional items to compare side by side.</p>
+                        <p class="text-sm text-blue-600 dark:text-blue-300 mt-1">Choose one item to compare with top influencers.</p>
                     </div>
                 </div>
             </div>
@@ -3589,8 +3610,8 @@ Vue.component('item-comparison-dashboard', {
                 <table class="w-full report-table">
                     <thead>
                         <tr class="border-b border-gray-200 dark:border-gray-700">
-                            <th @click="sortBy('name')" class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
-                                Item{{ getSortIndicator('name') }}
+                            <th @click="sortBy('value')" class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                                Item{{ getSortIndicator('value') }}
                             </th>
                             <th @click="sortBy('type')" class="text-center py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
                                 Type{{ getSortIndicator('type') }}
@@ -3616,19 +3637,18 @@ Vue.component('item-comparison-dashboard', {
                     </thead>
                     <tbody>
                         <tr v-for="(metric, index) in sortedComparisonMetrics" 
-                            :key="metric.name"
+                            :key="metric.id"
                             :class="[
                                 'border-b border-gray-200 dark:border-gray-700',
-                                comparisonBrands[0] && metric.name === comparisonBrands[0].value ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                                comparisonBrands[0] && metric.value === comparisonBrands[0].value ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                             ]"
                         >
                             <td class="py-3 px-4 font-medium text-gray-900 dark:text-white">
                                 <span 
-                                    :class="['comparison-term-clickable', $root.getHighlightClass(metric.name)]"
+                                    :class="['comparison-term-clickable', $root.getHighlightClass(metric.id)]"
                                     @click="scrollToEntitySection(metric.type)"
                                     :title="'Click to scroll to ' + metric.type + ' section'"
-                                >{{ metric.name }}</span>
-                                <span v-if="comparisonBrands[0] && metric.name === comparisonBrands[0].value" class="text-xs text-blue-600 dark:text-blue-400 ml-2">(Primary)</span>
+                                >{{ metric.value }}</span>                                
                             </td>
                             <td class="text-center py-3 px-4 text-sm text-gray-600 dark:text-gray-400 capitalize">
                                 {{ metric.type }}
@@ -3746,18 +3766,18 @@ Vue.component('item-comparison-dashboard', {
                 <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                     <h4 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Mention Volume</h4>
                     <div class="space-y-3">
-                        <div v-for="(metric, index) in mentionsSortedMetrics" :key="'mentions-' + metric.name" class="flex items-center">
-                            <div class="w-32 text-sm text-gray-600 dark:text-gray-400 truncate" :title="metric.name">
+                        <div v-for="(metric, index) in mentionsSortedMetrics" :key="'mentions-' + metric.id" class="flex items-center">
+                            <div class="w-32 text-sm text-gray-600 dark:text-gray-400 truncate" :title="metric.value">
                                 <span 
-                                    :class="['comparison-term-clickable', $root.getHighlightClass(metric.name)]"
+                                    :class="['comparison-term-clickable', $root.getHighlightClass(metric.value)]"
                                     @click="scrollToEntitySection(metric.type)"
                                     :title="'Click to scroll to ' + metric.type + ' section'"
-                                >{{ metric.name }}</span>
-                                <span v-if="comparisonBrands[0] && metric.name === comparisonBrands[0].value" class="text-xs text-blue-600 dark:text-blue-400 ml-1">(Primary)</span>
+                                >{{ metric.value }}</span>
+                                <span v-if="comparisonBrands[0] && metric.value === comparisonBrands[0].value" class="text-xs text-blue-600 dark:text-blue-400 ml-1">(Primary)</span>
                             </div>
                             <div class="flex-1 ml-3">
                                 <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-6 relative">
-                                    <div :class="comparisonBrands[0] && metric.name === comparisonBrands[0].value ? 'bg-blue-600 dark:bg-blue-500' : 'bg-gray-500 dark:bg-gray-400'" 
+                                    <div :class="comparisonBrands[0] && metric.value === comparisonBrands[0].value ? 'bg-blue-600 dark:bg-blue-500' : 'bg-gray-500 dark:bg-gray-400'" 
                                         class="h-6 rounded-full flex items-center justify-end pr-2" 
                                         :style="\`width: \${(metric.mentions / maxMentions) * 100}%\`">
                                         <span class="text-xs text-white font-medium">{{ metric.mentions }}</span>
@@ -3773,18 +3793,18 @@ Vue.component('item-comparison-dashboard', {
                 <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                     <h4 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Influence Score</h4>
                     <div class="space-y-3">
-                        <div v-for="(metric, index) in influenceSortedMetrics" :key="'influence-' + metric.name" class="flex items-center">
-                            <div class="w-32 text-sm text-gray-600 dark:text-gray-400 truncate" :title="metric.name">
+                        <div v-for="(metric, index) in influenceSortedMetrics" :key="'influence-' + metric.id" class="flex items-center">
+                            <div class="w-32 text-sm text-gray-600 dark:text-gray-400 truncate" :title="metric.value">
                                 <span 
-                                    :class="['comparison-term-clickable', $root.getHighlightClass(metric.name)]"
+                                    :class="['comparison-term-clickable', $root.getHighlightClass(metric.value)]"
                                     @click="scrollToEntitySection(metric.type)"
                                     :title="'Click to scroll to ' + metric.type + ' section'"
-                                >{{ metric.name }}</span>
-                                <span v-if="comparisonBrands[0] && metric.name === comparisonBrands[0].value" class="text-xs text-blue-600 dark:text-blue-400 ml-1">(Primary)</span>
+                                >{{ metric.value }}</span>
+                                <span v-if="comparisonBrands[0] && metric.value === comparisonBrands[0].value" class="text-xs text-blue-600 dark:text-blue-400 ml-1">(Primary)</span>
                             </div>
                             <div class="flex-1 ml-3">
                                 <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-6 relative">
-                                    <div :class="comparisonBrands[0] && metric.name === comparisonBrands[0].value ? 'bg-blue-600 dark:bg-blue-500' : 'bg-purple-500 dark:bg-purple-400'" 
+                                    <div :class="comparisonBrands[0] && metric.value === comparisonBrands[0].value ? 'bg-blue-600 dark:bg-blue-500' : 'bg-purple-500 dark:bg-purple-400'" 
                                         class="h-6 rounded-full flex items-center justify-end pr-2" 
                                         :style="\`width: \${(metric.influence / maxInfluence) * 100}%\`">
                                         <span class="text-xs text-white font-medium">{{ metric.influence.toFixed(1) }}%</span>
@@ -3843,7 +3863,7 @@ Vue.component('competitive-analysis', {
         brandMetrics() {
             if (!this.$root.selectesItems.length) {
                 return {
-                    name: 'Select a brand',
+                    name: 'Select an item',
                     mentions: 0,
                     influence: 0,
                     trend: 0,
@@ -3884,7 +3904,7 @@ Vue.component('competitive-analysis', {
                 } else {
                     insights.push({
                         type: 'warning',
-                        text: `${leadingCompetitor.name} leads with ${leadingCompetitor.influence.toFixed(1)}% influence`
+                        text: `${leadingCompetitor.value} leads with ${leadingCompetitor.influence.toFixed(1)}% influence`
                     });
                 }
             }
@@ -3939,7 +3959,7 @@ Vue.component('competitive-analysis', {
                             <!-- Brand Row (highlighted) -->
                             <tr class="bg-blue-50 dark:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700">
                                 <td class="py-3 px-4 font-medium text-gray-900 dark:text-white">
-                                    <span :class="$root.getHighlightClass(brandMetrics.name)">{{ brandMetrics.name }}</span> <span class="text-xs text-blue-600 dark:text-blue-400">(You)</span>
+                                    <span :class="$root.getHighlightClass(brandMetrics.value)">{{ brandMetrics.value }}</span> <span class="text-xs text-blue-600 dark:text-blue-400">(You)</span>
                                 </td>
                                 <td class="text-center py-3 px-4 font-medium">{{ brandMetrics.mentions }}</td>
                                 <td class="text-center py-3 px-4">
@@ -3963,13 +3983,13 @@ Vue.component('competitive-analysis', {
                             </tr>
                             
                             <!-- Competitor Rows -->
-                            <tr v-for="(comp, index) in topCompetitors" :key="comp.name" 
+                            <tr v-for="(comp, index) in topCompetitors" :key="comp.id" 
                                 class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <td class="py-3 px-4 text-gray-900 dark:text-white">
                                     <a v-if="comp.link" :href="comp.link" target="_blank" class="hover:underline">
-                                        <span :class="$root.getHighlightClass(comp.name)">{{ comp.name }}</span>
+                                        <span :class="$root.getHighlightClass(comp.value)">{{ comp.value }}</span>
                                     </a>
-                                    <span v-else :class="$root.getHighlightClass(comp.name)">{{ comp.name }}</span>
+                                    <span v-else :class="$root.getHighlightClass(comp.value)">{{ comp.value }}</span>
                                 </td>
                                 <td class="text-center py-3 px-4">{{ comp.mentions }}</td>
                                 <td class="text-center py-3 px-4">
@@ -4243,7 +4263,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Dynamic brand selection
                 selectesItems: [], // Array of selected brand objects
-                brandSearchQuery: '', // Search query for brand selector
+                itemSearchQuery: '', // Search query for brand selector
                 showBrandDropdown: false, // Control dropdown visibility
                 defaultBrand: null // Store the original brand from brand.md for reference
             }
@@ -4556,7 +4576,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const entities = [];
 
                 // Add entities from each main array
-                ENTITES_NON_COMPUTED.forEach(arrayName => {
+                ENTITES_ALL.forEach(arrayName => {
                     const items = this[arrayName] || [];
                     items.forEach(item => {
                         if (item.value) {

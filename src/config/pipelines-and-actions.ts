@@ -338,6 +338,8 @@ export const APP_ACTIONS: AppAction[] = [
     requiresProject: true,
   },
 
+/*
+// excluded from all pipelines, takes too long to process and generally not useful
   {
     id: 'enrich-generate-summary-ai',
     cmd: 'actions/enrich-generate-summary-ai',
@@ -347,7 +349,7 @@ export const APP_ACTIONS: AppAction[] = [
     category: 'project',
     requiresProject: true,
   },
-
+*/
   {
     id: 'report-generate-output-cleanup',
     cmd: 'actions/report-generate-output-cleanup',
