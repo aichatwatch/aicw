@@ -5,7 +5,7 @@ const FAVICON_64_TEMPLATE = 'https://www.google.com/s2/favicons?domain={{DOMAIN}
 const FAVICON_128_TEMPLATE = 'https://www.google.com/s2/favicons?domain={{DOMAIN}}&sz=128';
 
 const DEFAULT_GRAPH_NODE_LIMIT = 12; // Default number of top items to show in graphs
-const MIN_CHART_ITEMS = 30; // Maximum number of items to show in charts
+const MIN_CHART_ITEMS = 12; // Maximum number of items to show in charts (link types, domains)
 
 const ENTITES_CONFIG = [
     {
@@ -173,7 +173,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
 
     // Sections ordered to match left navigation menu
 
-    // events
+    // events - begin
     {
         title: 'Events',
         description: 'Events mentioned by AI engines',
@@ -181,12 +181,12 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         type: 'table-with-items',
         sourceArrayName: 'events',
         columns: [
+            { type: 'value', caption: 'Event' },
+            { type: 'link', caption: 'Link' },
             { type: 'marked', caption: '✔️' },
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'value', caption: 'Event' },
-            { type: 'link', caption: 'Link' },
             { type: 'modelNames', caption: 'AI Models' }
 
         ],
@@ -219,8 +219,8 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         defaultSortingDirection: 'desc',
         tocPath: 'Events/Graph'
     },
-
-    // keywords
+    // events - end
+    // keywords - begin     
     {
         title: 'Keywords',
         description: 'Keywords mentioned by AI engines',
@@ -229,10 +229,10 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         sourceArrayName: 'keywords',
         columns: [
             { type: 'marked', caption: '✔️' },
+            { type: 'value', caption: 'Keyword' },
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'value', caption: 'Keyword' },
             { type: 'similar', caption: 'Similar', subType2: 'commaSeparated' },            
             { type: 'modelNames', caption: 'AI Models' }
 
@@ -264,8 +264,9 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         tocPath: 'Keywords/Graph'
 
     },
+    // keywords - end
 
-    // organizations
+    // organizations - begin
     {
         title: 'Organizations',
         description: 'Organizations mentioned and used by AI engines',
@@ -274,11 +275,11 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         sourceArrayName: 'organizations',
         columns: [
             { type: 'marked', caption: '✔️' },
+            { type: 'value', caption: 'Organization' },
+            { type: 'link', caption: 'Link' },            
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'value', caption: 'Organization' },
-            { type: 'link', caption: 'Link' },            
             { type: 'modelNames', caption: 'AI Models' }
 
         ],
@@ -310,8 +311,8 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         defaultSortingDirection: 'desc',
         tocPath: 'Organizations/Graph'
     },
-
-    // persons
+    // organizations - end
+    // persons - begin
     {
         title: 'Persons',
         description: 'Persons mentioned by AI engines',
@@ -357,8 +358,9 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         defaultSortingDirection: 'desc',
         tocPath: 'Persons/Graph'
     },
+    // persons - end
 
-    // places
+    // places - begin       
     {
         title: 'Places',
         description: 'Places mentioned by AI engines',
@@ -367,11 +369,11 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         sourceArrayName: 'places',
         columns: [
             { type: 'marked', caption: '✔️' },
+            { type: 'value', caption: 'Place' },
+            { type: 'link', caption: 'Link' },            
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'value', caption: 'Place' },
-            { type: 'link', caption: 'Link' },            
             { type: 'modelNames', caption: 'AI Models' }
 
         ],
@@ -404,8 +406,9 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         defaultSortingDirection: 'desc',
         tocPath: 'Places/Graph'
     },
+    // places - end
 
-    // products
+    // products - begin
     {
         title: 'Products',
         description: 'Products mentioned and used by AI engines',
@@ -414,11 +417,11 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         sourceArrayName: 'products',
         columns: [
             { type: 'marked', caption: '✔️' },
+            { type: 'value', caption: 'Product' },
+            { type: 'link', caption: 'Link' },            
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'value', caption: 'Product' },
-            { type: 'link', caption: 'Link' },            
             { type: 'modelNames', caption: 'AI Models' }
 
         ],
@@ -450,8 +453,9 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         defaultSortingDirection: 'desc',
         tocPath: 'Products/Graph'
     },
+    // products - end
 
-    // links
+    // links - begin
     {
         title: 'Links',
         description: 'Links mentioned and used by AI engines',
@@ -460,12 +464,12 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         sourceArrayName: 'links',
         columns: [
             { type: 'marked', caption: '✔️' },
+            { type: 'link', caption: 'Link' },
+            { type: 'linkType', caption: 'Type' },            
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
             //{type: 'value', caption: 'Value'},
-            { type: 'link', caption: 'Link' },
-            { type: 'linkType', caption: 'Type' },            
             { type: 'modelNames', caption: 'AI Models' }
 
         ],
@@ -500,103 +504,9 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         tocPath: 'Links/Graph'
     },
 
-    // linkDomains
-    {
-        title: 'Link Domains',
-        description: 'Domains mentioned and used by AI engines',
-        id: 'table_linkDomains',
-        type: 'table-with-items',
-        sourceArrayName: 'linkDomains',
-        columns: [
-            { type: 'marked', caption: '✔️' },
-            { type: 'influence', caption: 'Voice' },
-            { type: 'appearanceOrder', caption: 'Order' },
-            { type: 'mentions', caption: 'Mentions' },
-            { type: 'link', caption: 'Domain' },
-            { type: 'linkTypeName', caption: 'Type' },
-            { type: 'modelNames', caption: 'AI Models' }
+    // links - end
 
-        ],
-        hasSearchFilter: true,
-        searchFilterFields: ['value'],
-        hasModelFilter: true,
-        botFilteredFields: ['bots'],
-        hasAppearanceOrderTrendFilter: true,
-        defaultSortingColumn: '',
-        defaultSortingDirection: 'desc',
-        tocPath: 'Link Domains/Table'
-
-    },
-    {
-        title: 'Link Domains Graph',
-        description: 'Visualization of domains mentioned and used by AI engines',
-        id: 'graph_linkDomains',
-        type: 'graph-with-items',
-        sourceArrayName: 'linkDomains',
-        hasSearchFilter: true,
-        searchFilterFields: ['value'],
-        hasModelFilter: true,
-        botFilteredFields: ['bots'],
-        hasAppearanceOrderTrendFilter: true,
-        hasTrendFilter: true,
-        defaultSortingColumn: 'positive',
-        defaultSortingDirection: 'desc',
-        tocPath: 'Link Domains/Graph'
-
-    },
-    {
-        title: 'Link Domains by Mentions',
-        description: 'Chart of domains by mentions',
-        id: 'chart_linkDomainsByMentions',
-        type: 'chart-with-items',
-        sourceArrayName: 'linkDomains',
-        chartSpecificConfig: {
-            chartType: 'horizontalBar',
-            formatValuesAsPercentage: false
-        },
-        columns: [
-            // first is always the category
-            { type: 'value', caption: 'Domain', chartAxis: 'x' },
-            { type: 'mentions', caption: 'Mentions', chartAxis: 'y' }
-        ],
-        hasSearchFilter: true,
-        searchFilterFields: ['value'],
-        hasModelFilter: true,
-        botFilteredFields: ['bots'],
-        hasAppearanceOrderTrendFilter: true,
-        hasTrendFilter: true,
-        defaultSortingColumn: 'mentions',
-        defaultSortingDirection: 'desc',
-        tocPath: 'Link Domains/Mentions Chart'
-
-    },
-    {
-        title: 'Link Domains by Influence',
-        description: 'Chart of domains by influence',
-        id: 'chart_linkDomainsByInfluence',
-        type: 'chart-with-items',
-        sourceArrayName: 'linkDomains',
-        chartSpecificConfig: {
-            chartType: 'horizontalBar',
-            formatAsPercentage: true
-        },
-        columns: [
-            // first is always the category
-            { type: 'value', caption: 'Domain', chartAxis: 'x' },
-            { type: 'influence', caption: 'Influence', chartAxis: 'y' }
-        ],
-        hasSearchFilter: true,
-        searchFilterFields: ['value'],
-        hasModelFilter: true,
-        botFilteredFields: ['bots'],
-        hasAppearanceOrderTrendFilter: true,
-        hasTrendFilter: true,
-        defaultSortingColumn: '',
-        defaultSortingDirection: 'desc',
-        tocPath: 'Link Domains/Influence Chart'
-    },
-
-    // linkTypes
+    // linkTypes - begin
     {
         title: 'Link Types',
         description: 'Source types mentioned and used by AI engines',
@@ -605,10 +515,10 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         sourceArrayName: 'linkTypes',
         columns: [
             { type: 'marked', caption: '✔️' },
+            { type: 'value', caption: 'Type' },            
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'value', caption: 'Type' },            
             { type: 'modelNames', caption: 'AI Models' }
 
         ],
@@ -639,6 +549,32 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         tocPath: 'Link Types/Graph'
 
     },
+
+    {
+        title: 'Link Type by Influence',
+        description: 'Chart of source types by influence',
+        id: 'chart_linkTypesByInfluence',
+        type: 'chart-with-items',
+        sourceArrayName: 'linkTypes',
+        chartSpecificConfig: {
+            chartType: 'horizontalBar',
+            formatAsPercentage: true  // This will format values as percentages
+        },
+        columns: [
+            // first is always the category
+            { type: 'value', caption: 'Link Type', chartAxis: 'x' },
+            { type: 'influence', caption: 'Influence', chartAxis: 'y' }
+        ],
+        hasSearchFilter: true,
+        searchFilterFields: ['value'],
+        hasModelFilter: true,
+        botFilteredFields: ['bots'],
+        hasAppearanceOrderTrendFilter: true,
+        hasTrendFilter: true,
+        defaultSortingColumn: '',
+        defaultSortingDirection: 'desc',
+        tocPath: 'Link Types/Influence Chart'
+    },    
     {
         title: 'Link Type by Mentions',
         description: 'Chart of source types by mentions',
@@ -665,19 +601,66 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         tocPath: 'Link Types/Mentions Chart'
 
     },
+    // link types - end    
+
+    // linkDomains - begin
     {
-        title: 'Link Type by Influence',
-        description: 'Chart of source types by influence',
-        id: 'chart_linkTypesByInfluence',
+        title: 'Link Domains',
+        description: 'Domains mentioned and used by AI engines',
+        id: 'table_linkDomains',
+        type: 'table-with-items',
+        sourceArrayName: 'linkDomains',
+        columns: [
+            { type: 'marked', caption: '✔️' },
+            { type: 'link', caption: 'Domain' },
+            { type: 'linkTypeName', caption: 'Type' },
+            { type: 'influence', caption: 'Voice' },
+            { type: 'appearanceOrder', caption: 'Order' },
+            { type: 'mentions', caption: 'Mentions' },
+            { type: 'modelNames', caption: 'AI Models' }
+
+        ],
+        hasSearchFilter: true,
+        searchFilterFields: ['value'],
+        hasModelFilter: true,
+        botFilteredFields: ['bots'],
+        hasAppearanceOrderTrendFilter: true,
+        defaultSortingColumn: '',
+        defaultSortingDirection: 'desc',
+        tocPath: 'Link Domains/Table'
+
+    },
+    {
+        title: 'Link Domains Graph',
+        description: 'Visualization of domains mentioned and used by AI engines',
+        id: 'graph_linkDomains',
+        type: 'graph-with-items',
+        sourceArrayName: 'linkDomains',
+        hasSearchFilter: true,
+        searchFilterFields: ['value'],
+        hasModelFilter: true,
+        botFilteredFields: ['bots'],
+        hasAppearanceOrderTrendFilter: true,
+        hasTrendFilter: true,
+        defaultSortingColumn: 'positive',
+        defaultSortingDirection: 'desc',
+        tocPath: 'Link Domains/Graph'
+
+    },
+
+    {
+        title: 'Link Domains by Influence',
+        description: 'Chart of domains by influence',
+        id: 'chart_linkDomainsByInfluence',
         type: 'chart-with-items',
-        sourceArrayName: 'linkTypes',
+        sourceArrayName: 'linkDomains',
         chartSpecificConfig: {
             chartType: 'horizontalBar',
-            formatAsPercentage: true  // This will format values as percentages
+            formatAsPercentage: true
         },
         columns: [
             // first is always the category
-            { type: 'value', caption: 'Link Type', chartAxis: 'x' },
+            { type: 'value', caption: 'Domain', chartAxis: 'x' },
             { type: 'influence', caption: 'Influence', chartAxis: 'y' }
         ],
         hasSearchFilter: true,
@@ -688,8 +671,36 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         hasTrendFilter: true,
         defaultSortingColumn: '',
         defaultSortingDirection: 'desc',
-        tocPath: 'Link Types/Influence Chart'
+        tocPath: 'Link Domains/Influence Chart'
     },
+
+    {
+        title: 'Link Domains by Mentions',
+        description: 'Chart of domains by mentions',
+        id: 'chart_linkDomainsByMentions',
+        type: 'chart-with-items',
+        sourceArrayName: 'linkDomains',
+        chartSpecificConfig: {
+            chartType: 'horizontalBar',
+            formatValuesAsPercentage: false
+        },
+        columns: [
+            // first is always the category
+            { type: 'value', caption: 'Domain', chartAxis: 'x' },
+            { type: 'mentions', caption: 'Mentions', chartAxis: 'y' }
+        ],
+        hasSearchFilter: true,
+        searchFilterFields: ['value'],
+        hasModelFilter: true,
+        botFilteredFields: ['bots'],
+        hasAppearanceOrderTrendFilter: true,
+        hasTrendFilter: true,
+        defaultSortingColumn: 'mentions',
+        defaultSortingDirection: 'desc',
+        tocPath: 'Link Domains/Mentions Chart'
+
+    },
+    // link domains - end
 
     {
         title: 'Compare',
@@ -739,11 +750,14 @@ const TRENDS = Object.freeze({
     UNKNOWN: -9999, // "?"
 });
 
-const NUMERIC_COLUMN_HEADERS = ['appearanceOrder', 'mentions',
-
+const NUMERIC_COLUMN_HEADERS = [
+    'appearanceOrder', 
+    'mentions',
     'influence',
-
-    'positive', 'neutral', 'negative'];
+    'positive', 
+    'neutral', 
+    'negative'
+];
 
 // Constants for default densities
 const DEFAULT_KEYWORD_DENSITY = 1;  // 50 is the middle of the slider
@@ -1248,7 +1262,7 @@ Vue.component('about-report', {
                 <div v-if="$root.totalDates.length === 1" class="text-gray-600 dark:text-gray-300 text-sm">
                     <span class="font-medium">Data captured on:</span> {{ $root.dateToString($root.report_date) }}
                     <br/>
-                    <span class="font-medium">Report generated on:</span> {{ $root.dateToString($root.creted_at) }}
+                    <span class="font-medium">Report generated on:</span> {{ $root.dateToString($root.created_at) }}
                 </div>
                 <div v-else class="space-y-2">
                     <div class="text-gray-600 dark:text-gray-300 text-sm">
@@ -7870,6 +7884,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 const linkCell = row.insertCell();
                 linkCell.setAttribute('data-column', 'link');
                 linkCell.className = 'px-4 py-2 w-full min-w-0 whitespace-nowrap report-table__cell';
+
+                // Check if link exists and is not undefined
+                if (!el.link || el.link === 'undefined') {
+                    // No link available - show empty cell
+                    linkCell.textContent = '';
+                    return;
+                }
 
                 // Check if this link is AI-generated
                 const isAIGenerated = el.sources && el.sources.link === "AI";
