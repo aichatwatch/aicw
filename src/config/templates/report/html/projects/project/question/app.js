@@ -3356,7 +3356,8 @@ Vue.component('top-influencers', {
     extends: baseProps,
     data() {
         return {
-            sortColumn: null,
+            // sort by mentions by default
+            sortColumn: 'mentions',
             sortDirection: 'desc' // 'asc' or 'desc'
         };
     },
@@ -3736,14 +3737,23 @@ Vue.component('top-influencers', {
                                     :title="'Click to scroll to ' + metric.type + ' section'"
                                 >{{ metric.value }}</span>
                             </div>
-                            <div class="flex-1 ml-3">
-                                <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-6 relative">
-                                    <div :class="'bg-gray-500 dark:bg-gray-400'" 
-                                        class="h-6 rounded-full flex items-center justify-end pr-2" 
+                            <div class="flex-1 ml-3 relative">
+                                <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-6">
+                                    <div :class="'bg-gray-500 dark:bg-gray-400'"
+                                        class="h-6 rounded-full"
                                         :style="\`width: \${(metric.mentions / maxMentions) * 100}%\`">
-                                        <span class="text-xs text-white font-medium">{{ metric.mentions }}</span>
                                     </div>
                                 </div>
+                                <!-- Number positioned absolutely based on bar width -->
+                                <span
+                                    :class="[
+                                        'text-xs font-medium absolute top-0 h-6 flex items-center',
+                                        'text-white'                                        
+                                    ]"
+                                    :style="'right: 0.5rem'"
+                                >
+                                    {{ metric.mentions }}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -3762,14 +3772,25 @@ Vue.component('top-influencers', {
                                     :title="'Click to scroll to ' + metric.type + ' section'"
                                 >{{ metric.value }}</span>
                             </div>
-                            <div class="flex-1 ml-3">
-                                <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-6 relative">
-                                    <div :class="'bg-purple-500 dark:bg-purple-400'" 
-                                        class="h-6 rounded-full flex items-center justify-end pr-2" 
+                            <div class="flex-1 ml-3 relative">
+                                <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-6">
+                                    <div :class="'bg-purple-500 dark:bg-purple-400'"
+                                        class="h-6 rounded-full"
                                         :style="\`width: \${(metric.influence / maxInfluence) * 100}%\`">
-                                        <span class="text-xs text-white font-medium">{{ metric.influence.toFixed(1) }}%</span>
                                     </div>
                                 </div>
+                                <!-- Number positioned absolutely based on bar width -->
+                                <span
+                                    :class="[
+                                        'text-xs font-medium absolute top-0 h-6 flex items-center',
+                                        (metric.influence / maxInfluence) >= 0.15
+                                            ? 'text-white'
+                                            : 'text-gray-700 dark:text-gray-300 left-full ml-2'
+                                    ]"
+                                    :style="(metric.influence / maxInfluence) >= 0.15 ? \`right: 0.5rem\` : \`\`"
+                                >
+                                    {{ metric.influence.toFixed(1) }}%
+                                </span>
                             </div>
                         </div>
                     </div>
