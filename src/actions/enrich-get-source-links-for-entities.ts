@@ -8,6 +8,8 @@ import { PipelineCriticalError, createMissingFileError } from '../utils/pipeline
 import { loadDataJs, saveDataJs, readQuestions } from '../utils/project-utils.js';
 import { getProjectNameFromCommandLine, validateAndLoadProject, getTargetDateFromProjectOrEnvironment } from '../utils/project-utils.js';
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
+import { cleanUrl } from '../utils/url-utils.js';
+import { extractLinksFromContent } from '../utils/link-extraction.js';
 
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
@@ -42,36 +44,9 @@ interface AnswerFileInfo {
 }
 
 // ============================================================================
-// URL CLEANING & DEDUPLICATION
+// URL DEDUPLICATION
 // ============================================================================
-
-/**
- * Clean and normalize URL for storage
- * Removes: protocol (http/https), www., query params, anchors, trailing slash
- */
-function cleanUrl(url: string): string {
-  let cleaned = url.trim();
-
-  // Remove protocol
-  cleaned = cleaned.replace(/^https?:\/\//, '');
-
-  // Remove www.
-  cleaned = cleaned.replace(/^www\./, '');
-
-  // Remove query params
-  cleaned = cleaned.split('?')[0];
-
-  // Remove anchors
-  cleaned = cleaned.split('#')[0];
-
-  // Remove markdown artifacts from end: ), *, ., etc.
-  cleaned = cleaned.replace(/[\)\*\.\,]+$/, '');
-
-  // Remove trailing slash
-  cleaned = cleaned.replace(/\/$/, '');
-
-  return cleaned.toLowerCase();
-}
+// Note: Using cleanUrl from url-utils.js for consistent URL normalization
 
 /**
  * Deduplicate sources and aggregate bot IDs
@@ -173,119 +148,67 @@ function isLinkWithinDistanceLimits(
 
 /**
  * Split text into sentences with smart boundary detection
- * Handles: "Mr. Smith", "Dr. Jones", "U.S.", "U.K."
+ * Handles: "Mr. Smith", "Dr. Jones", "U.S.", "U.K.", bulleted lists
  */
 function splitIntoSentences(text: string): string[] {
-  // Handle common abbreviations by temporarily replacing dots
-  let processed = text
-    .replace(/Mr\./g, 'Mr[DOT]')
-    .replace(/Mrs\./g, 'Mrs[DOT]')
-    .replace(/Ms\./g, 'Ms[DOT]')
-    .replace(/Dr\./g, 'Dr[DOT]')
-    .replace(/Prof\./g, 'Prof[DOT]')
-    .replace(/U\.S\./g, 'US')
-    .replace(/U\.K\./g, 'UK')
-    .replace(/e\.g\./g, 'eg')
-    .replace(/i\.e\./g, 'ie');
+  // FIRST: Split on bulleted/numbered list items to handle entities in separate list items
+  // Patterns: "- **Entity:**", "* **Entity:**", "1. **Entity:**"
+  const listItemRegex = /\n(?=[-*]|\d+\.)\s*/g;
+  const listItems = text.split(listItemRegex);
 
-  // Split on sentence boundaries: . ! ? followed by space and capital or end
-  const sentences = processed.split(/([.!?])\s+(?=[A-Z])|([.!?])$/);
+  const allSentences: string[] = [];
 
-  // Reconstruct sentences with their punctuation
-  const result: string[] = [];
-  for (let i = 0; i < sentences.length; i++) {
-    if (!sentences[i]) continue;
+  for (const listItem of listItems) {
+    // Handle common abbreviations by temporarily replacing dots
+    let processed = listItem
+      .replace(/Mr\./g, 'Mr[DOT]')
+      .replace(/Mrs\./g, 'Mrs[DOT]')
+      .replace(/Ms\./g, 'Ms[DOT]')
+      .replace(/Dr\./g, 'Dr[DOT]')
+      .replace(/Prof\./g, 'Prof[DOT]')
+      .replace(/U\.S\./g, 'US')
+      .replace(/U\.K\./g, 'UK')
+      .replace(/e\.g\./g, 'eg')
+      .replace(/i\.e\./g, 'ie');
 
-    let sentence = sentences[i];
+    // Split on sentence boundaries: . ! ? followed by space and capital or end
+    const sentences = processed.split(/([.!?])\s+(?=[A-Z])|([.!?])$/);
 
-    // Add punctuation back if next element is punctuation
-    if (i + 1 < sentences.length && /^[.!?]$/.test(sentences[i + 1])) {
-      sentence += sentences[i + 1];
-      i++; // Skip the punctuation element
-    }
+    // Reconstruct sentences with their punctuation
+    for (let i = 0; i < sentences.length; i++) {
+      if (!sentences[i]) continue;
 
-    // Restore abbreviations
-    sentence = sentence
-      .replace(/\[DOT\]/g, '.');
+      let sentence = sentences[i];
 
-    if (sentence.trim().length > 0) {
-      result.push(sentence.trim());
+      // Add punctuation back if next element is punctuation
+      if (i + 1 < sentences.length && /^[.!?]$/.test(sentences[i + 1])) {
+        sentence += sentences[i + 1];
+        i++; // Skip the punctuation element
+      }
+
+      // Restore abbreviations
+      sentence = sentence.replace(/\[DOT\]/g, '.');
+
+      if (sentence.trim().length > 0) {
+        allSentences.push(sentence.trim());
+      }
     }
   }
 
   // Fallback: if no sentences found, return the original text as one sentence
-  if (result.length === 0 && text.trim().length > 0) {
+  if (allSentences.length === 0 && text.trim().length > 0) {
     return [text.trim()];
   }
 
-  return result;
+  return allSentences;
 }
 
 // ============================================================================
-// LINK EXTRACTION FUNCTIONS (4 Types)
+// CITATION RESOLUTION
 // ============================================================================
 
 /**
- * Type 1: Extract markdown links [text](url)
- */
-function extractMarkdownLinks(text: string): string[] {
-  const links: string[] = [];
-  const regex = /\[([^\]]+)\]\(([^)]+)\)/g;
-
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    const url = match[2].trim();
-    if (url && !url.startsWith('#')) { // Skip anchor links
-      links.push(url);
-    }
-  }
-
-  return links;
-}
-
-/**
- * Type 2: Extract plain URLs with protocol (http:// or https://)
- */
-function extractPlainUrls(text: string): string[] {
-  const links: string[] = [];
-  const regex = /https?:\/\/[^\s<>"{}|\\^`\[\]()]+/g;
-
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    links.push(match[0]);
-  }
-
-  return links;
-}
-
-/**
- * Type 3: Extract plain domains (www.example.com or example.com)
- */
-function extractPlainDomains(text: string): string[] {
-  const domains: string[] = [];
-
-  // Match domain patterns but exclude if preceded by protocol
-  // Handles: www.example.com, example.com, example.com/path
-  const regex = /(?<!https?:\/\/)(?<!https?:\/\/www\.)(?:www\.)?([a-z0-9][-a-z0-9]*\.)+[a-z]{2,}(?:\/[^\s)]*)?/gi;
-
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    const domain = match[0];
-
-    // Filter out common false positives
-    if (!domain.endsWith('.md') &&
-        !domain.endsWith('.js') &&
-        !domain.endsWith('.ts') &&
-        !domain.endsWith('.json')) {
-      domains.push(domain);
-    }
-  }
-
-  return domains;
-}
-
-/**
- * Type 4: Resolve citation references [1], [8], [9] to citations array
+ * Resolve citation references [1], [8], [9] to citations array
  * Example: "text[1][8][9]" → citations[0], citations[7], citations[8]
  */
 function resolveCitationReferences(context: string, citations: string[]): string[] {
@@ -374,7 +297,8 @@ function extractContextWindowsForEntity(
 
 /**
  * Find all links near entity mentions in content (±2 sentences)
- * Supports 4 link types: markdown, plain URLs, plain domains, citation references
+ * Uses proven extraction function from link-extraction.ts
+ * Note: This is Strategy 3 in the priority order (after annotations and sentence-start links)
  */
 function findLinksNearEntityInContent(
   content: string,
@@ -383,81 +307,103 @@ function findLinksNearEntityInContent(
 ): string[] {
   const sources: string[] = [];
 
-  // Extract context windows around entity mentions
-  const contexts = extractContextWindowsForEntity(content, entityValue, 2);
+  // Split into sentences to find entity's exact sentence
+  const sentences = splitIntoSentences(content);
+  const normalizedEntity = entityValue.toLowerCase();
 
-  if (contexts.length === 0) {
-    return sources;
-  }
-
-  // Extract all 4 link types from each context and filter by distance
-  for (const context of contexts) {
-    // Type 1: Markdown links
-    const markdownLinks = extractMarkdownLinks(context);
-    for (const link of markdownLinks) {
-      const distanceCheck = isLinkWithinDistanceLimits(context, entityValue, link);
-      if (distanceCheck.withinLimits) {
-        sources.push(link);
-      } else {
-        logger.warn(
-          `Skipped source "${link}" for entity "${entityValue}" - ` +
-          `distance: ${distanceCheck.minSentences} sentences, ${distanceCheck.minWords} words ` +
-          `(limits: ${SOURCE_DETECTION_MAX_SENTENCES_FROM_SOURCE} sentences, ${SOURCE_DETECTION_MAX_WORDS_FROM_SOURCE} words)`
-        );
-      }
+  // Find all sentences containing the entity
+  for (const sentence of sentences) {
+    if (!sentence.toLowerCase().includes(normalizedEntity)) {
+      continue; // Skip sentences without entity
     }
 
-    // Type 2: Plain URLs
-    const plainUrls = extractPlainUrls(context);
-    for (const link of plainUrls) {
-      const distanceCheck = isLinkWithinDistanceLimits(context, entityValue, link);
-      if (distanceCheck.withinLimits) {
-        sources.push(link);
-      } else {
-        logger.warn(
-          `Skipped source "${link}" for entity "${entityValue}" - ` +
-          `distance: ${distanceCheck.minSentences} sentences, ${distanceCheck.minWords} words ` +
-          `(limits: ${SOURCE_DETECTION_MAX_SENTENCES_FROM_SOURCE} sentences, ${SOURCE_DETECTION_MAX_WORDS_FROM_SOURCE} words)`
-        );
-      }
-    }
-
-    // Type 3: Plain domains
-    const plainDomains = extractPlainDomains(context);
-    for (const link of plainDomains) {
-      const distanceCheck = isLinkWithinDistanceLimits(context, entityValue, link);
-      if (distanceCheck.withinLimits) {
-        sources.push(link);
-      } else {
-        logger.warn(
-          `Skipped source "${link}" for entity "${entityValue}" - ` +
-          `distance: ${distanceCheck.minSentences} sentences, ${distanceCheck.minWords} words ` +
-          `(limits: ${SOURCE_DETECTION_MAX_SENTENCES_FROM_SOURCE} sentences, ${SOURCE_DETECTION_MAX_WORDS_FROM_SOURCE} words)`
-        );
-      }
-    }
-
-    // Type 4: Citation references - check distance to marker [N], not resolved URL
+    // Extract citation markers ONLY from this sentence
     const citationRegex = /\[(\d+)\]/g;
     let match;
-    while ((match = citationRegex.exec(context)) !== null) {
-      const marker = match[0]; // e.g., "[1]"
+    while ((match = citationRegex.exec(sentence)) !== null) {
+      const citationMarker = match[0]; // e.g., "[9]"
       const citationNumber = parseInt(match[1], 10);
       const citationIndex = citationNumber - 1;
+
+      // Check distance within THIS sentence only using defined constants
+      const distanceCheck = isLinkWithinDistanceLimits(sentence, entityValue, citationMarker);
+
+      // Use constants: SOURCE_DETECTION_MAX_SENTENCES_FROM_SOURCE and SOURCE_DETECTION_MAX_WORDS_FROM_SOURCE
+      if (!distanceCheck.withinLimits) {
+        continue; // Skip citations too far from entity
+      }
 
       if (citationIndex >= 0 && citationIndex < citations.length) {
         const citationUrl = citations[citationIndex];
         if (citationUrl) {
-          const distanceCheck = isLinkWithinDistanceLimits(context, entityValue, marker);
-          if (distanceCheck.withinLimits) {
-            sources.push(citationUrl);
-          } else {
-            logger.warn(
-              `Skipped citation ${marker} (${citationUrl}) for entity "${entityValue}" - ` +
-              `distance: ${distanceCheck.minSentences} sentences, ${distanceCheck.minWords} words ` +
-              `(limits: ${SOURCE_DETECTION_MAX_SENTENCES_FROM_SOURCE} sentences, ${SOURCE_DETECTION_MAX_WORDS_FROM_SOURCE} words)`
-            );
+          const cleaned = cleanUrl(citationUrl);
+          if (cleaned) {
+            sources.push(cleaned);
           }
+        }
+      }
+    }
+
+    // Also detect markdown link syntax: [Entity Name](url)
+    // Handles Claude/AI answers without citations/annotations arrays
+    const escapedEntity = entityValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const markdownLinkRegex = new RegExp(`\\[${escapedEntity}\\]\\(([^)]+)\\)`, 'gi');
+    let mdMatch;
+    while ((mdMatch = markdownLinkRegex.exec(sentence)) !== null) {
+      const mdUrl = mdMatch[1].trim();
+      if (mdUrl && mdUrl.startsWith('http')) {
+        const cleaned = cleanUrl(mdUrl);
+        if (cleaned) {
+          sources.push(cleaned);
+        }
+      }
+    }
+
+    // Also detect ANY markdown links near entity (e.g., source references)
+    // Pattern: Entity text (source: [Source Name](url))
+    const anyMarkdownLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    let anyMdMatch;
+    while ((anyMdMatch = anyMarkdownLinkRegex.exec(sentence)) !== null) {
+      const linkText = anyMdMatch[1];
+      const mdUrl = anyMdMatch[2].trim();
+
+      // Skip if this is the entity-name link (already handled above)
+      if (linkText.toLowerCase() === entityValue.toLowerCase()) {
+        continue;
+      }
+
+      // Check distance from entity to this markdown link
+      const distanceCheck = isLinkWithinDistanceLimits(sentence, entityValue, anyMdMatch[0]);
+      if (!distanceCheck.withinLimits) {
+        continue;
+      }
+
+      if (mdUrl && mdUrl.startsWith('http')) {
+        const cleaned = cleanUrl(mdUrl);
+        if (cleaned) {
+          sources.push(cleaned);
+        }
+      }
+    }
+
+    // Also detect PLAIN URLs near entity (not markdown formatted)
+    // Pattern: Entity text https://example.com or http://example.com
+    // Exclude ] and [ to prevent matching through markdown syntax like ](
+    const plainUrlRegex = /(https?:\/\/[^\s\)\[\]]+)/g;
+    let plainMatch;
+    while ((plainMatch = plainUrlRegex.exec(sentence)) !== null) {
+      const plainUrl = plainMatch[1].trim();
+
+      // Check distance from entity to this plain URL
+      const distanceCheck = isLinkWithinDistanceLimits(sentence, entityValue, plainMatch[0]);
+      if (!distanceCheck.withinLimits) {
+        continue;
+      }
+
+      if (plainUrl && plainUrl.startsWith('http')) {
+        const cleaned = cleanUrl(plainUrl);
+        if (cleaned) {
+          sources.push(cleaned);
         }
       }
     }
@@ -467,7 +413,95 @@ function findLinksNearEntityInContent(
 }
 
 // ============================================================================
-// STRATEGY 2: ANNOTATIONS SEARCH
+// STRATEGY 2: SENTENCE-START LINKS
+// ============================================================================
+
+/**
+ * Find links at the beginning of sentences or paragraphs near entity mentions
+ * Pattern: "www.example.com - information about entity"
+ * Priority: Check 2 sentences forward, then backward to paragraph start
+ */
+function findLinksAtSentenceStart(
+  content: string,
+  entityValue: string,
+  citations: string[]
+): string[] {
+  const sources: string[] = [];
+  const sentences = splitIntoSentences(content);
+
+  if (sentences.length === 0) return sources;
+
+  const normalizedEntity = entityValue.toLowerCase();
+
+  // Find all sentences containing entity
+  const matchingIndices: number[] = [];
+  sentences.forEach((sentence, index) => {
+    if (sentence.toLowerCase().includes(normalizedEntity)) {
+      matchingIndices.push(index);
+    }
+  });
+
+  if (matchingIndices.length === 0) return sources;
+
+  const foundUrls = new Set<string>(); // Avoid duplicates
+
+  for (const matchIndex of matchingIndices) {
+    // Strategy 2a: Scan 2 sentences FORWARD for sentence-start links
+    const forwardEnd = Math.min(sentences.length - 1, matchIndex + 2);
+
+    for (let i = matchIndex; i <= forwardEnd; i++) {
+      const sentence = sentences[i].trim();
+
+      // Check if sentence starts with a link (allow whitespace)
+      const startsWithUrl = /^\s*(https?:\/\/|www\.|[a-z0-9][-a-z0-9]*\.[a-z]{2,})/i.test(sentence);
+
+      if (startsWithUrl) {
+        // Extract all link types using proven extraction function
+        const links = extractLinksFromContent(sentence);
+
+        for (const link of links) {
+          if (!foundUrls.has(link)) {
+            foundUrls.add(link);
+            sources.push(link);
+            break; // Take first link only
+          }
+        }
+        if (sources.length > 0) break; // Stop forward scan after first link
+      }
+    }
+
+    // Strategy 2b: Scan BACKWARD to paragraph start for sentence-start links
+    // (only if we haven't found links forward)
+    if (sources.length === 0) {
+      for (let i = matchIndex - 1; i >= 0; i--) {
+        const sentence = sentences[i].trim();
+
+        // Stop at likely paragraph boundary (empty or very short)
+        if (sentence.length < 10) break;
+
+        const startsWithUrl = /^\s*(https?:\/\/|www\.|[a-z0-9][-a-z0-9]*\.[a-z]{2,})/i.test(sentence);
+
+        if (startsWithUrl) {
+          // Extract all link types using proven extraction function
+          const links = extractLinksFromContent(sentence);
+
+          for (const link of links) {
+            if (!foundUrls.has(link)) {
+              foundUrls.add(link);
+              sources.push(link);
+            }
+          }
+          break; // Only take the first paragraph-start link found
+        }
+      }
+    }
+  }
+
+  return sources;
+}
+
+// ============================================================================
+// STRATEGY 3: ANNOTATIONS SEARCH
 // ============================================================================
 
 /**
@@ -495,13 +529,15 @@ function findLinksInAnnotations(
 
     // Field 1: Check title
     if (citation.title && citation.title.toLowerCase().includes(normalizedEntity)) {
-      sources.push(citation.url);
+      const cleaned = cleanUrl(citation.url);
+      if (cleaned) sources.push(cleaned);
       found = true;
     }
 
     // Field 2: Check content (OpenAI provides this with snippets)
     if (!found && citation.content && citation.content.toLowerCase().includes(normalizedEntity)) {
-      sources.push(citation.url);
+      const cleaned = cleanUrl(citation.url);
+      if (cleaned) sources.push(cleaned);
       found = true;
     }
 
@@ -517,7 +553,8 @@ function findLinksInAnnotations(
 
       for (const variation of urlVariations) {
         if (urlDecoded.includes(variation)) {
-          sources.push(citation.url);
+          const cleaned = cleanUrl(citation.url);
+          if (cleaned) sources.push(cleaned);
           break;
         }
       }
@@ -528,7 +565,7 @@ function findLinksInAnnotations(
 }
 
 // ============================================================================
-// STRATEGY 3: CITATIONS DIRECT SEARCH
+// STRATEGY 4: CITATIONS DIRECT SEARCH
 // ============================================================================
 
 /**
@@ -559,10 +596,12 @@ function findLinksInCitations(
 
     for (const variation of variations) {
       if (urlDecoded.includes(variation)) {
-        sources.push(citationUrl);
+        const cleaned = cleanUrl(citationUrl);
+        if (cleaned) sources.push(cleaned);
         break;
       }
     }
+    if (sources.length > 0) break; // Stop after first citation found
   }
 
   return sources;
@@ -699,22 +738,44 @@ export async function enrichGetSourceLinksForEntities(
               const annotations = choice.message?.annotations || [];
               const citations = answer.citations || [];
 
-              // Strategy 1: Content proximity (4 link types)
-              const contentLinks = findLinksNearEntityInContent(content, item.value, citations);
-              for (const url of contentLinks) {
-                allSources.push({ url, bots: answerFile.bots });
-              }
+              // Primary strategies (always run together): Annotations + Citation markers
+              // Fallback strategies (only if primary found nothing): Sentence-start + Citations direct
+              let foundInThisAnswer = false;
 
-              // Strategy 2: Annotations (title + content + url)
+              // Strategy 1: Annotations (title + content + url)
               const annotationLinks = findLinksInAnnotations(item.value, annotations);
               for (const url of annotationLinks) {
                 allSources.push({ url, bots: answerFile.bots });
               }
 
-              // Strategy 3: Citations direct
-              const citationLinks = findLinksInCitations(item.value, citations);
-              for (const url of citationLinks) {
+              // Strategy 3: Content proximity (citation markers)
+              const contentLinks = findLinksNearEntityInContent(content, item.value, citations);
+              for (const url of contentLinks) {
                 allSources.push({ url, bots: answerFile.bots });
+              }
+
+              // Mark as found if either Strategy 1 or 3 found anything
+              if (annotationLinks.length > 0 || contentLinks.length > 0) {
+                foundInThisAnswer = true;
+              }
+
+              // Strategy 2: Sentence-start links (fallback only)
+              if (!foundInThisAnswer) {
+                const sentenceStartLinks = findLinksAtSentenceStart(content, item.value, citations);
+                if (sentenceStartLinks.length > 0) {
+                  for (const url of sentenceStartLinks) {
+                    allSources.push({ url, bots: answerFile.bots });
+                  }
+                  foundInThisAnswer = true;
+                }
+              }
+
+              // Strategy 4: Citations direct (last resort)
+              if (!foundInThisAnswer) {
+                const citationLinks = findLinksInCitations(item.value, citations);
+                for (const url of citationLinks) {
+                  allSources.push({ url, bots: answerFile.bots });
+                }
               }
 
             } catch (error) {

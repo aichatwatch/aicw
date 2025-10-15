@@ -358,10 +358,9 @@ export const APP_ACTIONS: AppAction[] = [
     category: 'project',
     requiresProject: true,
   },
-
   {
-    id: 'enrich-generate-links-for-entities-ai',
-    cmd: 'actions/enrich-generate-links-for-entities-ai',
+    id: 'enrich-generate-links-for-entities',
+    cmd: 'actions/enrich-generate-links-for-entities',
     name: 'Find Entity URLs',
     desc: 'Finding website URLs for entities',
     pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
@@ -369,6 +368,18 @@ export const APP_ACTIONS: AppAction[] = [
     requiresProject: true,
   },
 
+/*
+  {
+    id: 'enrich-generate-links-for-entities-ai',
+    cmd: 'actions/enrich-generate-links-for-entities-ai',
+    name: 'Find Entity URLs using AI',
+    desc: 'Finding website URLs for entities using AI',
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
+    category: 'project',
+    requiresProject: true,
+  },
+*/
+/* // excluding generating similar terms for entities as it is not useful and takes too long to process
   {
     id: 'enrich-generate-similar-for-entities-ai',
     cmd: 'actions/enrich-generate-similar-for-entities-ai',
@@ -378,6 +389,7 @@ export const APP_ACTIONS: AppAction[] = [
     category: 'project',
     requiresProject: true,
   },
+*/
 
 /*
 // excluded from all pipelines, takes too long to process and generally not useful
