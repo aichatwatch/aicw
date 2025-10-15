@@ -67,9 +67,11 @@ export interface PipelineDefinition {
   /** Optional: CLI command that triggers this pipeline */
   cliCommand?: string;
   /* optional: next step pipeline to run after this action */
-  nextPipeline?: string;  
+  nextPipeline?: string;
   /** Optional: whether the pipeline requires full configuration */
   requiresApiKeys?: boolean;
+  /** Optional: pipeline type (e.g., "advanced") - advanced pipelines shown only with --advanced flag */
+  type?: string;
 }
 
 // ============================================================================
@@ -155,6 +157,16 @@ export const APP_ACTIONS: AppAction[] = [
   },
 
   {
+    id: 'transform-answers-to-md',
+    cmd: 'actions/transform-answers-to-md',
+    name: 'Transform Answers to Markdown',
+    desc: 'Transform answer.json files to enhanced answer.md with full citations',
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
+    category: 'project',
+    requiresProject: true,
+  },
+
+  {
     id: 'extract-entities-prepare-prompt',
     cmd: 'actions/extract-entities-prepare-prompt',
     name: 'Extract entities: prepare prompts',
@@ -169,6 +181,16 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/extract-entities-ai',
     name: 'Extract Entities: extract entities',
     desc: 'Extract entities: extract entities',
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
+    category: 'project',
+    requiresProject: true,
+  },
+
+  {
+    id: 'enrich-get-source-links-for-entities',
+    cmd: 'actions/enrich-get-source-links-for-entities',
+    name: 'Get Source Links for Entities',
+    desc: 'Extracting source links from citations for entities',
     pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
     category: 'project',
     requiresProject: true,
@@ -336,10 +358,9 @@ export const APP_ACTIONS: AppAction[] = [
     category: 'project',
     requiresProject: true,
   },
-
   {
-    id: 'enrich-generate-links-for-entities-ai',
-    cmd: 'actions/enrich-generate-links-for-entities-ai',
+    id: 'enrich-generate-links-for-entities',
+    cmd: 'actions/enrich-generate-links-for-entities',
     name: 'Find Entity URLs',
     desc: 'Finding website URLs for entities',
     pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
@@ -347,6 +368,18 @@ export const APP_ACTIONS: AppAction[] = [
     requiresProject: true,
   },
 
+/*
+  {
+    id: 'enrich-generate-links-for-entities-ai',
+    cmd: 'actions/enrich-generate-links-for-entities-ai',
+    name: 'Find Entity URLs using AI',
+    desc: 'Finding website URLs for entities using AI',
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
+    category: 'project',
+    requiresProject: true,
+  },
+*/
+/* // excluding generating similar terms for entities as it is not useful and takes too long to process
   {
     id: 'enrich-generate-similar-for-entities-ai',
     cmd: 'actions/enrich-generate-similar-for-entities-ai',
@@ -356,6 +389,7 @@ export const APP_ACTIONS: AppAction[] = [
     category: 'project',
     requiresProject: true,
   },
+*/
 
 /*
 // excluded from all pipelines, takes too long to process and generally not useful
@@ -514,10 +548,20 @@ export const PROJECT_PIPELINES: PipelineDefinition[] = [
     id: 'pipeline-project-rebuild-report-only',
     name: 'Project: generate report (only)',
     description: 'create html report from existing data, no recalc',
-    
+
     category: 'project',
     actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-project-rebuild-report-only')),
     requiresApiKeys: true
+  },
+
+  {
+    id: 'pipeline-project-transform-answers',
+    name: 'Advanced: regenerate answer.md from answer.json',
+    description: 'transform answer.json to enhanced answer.md with full citations',
+    category: 'project',
+    actions: APP_ACTIONS.filter(a => a.id === 'transform-answers-to-md'),
+    requiresApiKeys: false,
+    type: 'advanced'
   },
 ];
 
@@ -656,17 +700,26 @@ export interface CliMenuItem {
   category: string;
   requiresProject?: boolean;
   nextPipeline?: string;
+  type?: string;
 }
 
 
 /**
  * Get all CLI menu items (pipelines + standalone actions) organized by category
+ * @param showAdvanced - Include advanced pipelines (default: false)
  */
-export function getCliMenuItems(): CliMenuItem[] {
+export function getCliMenuItems(showAdvanced: boolean = false): CliMenuItem[] {
   const items: CliMenuItem[] = [];
 
   // Add invokable pipelines
-  const pipelines = ALL_PIPELINES; // all pipelines can be invoked from CLI
+  const pipelines = ALL_PIPELINES.filter(p => {
+    // Filter out advanced pipelines unless showAdvanced is true
+    if (p.type === 'advanced' && !showAdvanced) {
+      return false;
+    }
+    return true;
+  });
+
   for (const pipeline of pipelines) {
     items.push({
       id: pipeline.id,
@@ -676,6 +729,7 @@ export function getCliMenuItems(): CliMenuItem[] {
       category: pipeline.category,
       requiresProject: true, // Pipelines always require project
       nextPipeline: pipeline.nextPipeline,
+      type: pipeline.type,
     });
   }
 

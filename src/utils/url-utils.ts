@@ -20,11 +20,12 @@ export function cleanUrl(url: string): string {
 
     // Remove trailing punctuation from markdown syntax or sentence endings
     // This handles cases like url), url)., url),, etc. from markdown links [text](url)
+    // Includes markdown characters: * (bold/italic), [ ] (links), _ (italic)
     // These characters are very rarely intentional URL endings
     let prevLength = 0;
     while (prevLength !== cleaned.length) {
       prevLength = cleaned.length;
-      cleaned = cleaned.replace(/[),.:;!?]$/, '');
+      cleaned = cleaned.replace(/[),.:;!?*\[\]_]$/, '');
     }
 
     // Remove protocol (http:// or https://)
@@ -35,6 +36,11 @@ export function cleanUrl(url: string): string {
 
     // Remove trailing slashes (one or more)
     cleaned = cleaned.replace(/\/+$/, '');
+
+    // Remove trailing punctuation AGAIN after slash removal
+    // This handles cases like "url)/" → after slash removal → "url)" → "url"
+    // Includes markdown characters: * (bold/italic), [ ] (links), _ (italic)
+    cleaned = cleaned.replace(/[),.:;!?*\[\]_]+$/, '');
 
     return cleaned;
   } catch (e) {

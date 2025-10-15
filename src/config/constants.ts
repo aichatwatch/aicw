@@ -1,5 +1,7 @@
 export const AGGREGATED_DIR_NAME = '_all-questions-combined';
 export const AICW_GITHUB_URL = 'https://github.com/aichatwatch/aicw';
+export const CITATION_HEADER = '# CITATIONS';
+export const CITATION_ITEM_FORMAT_WITH_URL = '{{INDEX}}. [{{TITLE}}]({{URL}})';
 
 /**
  * When true, configs are used directly from the package instead of being copied to user data folder.

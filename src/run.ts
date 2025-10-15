@@ -209,7 +209,7 @@ async function checkApiKeysArePresent(): Promise<boolean> {
 
 }
 
-async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuState> {
+async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boolean = false): Promise<MenuState> {
   if (showHeader) {
     printHeader();
   }
@@ -221,20 +221,31 @@ async function showInteractiveMenu(showHeader: boolean = true): Promise<MenuStat
   }
 
   // Get all CLI menu items dynamically
-  const allMenuItems = getCliMenuItems();
+  const allMenuItems = getCliMenuItems(showAdvanced);
 
-  // Organize items by type
-  const pipelines = allMenuItems;
+  // Separate normal and advanced pipelines
+  const normalPipelines = allMenuItems.filter(p => p.type !== 'advanced');
+  const advancedPipelines = allMenuItems.filter(p => p.type === 'advanced');
 
   // Build menu items map (choice number -> menu item)
   const menuMap = new Map<string, CliMenuItem>();
   let choiceNum = 1;
 
-  // Display Pipelines
-  if (pipelines.length > 0) {
+  // Display Normal Pipelines
+  if (normalPipelines.length > 0) {
     output.writeLine('\n' + colorize('➡ Pipelines:', 'yellow'));
-    for (const pipeline of pipelines) {
+    for (const pipeline of normalPipelines) {
       const numStr = String(choiceNum++);
+      menuMap.set(numStr, pipeline);
+      output.writeLine(`${numStr}) ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
+    }
+  }
+
+  // Display Advanced Pipelines with 999 prefix
+  if (advancedPipelines.length > 0 && showAdvanced) {
+    output.writeLine('\n' + colorize('🔧 ADVANCED PIPELINES:', 'yellow'));
+    for (const pipeline of advancedPipelines) {
+      const numStr = String(1000+choiceNum++);
       menuMap.set(numStr, pipeline);
       output.writeLine(`${numStr}) ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
     }
@@ -385,16 +396,16 @@ async function executePipelineForMenuItem(pipelineId: string, project?: string):
 }
 
 // Main menu loop - runs continuously until user chooses to exit
-async function runMenuLoop(): Promise<void> {
+async function runMenuLoop(showAdvanced: boolean = false): Promise<void> {
   let currentState = MenuState.MAIN;
   let isFirstRun = true;
-  
+
   while (currentState !== MenuState.EXIT) {
     try {
       switch (currentState) {
         case MenuState.MAIN:
         case MenuState.CONTINUE:
-          currentState = await showInteractiveMenu(isFirstRun);
+          currentState = await showInteractiveMenu(isFirstRun, showAdvanced);
           isFirstRun = false;
           break;
         default:
@@ -409,7 +420,7 @@ async function runMenuLoop(): Promise<void> {
       isFirstRun = false; // Don't show header after errors
     }
   }
-  
+
   process.exit(0);
 }
 
@@ -432,12 +443,15 @@ async function main(): Promise<void> {
     }
   });
 
-  const [command, projectArg, ...args]: string[] = process.argv.slice(2);
+  const allArgs = process.argv.slice(2);
+  const showAdvanced = allArgs.includes('--advanced');
+
+  const [command, projectArg, ...args]: string[] = allArgs;
   let project = projectArg;
 
-  // Show interactive menu if no command
-  if (!command) {
-    await runMenuLoop();
+  // Show interactive menu if no command or --advanced flag only
+  if (!command || command === '--advanced') {
+    await runMenuLoop(showAdvanced);
     return;
   }
   

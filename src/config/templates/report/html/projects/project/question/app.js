@@ -201,13 +201,15 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         type: 'table-with-items',
         sourceArrayName: 'events',
         columns: [
-            { type: 'value', caption: 'Event' },
-            { type: 'link', caption: 'Link' },
             { type: 'marked', caption: '✔️' },
+            { type: 'value', caption: 'Event' },
+            { type: 'sources', caption: 'Sources' },
+            //{ type: 'link', caption: 'Link' },
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'modelNames', caption: 'AI Models' }
+            { type: 'modelNames', caption: 'AI Models' },
+
 
         ],
         hasSearchFilter: true,
@@ -250,11 +252,13 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         columns: [
             { type: 'marked', caption: '✔️' },
             { type: 'value', caption: 'Keyword' },
+            { type: 'sources', caption: 'Sources' },
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'similar', caption: 'Similar', subType2: 'commaSeparated' },            
-            { type: 'modelNames', caption: 'AI Models' }
+            //{ type: 'similar', caption: 'Similar', subType2: 'commaSeparated' },
+            { type: 'modelNames', caption: 'AI Models' },
+
 
         ],
 
@@ -296,11 +300,13 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         columns: [
             { type: 'marked', caption: '✔️' },
             { type: 'value', caption: 'Organization' },
-            { type: 'link', caption: 'Link' },            
+            //{ type: 'link', caption: 'Link' },
+            { type: 'sources', caption: 'Sources' },
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
             { type: 'modelNames', caption: 'AI Models' }
+            
 
         ],
         hasSearchFilter: true,
@@ -341,12 +347,14 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         sourceArrayName: 'persons',
         columns: [
             { type: 'marked', caption: '✔️' },
+            { type: 'value', caption: 'Person' },
+            //{ type: 'link', caption: 'Link' },
+            { type: 'sources', caption: 'Sources' },
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'value', caption: 'Person' },
-            { type: 'link', caption: 'Link' },
-            { type: 'modelNames', caption: 'AI Models' }
+            { type: 'modelNames', caption: 'AI Models' },
+            
 
         ],
         hasSearchFilter: true,
@@ -390,11 +398,12 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         columns: [
             { type: 'marked', caption: '✔️' },
             { type: 'value', caption: 'Place' },
-            { type: 'link', caption: 'Link' },            
+            //{ type: 'link', caption: 'Link' },
+            { type: 'sources', caption: 'Sources' },
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'modelNames', caption: 'AI Models' }
+            { type: 'modelNames', caption: 'AI Models' },
 
         ],
         hasSearchFilter: true,
@@ -438,7 +447,8 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         columns: [
             { type: 'marked', caption: '✔️' },
             { type: 'value', caption: 'Product' },
-            { type: 'link', caption: 'Link' },            
+            //{ type: 'link', caption: 'Link' },
+            { type: 'sources', caption: 'Sources' },
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
@@ -485,7 +495,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         columns: [
             { type: 'marked', caption: '✔️' },
             { type: 'link', caption: 'Link' },
-            { type: 'linkType', caption: 'Type' },            
+            { type: 'linkType', caption: 'Type' },
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
@@ -7756,6 +7766,10 @@ document.addEventListener('DOMContentLoaded', function () {
                                 this.addValueCell(containerId, row, el, column);
                                 columnCount++;
                                 break;
+                            case 'sources':
+                                this.addSourcesCell(containerId, row, el, selectedAIEngine);
+                                columnCount++;
+                                break;
 
                             default:
                                 throw new Error(`unknown column type: ${column.type}`);
@@ -7928,6 +7942,131 @@ document.addEventListener('DOMContentLoaded', function () {
                 cell.setAttribute('data-value', uniqueCount);
             },
 
+            // Helper function to extract domain from URL
+            // Uses proven logic from url-utils.ts
+            extractDomainFromUrl(url) {
+                if (!url) return '';
+
+                // Decode URL to handle special characters
+                try {
+                    url = decodeURIComponent(url);
+                } catch (e) {
+                    // If decoding fails, use original
+                }
+
+                try {
+                    // Try URL object parser first (most accurate)
+                    const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
+                    return urlObj.hostname.toLowerCase().replace(/^www\./, '');
+                } catch {
+                    // Fallback to string-based parsing with comprehensive edge case handling
+                    return url
+                        .toLowerCase()
+                        .split('?')[0]
+                        .split('/')[0]
+                        .split('#')[0]
+                        .split('@')[0]
+                        .split(':')[0]
+                        .split(';')[0]
+                        .split('=')[0]
+                        .replace(/^https?:\/\//, '')
+                        .replace(/^www\./, '')
+                        .replace(/\/+$/, '');
+                }
+            },
+
+            // Helper function to generate Google Favicon API URL
+            getFaviconUrlForDomain(url) {
+                const domain = this.extractDomainFromUrl(url);
+                return `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+            },
+
+            // Helper function to filter sources by selected AI models
+            getFilteredSourcesByBots(sources, selectedEngine) {
+                if (!sources || sources.length === 0) return [];
+
+                // If "All models" is selected or no filter, show all sources
+                if (!selectedEngine || selectedEngine === this.ALL_MODELS_OPTION_CAPTION) {
+                    return sources;
+                }
+
+                // Filter: keep source if selected bot cited it
+                return sources.filter(source => {
+                    const sourceBots = source.bots.split(',');
+                    return sourceBots.includes(selectedEngine);
+                });
+            },
+
+            addSourcesCell(parentContainerId, row, el, selectedEngine) {
+                const sourcesCell = row.insertCell();
+                sourcesCell.setAttribute('data-column', 'sources');
+                sourcesCell.className = 'px-4 py-2 whitespace-nowrap report-table__cell';
+
+                // Get sources filtered by selected AI model
+                const filteredSources = this.getFilteredSourcesByBots(el.sources || [], selectedEngine);
+
+                if (filteredSources.length === 0) {
+                    sourcesCell.innerHTML = '<span class="text-gray-400 dark:text-gray-600">—</span>';
+                    sourcesCell.setAttribute('data-value', 0);
+                    return;
+                }
+
+                const MAX_VISIBLE_SOURCES = 3;
+
+                // Build HTML for count + favicon icons
+                let cellHtml = '<div class="flex items-center gap-2">';
+
+                // Count
+                cellHtml += `<span class="font-semibold text-gray-700 dark:text-gray-300">${filteredSources.length}</span>`;
+
+                // Icons container
+                cellHtml += '<div class="inline-flex flex-wrap gap-1 items-center">';
+
+                filteredSources.forEach((source, index) => {
+                    // Inject expand button at 4th position (index 3)
+                    if (index === MAX_VISIBLE_SOURCES) {
+                        const remaining = filteredSources.length - MAX_VISIBLE_SOURCES;
+                        cellHtml += `
+                            <button type="button"
+                                    class="text-sm text-blue-600 dark:text-blue-400 font-semibold hover:underline px-1"
+                                    onclick="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"
+                                    title="Show ${remaining} more sources">
+                                [+${remaining}]
+                            </button>
+                            <div style="display:none;" class="inline-flex flex-wrap gap-1">
+                        `;
+                    }
+
+                    const faviconUrl = this.getFaviconUrlForDomain(source.url);
+                    const fullUrl = source.url.startsWith('http') ? source.url : `https://${source.url}`;
+
+                    cellHtml += `
+                        <a href="${fullUrl}"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           title="${source.url}"
+                           class="inline-block hover:opacity-70 transition-opacity">
+                            <img src="${faviconUrl}"
+                                 width="16"
+                                 height="16"
+                                 alt="${this.extractDomainFromUrl(source.url)}"
+                                 class="inline-block"
+                                 onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22><rect width=%2216%22 height=%2216%22 fill=%22%23ddd%22/><text x=%228%22 y=%2212%22 font-size=%2210%22 text-anchor=%22middle%22 fill=%22%23666%22>?</text></svg>';" />
+                        </a>
+                    `;
+                });
+
+                // Close hidden div if opened
+                if (filteredSources.length > MAX_VISIBLE_SOURCES) {
+                    cellHtml += '</div>';
+                }
+
+                cellHtml += '</div></div>';
+
+                sourcesCell.innerHTML = cellHtml;
+                sourcesCell.setAttribute('data-value', filteredSources.length);
+            },
+
             addLinkCell(row, el) {
                 const linkCell = row.insertCell();
                 linkCell.setAttribute('data-column', 'link');
@@ -7947,10 +8086,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Check if excerpts are available
                 const hasExcerpts = el.excerptsByModel && Object.keys(el.excerptsByModel).some(modelId => el.excerptsByModel[modelId] && el.excerptsByModel[modelId].length > 0);
 
+                const domain = this.extractDomainFromUrl(el.link);
+                const faviconUrl = FAVICON_32_TEMPLATE.replace('{{DOMAIN}}', domain);
+
                 if (hasExcerpts) {
                     // Create a container for link and preview button
                     linkCell.innerHTML = `
                         <div class="flex items-center gap-2">
+                            <img src="${faviconUrl}"
+                                 width="16"
+                                 height="16"
+                                 alt="${domain}"
+                                 class="inline-block"
+                                 onerror="this.style.display='none';" />
                             <a href="${this.makeClickableUrl(el.link)}"
                                target="_blank"
                                rel="noopener noreferrer"
@@ -7968,15 +8116,22 @@ document.addEventListener('DOMContentLoaded', function () {
                     `;
                 } else {
                     // Original implementation without preview button
-                    const linkElement = document.createElement('a');
-                    const formattedLink = this.cleanAndMinimizeUrl(this.makeClickableUrl(el.link));
-                    linkElement.href = this.makeClickableUrl(el.link);
-                    linkElement.textContent = this.truncateString(formattedLink) + contentSuffix;
-                    linkElement.target = '_blank';
-                    linkElement.rel = 'noopener noreferrer';
-                    linkElement.className = 'text-blue-600 hover:text-blue-800 hover:underline block truncate';
-
-                    linkCell.appendChild(linkElement);
+                    linkCell.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <img src="${faviconUrl}"
+                                 width="16"
+                                 height="16"
+                                 alt="${domain}"
+                                 class="inline-block"
+                                 onerror="this.style.display='none';" />
+                            <a href="${this.makeClickableUrl(el.link)}"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline truncate">
+                                ${this.truncateString(this.cleanAndMinimizeUrl(this.makeClickableUrl(el.link)))}${contentSuffix}
+                            </a>
+                        </div>
+                    `;
                 }
             },
 
@@ -8043,10 +8198,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (this.checkIfStringIsUrl(val)) {
                     valueCell.innerHTML = `
-                    <a class="px-4 py-2 whitespace-nowrap min-w-0 block truncate selectable-text" 
-                    href="${val}" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                    <a class="px-4 py-2 whitespace-nowrap min-w-0 block truncate selectable-text"
+                    href="${this.makeClickableUrl(val)}"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     v-select-text
                     ${aggregateTooltip}
                     >${val}</a>`;
@@ -8068,14 +8223,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // Check if this field is AI-generated
                     const isAIGenerated = el.sources && el.sources[column.type] === "AI";
-                    const contentSuffix = isAIGenerated ? "<small>✨</small>" : "";                    
+                    const contentSuffix = isAIGenerated ? "<small>✨</small>" : "";
                     const addPreviewExcerpt = hasExcerpts && (COLUMNS_WITH_PREVIEW_EXCERPT.includes(column.type));
+
+                    // Conditionally make value clickable if .link exists
+                    const renderValue = (column.type === 'value' && el.link && el.link.trim())
+                        ? (v) => {
+                            const domain = this.extractDomainFromUrl(el.link);
+                            const faviconUrl = FAVICON_32_TEMPLATE.replace('{{DOMAIN}}', domain);
+                            const linkUrl = this.makeClickableUrl(el.link);
+
+                            return `
+                                <a href="${linkUrl}"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="text-blue-600 hover:underline dark:text-blue-400 inline-flex items-center gap-1"
+                                   title="${el.link}">
+                                    <img src="${faviconUrl}"
+                                         width="16"
+                                         height="16"
+                                         alt="${domain}"
+                                         class="inline-block"
+                                         onerror="this.style.display='none';" />
+                                    <span class="selectable-text" v-select-text>${v}</span>
+                                </a>
+                            `.trim();
+                        }
+                        : (v) => `<span class="selectable-text" v-select-text>${v}</span>`;
 
                     valueCell.innerHTML = `
                     <div class="flex items-center gap-2 px-4 py-2" ${aggregateTooltip}>
                         ${sValues.map(v => `
                             <span class="inline-flex items-center gap-1 group">
-                                <span class="selectable-text" v-select-text>${v}</span>${contentSuffix}
+                                ${renderValue(v)}${contentSuffix}
                                 ${addPreviewExcerpt ? `<button
                                     class="preview-icon-btn group-hover-visible"
                                     title="View context from AI models"

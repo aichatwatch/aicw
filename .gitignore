@@ -49,8 +49,10 @@ data/clients/
 
 # misc
 .playwright-mc/
+.playwright-mcp/
 .claude/
 
 # Package testing
 package/
+
 

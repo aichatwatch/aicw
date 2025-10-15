@@ -8,7 +8,6 @@ import { PROJECT_DIR, QUESTIONS_DIR, CAPTURE_DIR, MIN_VALID_ANSWER_SIZE } from '
 import { USER_SYSTEM_PROMPT_FILE_PATH } from '../config/user-paths.js';
 import { callAIWithRetry, createAiClientInstance } from '../utils/ai-caller.js';
 import { interruptibleDelay as delay, isInterrupted } from '../utils/delay.js';
-import { isUrlLikeTitle } from '../utils/url-utils.js';
 import { readQuestions, loadProjectModelConfigs, validateModelsAIPresetForProject } from '../utils/project-utils.js';
 import { getTargetDateFromProjectOrEnvironment, getProjectNameFromCommandLine, validateAndLoadProject } from '../utils/project-utils.js';
 import { logger } from '../utils/compact-logger.js';
@@ -202,181 +201,8 @@ async function answerAlreadyExists(answerFile: string): Promise<{ exists: boolea
 
 // Interface for the return value of fetchAnswer
 interface FetchAnswerResult {
-  answer: string;  // The processed answer text with citations if needed
+  success: boolean;  // The raw answer text content
   fullResponse: any;  // The complete API response object
-}
-
-// Helper function to extract and process citations
-function extractCitations(responseData: any, answerContent: string): { enrichedContent: string; citationsFooter: string } {
-  // Check if citations exist in the response
-  const message = responseData?.choices?.[0]?.message;
-  if (!message) {
-    return { enrichedContent: answerContent, citationsFooter: '' };
-  }
-
-  // Build a map of citations by index for numbered references
-  const citationsByIndex: Map<number, { title: string; url: string }> = new Map();
-  const uniqueCitations: Map<string, { title: string; url: string }> = new Map();
-
-  // Process root-level citations array (e.g., from Perplexity Sonar)
-  if (responseData.citations && Array.isArray(responseData.citations)) {
-    responseData.citations.forEach((url: string, index: number) => {
-      if (url) {
-        // For root-level citations, we only have URLs, no titles
-        // Index is 1-based for user-facing references
-        citationsByIndex.set(index + 1, {
-          title: url, // Will be detected as URL-like by isUrlLikeTitle
-          url: url
-        });
-      }
-    });
-  }
-
-  // Process annotations with titles (if available)
-  // These might override the simple URLs from root citations with better titles
-  if (message.annotations && Array.isArray(message.annotations)) {
-    message.annotations.forEach((annotation: any, index: number) => {
-      if (annotation.type === 'url_citation' && annotation.url_citation) {
-        const { url, title } = annotation.url_citation;
-        if (url) {
-          // Annotations are also 1-based
-          citationsByIndex.set(index + 1, {
-            title: title || url,
-            url: url
-          });
-        }
-      }
-    });
-  }
-
-  // Also collect citations from message.citations field
-  const citationSources = [message.citations];
-  for (const citations of citationSources) {
-    if (!citations || !Array.isArray(citations)) {
-      continue;
-    }
-    for (const citation of citations) {
-      if (citation.type === 'url_citation' && citation.url_citation) {
-        const { url, title } = citation.url_citation;
-        if (url && !uniqueCitations.has(url)) {
-          uniqueCitations.set(url, {
-            title: title || 'Untitled',
-            url: url
-          });
-        }
-      }
-    }
-  }
-
-  // Handle Perplexity's direct API format (search_results)
-  if (message.search_results && Array.isArray(message.search_results)) {
-    for (const result of message.search_results) {
-      if (result.url && !uniqueCitations.has(result.url)) {
-        uniqueCitations.set(result.url, {
-          title: result.title || 'Untitled',
-          url: result.url
-        });
-      }
-    }
-  }
-
-  // Handle OpenAI/Azure's direct API format (context.citations)
-  if (message.context?.citations && Array.isArray(message.context.citations)) {
-    for (const citation of message.context.citations) {
-      if (citation.url && !uniqueCitations.has(citation.url)) {
-        uniqueCitations.set(citation.url, {
-          title: citation.title || 'Untitled',
-          url: citation.url
-        });
-      }
-    }
-  }
-
-  // Check if content has numbered references like [1], [2], etc. that are NOT already linked
-  const numberedRefPattern = /\[(\d+)\](?!\()/g;
-  const hasNumberedRefs = numberedRefPattern.test(answerContent);
-
-  let enrichedContent = answerContent;
-  const usedCitationIndices = new Set<number>();
-
-  // If we have numbered references and citations by index, enrich the content
-  if (hasNumberedRefs && citationsByIndex.size > 0) {
-    // Find all numbered references and process them backwards
-    const matches = Array.from(answerContent.matchAll(/\[(\d+)\](?!\()/g));
-
-    // Sort matches by position (descending) to process backwards
-    matches.sort((a, b) => (b.index ?? 0) - (a.index ?? 0));
-
-    // Process each match
-    for (const match of matches) {
-      const refNum = parseInt(match[1]);
-      const citation = citationsByIndex.get(refNum);
-
-      if (citation && match.index !== undefined) {
-        // Determine the replacement format
-        let replacement: string;
-        if (isUrlLikeTitle(citation.url, citation.title)) {
-          // Use double brackets to preserve [N] appearance when rendered
-          replacement = `[[${refNum}]](${citation.url})`;
-        } else {
-          // Use the title as the link text if it's meaningful
-          replacement = `[${citation.title}](${citation.url})`;
-        }
-
-        // Replace in content (safe because we're processing backwards)
-        enrichedContent = enrichedContent.substring(0, match.index) +
-                         replacement +
-                         enrichedContent.substring(match.index + match[0].length);
-
-        usedCitationIndices.add(refNum);
-      }
-    }
-  }
-
-  // Build citations footer
-  let citationsFooter = '';
-
-  // For numbered references, show ALL citations in their original order (like academic papers)
-  if (hasNumberedRefs && citationsByIndex.size > 0) {
-    citationsFooter = '\n\n# Citations\n\n';
-
-    // Sort citations by their index to maintain proper numbering
-    const sortedCitations = Array.from(citationsByIndex.entries())
-      .sort((a, b) => a[0] - b[0]);
-
-    // List all citations with their original numbers
-    for (const [index, citation] of sortedCitations) {
-      if (isUrlLikeTitle(citation.url, citation.title)) {
-        citationsFooter += `${index}. ${citation.url}\n`;
-      } else {
-        citationsFooter += `${index}. [${citation.title}](${citation.url})\n`;
-      }
-    }
-  } else {
-    // For non-numbered citations, only show those not already in content
-    const unusedCitations: Array<{ title: string; url: string }> = [];
-
-    // Collect citations that aren't already in the enriched content
-    for (const [url, citation] of uniqueCitations) {
-      if (!enrichedContent.includes(url)) {
-        unusedCitations.push(citation);
-      }
-    }
-
-    // Build footer with bullet points for unused citations
-    if (unusedCitations.length > 0) {
-      citationsFooter = '\n\n# Citations\n\n';
-      for (const citation of unusedCitations) {
-        if (isUrlLikeTitle(citation.url, citation.title)) {
-          citationsFooter += `- ${citation.url}\n`;
-        } else {
-          citationsFooter += `- [${citation.title}](${citation.url})\n`;
-        }
-      }
-    }
-  }
-
-  return { enrichedContent, citationsFooter };
 }
 
 async function fetchAnswer(cfg: ModelConfig, question: string, systemPrompt: string, tracker?: ProgressTracker): Promise<FetchAnswerResult> {
@@ -432,20 +258,19 @@ async function fetchAnswer(cfg: ModelConfig, question: string, systemPrompt: str
       aiClientInstance,
       cfg,
       { model: cfg.model, messages },
-      { 
+      {
         cacheNamePrefix: CURRENT_MODULE_NAME,
-        contextInfo: `Fetching answer from ${cfg.id} (model: ${cfg.model})` 
+        contextInfo: `Fetching answer from ${cfg.id} (model: ${cfg.model})`
       }
     );
 
-    const answerContent = response.choices[0]?.message?.content || '';
-
-    // Extract citations and enrich content with clickable references
-    const { enrichedContent, citationsFooter } = extractCitations(response, answerContent);
-    const finalAnswer = enrichedContent + citationsFooter;
+    // Extract raw content - citation processing will be done by transform-answers-to-md step
+    const nonEmptyAnswer: boolean = response.choices[0]?.message?.content !== undefined && 
+      response.choices[0]?.message?.content !== null &&
+      response.choices[0]?.message?.content !== '';
 
     return {
-      answer: finalAnswer,
+      success: nonEmptyAnswer,
       fullResponse: response
     };
 
@@ -599,7 +424,12 @@ async function main(): Promise<void> {
       const result = await fetchAnswer(cfg, q.question, systemPrompt, tracker);
 
       // Save the markdown answer with citations
-      await writeFileAtomic(answerFile, result.answer);
+      if(!result.success) {
+        const msgEmptyResponse = `Empty response from ${q.folder}/${cfg.id}: ${result.fullResponse.choices[0]?.message?.content}`;
+        logger.error(msgEmptyResponse);
+        // throw new error to retry the task
+        throw new Error(msgEmptyResponse);
+      }
 
       // Save the full JSON response
       const jsonFile = path.join(botFolder, 'answer.json');
@@ -626,6 +456,7 @@ async function main(): Promise<void> {
         logger.error(`${colorize('Please fix the issues in src/config.ts and try again.', 'yellow')}\n`);
         throw new Error('Configuration errors detected');
       } else {
+        // otherwise any other error falls here to try again
         tracker.update(operationCount, `${colorize(q.folder, 'dim')} / ${colorize(cfg.id, 'cyan')} - ${colorize('Failed', 'red')}`);
         
         // Track failed tasks for retry (but not if this is already a retry)
