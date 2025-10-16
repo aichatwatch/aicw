@@ -1250,7 +1250,7 @@ Vue.component('about-report', {
     extends: baseProps,
     data() {
         return {
-            tocSectionExpanded: localStorage.getItem('tocSectionExpanded') !== 'false', // Default to true
+            tocSectionExpanded: localStorage.getItem('tocSectionExpanded') === 'true', // Default to false
             dataSectionExpanded: localStorage.getItem('dataSectionExpanded') === 'false', // Default to false
             questionsExpanded: true, // Default to expanded for easy access
             questionSearch: '' // Search query for questions
@@ -8028,10 +8028,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         const remaining = filteredSources.length - MAX_VISIBLE_SOURCES;
                         cellHtml += `
                             <button type="button"
-                                    class="text-sm text-blue-600 dark:text-blue-400 font-semibold hover:underline px-1"
+                                    class="icon-expand-badge"
                                     onclick="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"
                                     title="Show ${remaining} more sources">
-                                [+${remaining}]
+                                +${remaining}
                             </button>
                             <div style="display:none;" class="inline-flex flex-wrap gap-1">
                         `;
