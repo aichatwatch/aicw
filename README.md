@@ -1,9 +1,8 @@
 # AI Chat Watch (AICW)
 
-Track who and what is mentioned by ChatGPT, Claude, Gemini, Perplexity and other AIs.
-See who is mentioned first and how often. See which websites are mentioned and cited by AIs. Track trends over time. See influence scores. See how your brand is positioned compared to competitors. AICW is **free open-source and runs on your computer**. Explore sample reports: https://aichatwatch.com/demo/reports/
+AI Chat Watch (aka AICW) is the tool for GEO (Generative Engine Optimization) marketers to track mentions of brands/products/websites by AI like ChatGPT. See who is mentioned first and how often, by which AI, how mentions change over time. Instantly see sources for citations. Track trends over time. See how your brand is positioned compared to competitors in AI search results. AICW is **free open-source and runs on your computer, you own all your data**. Explore sample reports: https://aichatwatch.com/demo/reports/
 
-*ELI5 (Explain like I'm 5 years old)?*: *AI Chat Watch is a free app that runs on your computer and asks AIs like ChatGPT to answer a set of questions. Then it reads these answers and telling: which companies, people, places, events are mentioned, in which order and how often. If you run it again after some time, it will also tell how answers changed. Best of all, it's open-source and runs on your computer.*
+*ELI5 (Explain like I'm 5 years old)?*: *AI Chat Watch is like a notebook that keeps track of which toys or pizza places the robot talks about!*
 
 ---
 
@@ -25,9 +24,9 @@ See who is mentioned first and how often. See which websites are mentioned and c
 
 ## Features:
 
-- ✅ **Multi-Model Querying** - ChatGPT, Claude, Perplexity, Gemini and others.
-- ✅ **Influence Scoring** - Weighted by AI model usage data
-- ✅ **Entity Extraction** - Identify products, companies, people, places, events mentioned.
+- ✅ **Multi-Model Querying** - ChatGPT, Claude, Perplexity, Gemini and many others
+- ✅ **Influence(Voice) Scoring** - Weighted by AI model usage data
+- ✅ **Brands Extraction** - Identify products, companies, people, places, events mentioned.
 - ✅ **Beautiful Reports** - Interactive HTML with tables, charts, graphs and drill-downs and advanced filtering.
 - ✅ **Historical Trends** - Track rising/falling positions and mentions over time
 - ✅ **Export to CSV and JSON** - Export any data to CSV or access original data in JSON format.
