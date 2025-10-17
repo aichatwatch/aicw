@@ -126,17 +126,6 @@ export const APP_ACTIONS: AppAction[] = [
   },
 
   {
-    id: 'project-cleanup-orphaned-questions',
-    cmd: 'actions/project-cleanup-orphaned-questions',
-    name: 'Cleanup: remove orphaned questions',
-    desc: 'Removing orphaned question folders',
-    pipelines: ['pipeline-project-rebuild', 'pipeline-project-build'],
-    category: 'project',
-    requiresProject: true,
-  },
-
-
-  {
     id: 'project-data-file-create',
     cmd: 'actions/project-data-file-create',
     name: 'Data file: prepare data files',
