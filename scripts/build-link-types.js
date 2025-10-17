@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 
 /**
- * Build script to compile OSS link type patterns from txt files into JSON
- * This script processes only the base (non-EE) patterns
  * Generates: src/config/link-types.json
  */
 
@@ -17,11 +15,8 @@ const projectRoot = path.join(__dirname, '..');
 const basePatternsDir = path.join(projectRoot, 'src', 'config', 'data', 'link-types', 'patterns');
 const baseOutputPath = path.join(projectRoot, 'src', 'config', 'data-generated', 'link-types.json');
 
-/**
- * Main build function for OSS version
- */
 function buildLinkTypes() {
-  console.log('🔨 Building OSS link-types.json file...\n');
+  console.log('🔨 Building link-types.json file...\n');
 
   try {
     // Compile patterns from base directory only (overwrite mode)

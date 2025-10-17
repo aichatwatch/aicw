@@ -3,7 +3,7 @@ import path, { join } from 'path';
 import { createInterface } from 'readline';
 import { colorize,  waitForEnterInInteractiveMode,  writeFileAtomic } from '../utils/misc-utils.js';
 import { ModelConfig, loadAllAIPresets, getAIAIPresetWithModels } from '../utils/model-config.js';
-import { ROOT_DIR, PROJECT_DIR } from '../config/paths.js';
+import { PROJECT_DIR } from '../config/paths.js';
 import { getProjectDisplayPath, getPackageRoot, getUserProjectQuestionsFile, getUserProjectConfigFile } from '../config/user-paths.js';
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
@@ -196,7 +196,7 @@ async function selectQuestionTemplate(subject: string): Promise<QuestionTemplate
     logger.log('\n' + colorize('─'.repeat(50), 'dim'));
 
     // Ask for confirmation (N is default)
-    const confirm = await confirmAction('\nUse these questions? You can edit them on the next step.', false);
+    const confirm = await confirmAction('\nUse this set? You can edit them later', false);
 
     if (confirm) {
       return selectedTemplate;
@@ -442,7 +442,7 @@ interface StepData {
 async function getTopicStep(): Promise<string> {
   logger.log('\n' + colorize('Step 1: Enter The Topic/Subject for tracking', 'bright'));
   logger.log(colorize('Enter topic/subject would you like to track mentions about?', 'dim'));
-  logger.log(colorize('Examples: "Storage APIs", "AI Writing Tools", "Project Management Software", "Electric Vehicles", etc.', 'dim'));
+  logger.log(colorize('Examples: "Storage APIs", "Project Management Apps", "Electric Vehicles", etc.', 'dim'));
 
   try {
     const subject = await questionWithCancelOption('\nEnter the topic/subject: ', 'Press Enter again to exit, or type your topic: ');

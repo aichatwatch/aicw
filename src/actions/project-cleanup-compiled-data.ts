@@ -17,6 +17,10 @@ const DATE_TEST_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 async function cleanWithCaution(project: string, targetDate: string, targetPath: string, dateFromPath: string)
 {
+  const { validatePathIsSafe } = await import('../utils/misc-utils.js');
+
+  // SECURITY: Validate path is safe and inside USER_DATA_DIR before ANY deletion
+  await validatePathIsSafe(targetPath, `compiled data cleanup for project: ${project}, date: ${dateFromPath}`);
 
   // INVERTED LOGIC: Clean ONLY the target date, preserve all others
   if (dateFromPath !== targetDate) {

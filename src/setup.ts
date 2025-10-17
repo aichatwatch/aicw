@@ -13,7 +13,6 @@ const logger = CompactLogger.getInstance();
 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT_DIR = join(__dirname, '..');
 
 function question(prompt: string): Promise<string> {
   const rl = createInterface({

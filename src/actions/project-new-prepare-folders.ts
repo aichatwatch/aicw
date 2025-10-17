@@ -161,7 +161,7 @@ async function main(): Promise<void> {
     }
     
     const total = lines.length - duplicates;
-    logger.info(`Questions prepared: ${total} questions saved into the folder:\n${destDir}`);
+    logger.info(`Questions prepared: ${total} questions saved into the folder:\n\n${destDir}\n\n`);
     if (created > 0) logger.info(`  • Created: ${created}`);
     if (reused > 0) logger.info(`  • Reused existing: ${reused}`);
     if (duplicates > 0) logger.info(`  • Skipped duplicates in input: ${duplicates}`);

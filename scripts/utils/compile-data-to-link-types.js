@@ -2,7 +2,6 @@
 
 /**
  * Core compilation functions for link type patterns
- * Shared module used by both OSS and EE build scripts
  */
 
 import fs from 'fs';

@@ -6,11 +6,17 @@ import pkg from 'fs-extra';
 const { copySync } = pkg;
 import { AGGREGATED_DIR_NAME, USE_PACKAGE_CONFIG } from './constants.js';
 import { CompactLogger } from '../utils/compact-logger.js';
+import { validatePathIsSafe } from '../utils/misc-utils.js';
+import { explainFileSystemError } from '../utils/misc-utils.js';
 const logger = CompactLogger.getInstance();
 
 // Define __dirname for ES modules FIRST - needed by getPackageRoot()
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// File size constraints
+export const MIN_VALID_ANSWER_SIZE = 200; // Minimum size in bytes for a valid answer
+export const MIN_VALID_OUTPUT_DATA_SIZE = 200; // Minimum size in bytes for PROMPT.md, COMPILED.js, data.js files
 
 // default other link type short name
 export const DEFAULT_OTHER_LINK_TYPE_SHORT_NAME = 'oth';
@@ -32,7 +38,6 @@ export const USER_INVALID_OUTPUTS_DIR = path.join(USER_LOGS_DIR, 'invalid');
 
 
 // Default data directory for user config files (defined here to avoid circular dependency)
-const DEFAULT_CONFIG_FOR_USER_DATA_DIR = path.join(getPackageConfigDir(), 'default');
 
 // dynamic path resolution functions that respect USE_PACKAGE_CONFIG
 export const USER_CONFIG_PROMPTS_DIR: string = path.join(getConfigDirDependingOnEnvironment(), 'prompts');
@@ -55,6 +60,10 @@ const QUESTIONS_FILE_NAME = 'questions.md';
  * User data path management for aicw
  * Centralizes all user-specific data storage locations
  */
+
+function getDefaultConfigForUserDataDir() {
+  return path.join(getPackageConfigDir(), 'default');
+}
 
 // Get the base user data directory based on platform
 export function getUserDataDir(): string {
@@ -119,7 +128,13 @@ export function getCurrentDateTimeAsString(): string {
 
 // Project-specific paths
 export function getUserProjectDir(projectName: string): string {
-  return path.join(USER_PROJECTS_DIR, projectName);
+
+  const projectPath = path.join(USER_PROJECTS_DIR, projectName);
+
+  // SECURITY: Validate that project path is safe and inside USER_DATA_DIR
+  validatePathIsSafe(projectPath, `project directory for: ${projectName}`);
+
+  return projectPath;
 }
 
 export function getUserProjectQuestionsFile(projectName: string): string {
@@ -184,8 +199,8 @@ export function getProjectDisplayPath(projectName: string): string {
   const fullPath = getUserProjectDir(projectName);
   const home = homedir();
   // Contract home directory to ~ for display
-  return fullPath.startsWith(home) 
-    ? fullPath.replace(home, '~') 
+  return fullPath.startsWith(home)
+    ? fullPath.replace(home, '~')
     : fullPath;
 }
 
@@ -204,7 +219,7 @@ export function getActualReportsPath(projectName: string): string {
 }
 
 // Initialize user directories (creates them if they don't exist)
-export function initializeUserDirectories(): void {
+export async function initializeUserDirectories(): Promise<void> {
 
   logger.info(`Initializing user data directories...`);
   // project and reports directories
@@ -221,7 +236,25 @@ export function initializeUserDirectories(): void {
 
   for (const dir of directories) {
     if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
+      try {
+        // SECURITY: Validate path is safe before creating directory
+        await validatePathIsSafe(dir, `creating user data directory: ${dir}`);
+
+        mkdirSync(dir, { recursive: true });
+        logger.debug(`Created directory: ${dir}`);
+      } catch (error: any) {
+        // Check if it's a security error (PipelineCriticalError)
+        if (error.name === 'PipelineCriticalError') {
+          console.error(`\n${error.message}`);
+          process.exit(1);
+        }
+
+        // File system error - explain it to user
+        console.error(`\n${explainFileSystemError(error, `creating directory: ${dir}`)}`);
+        console.error(`\nPath: ${dir}`);
+        console.error(`\nAICW cannot continue without user data directories.`);
+        process.exit(1);
+      }
     }
   }
 
@@ -236,12 +269,12 @@ export function initializeUserDirectories(): void {
 export function copyDefaultDataToUserConfig(): void {
   logger.info(`Copying default config files to user config directory...`);
   // Add safety check
-  if (!existsSync(DEFAULT_CONFIG_FOR_USER_DATA_DIR)) {
-    const msg = `Default config directory not found: ${DEFAULT_CONFIG_FOR_USER_DATA_DIR}`;
+  if (!existsSync(getDefaultConfigForUserDataDir())) {
+    const msg = `Default config directory not found: ${getDefaultConfigForUserDataDir()}`;
     logger.error(msg);
     throw new Error(msg);
   }  
-  copyDirRecursive(DEFAULT_CONFIG_FOR_USER_DATA_DIR, USER_CONFIG_DIR);
+  copyDirRecursive(getDefaultConfigForUserDataDir(), USER_CONFIG_DIR);
 }
 
 function copyDirRecursive(src: string, dest: string): void {
@@ -272,7 +305,7 @@ export function checkIfUserConfigFolderHasAllRequiredDataFiles(): boolean {
   }
 
   const missingFiles: string[] = [];
-  checkDirRecursive(DEFAULT_CONFIG_FOR_USER_DATA_DIR, USER_CONFIG_DIR, missingFiles);
+  checkDirRecursive(getDefaultConfigForUserDataDir(), USER_CONFIG_DIR, missingFiles);
 
   if (missingFiles.length > 0) {
     logger.warn(`Missing required user config files: \n${missingFiles.join('\n')}`);
@@ -361,7 +394,7 @@ export function getPackageConfigDir(subFolder: string = ''): string {
 function getConfigDirDependingOnEnvironment(): string {
   if (USE_PACKAGE_CONFIG) {
     logger.debug(`using package config directory`);
-    return DEFAULT_CONFIG_FOR_USER_DATA_DIR;
+    return getDefaultConfigForUserDataDir();
   }
   logger.debug(`using user config directory`);
   return USER_CONFIG_DIR;
