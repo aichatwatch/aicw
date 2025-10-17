@@ -48,7 +48,7 @@ async function runInterruptible(
   return new Promise((resolve, reject) => {
     // Show interrupt hint unless disabled
     if (showHint) {
-      output.writeLine(colorize('\n💡 Press Ctrl+C to cancel this operation and return to menu', 'dim'));
+      output.writeLine(colorize('\n💡 Press Ctrl+C to cancel operation and return to menu', 'dim'));
     }
 
     // Set environment variable to indicate we're running from interactive mode
@@ -199,7 +199,7 @@ async function checkApiKeysArePresent(): Promise<boolean> {
 
   if (!hasApiKey) {
     output.writeLine('--------------------------------');
-    output.writeLine(colorize('⚠️  No API keys were set! Please run "Setup: setup API Key" first and try again.\n', 'yellow'));
+    output.writeLine(colorize('⚠️  No API keys were set! Please run "Setup: setup API Key" first and then try again.\n', 'yellow'));
     output.writeLine('--------------------------------');
     return false;
   }  
@@ -385,7 +385,7 @@ async function executePipelineForMenuItem(pipelineId: string, project?: string):
   if (runNextPipeline) {
       const ExecutionResultNext: ExecutionResult = await executePipelineForMenuItem(pipeline.nextPipeline, executionResult.project);
       if (!ExecutionResultNext.success) {
-        logger.error(`Failed to run next pipeline ${pipeline.nextPipeline} (parent: ${pipelineId}) for project ${executionResult.project}`);
+        logger.error(`Failed to run next pipeline ${pipeline.nextPipeline} (parent: "${pipelineId}") for project "${executionResult.project}"`);
       }
       return ExecutionResultNext;
   }

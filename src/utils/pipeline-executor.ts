@@ -244,7 +244,7 @@ export class PipelineExecutor {
           };
           return `${COLORS[color] || ''}${text}${COLORS.reset}`;
         };
-        output.writeLine(colorize('\n💡 Press Ctrl+C to cancel this operation and return to menu', 'dim'));
+        output.writeLine(colorize('\n💡 Running a pipeline: press Ctrl+C to interrupt the pipeline', 'dim'));
       }
 
       // Set environment variables
@@ -258,7 +258,7 @@ export class PipelineExecutor {
 
       const isPipeRequired = action && action.requiresConsolePipeReturn;
       if(isPipeRequired) {
-        logger.info(`Action requires pipe (isPipeRequired: ${isPipeRequired})`);
+        logger.debug(`Action requires pipe (isPipeRequired: ${isPipeRequired})`);
       }
 
       // Use pipe for stdout if project-new, otherwise inherit

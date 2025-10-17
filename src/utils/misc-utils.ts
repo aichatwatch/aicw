@@ -416,7 +416,7 @@ export function isBackupFileOrFolder(entryName: string, isDirectory: boolean): b
 
 export enum WaitForEnterMessageType {
   PRESS_ENTER_TO_THE_MENU = 'PRESS ENTER TO RETURN TO THE MENU',
-  PRESS_ENTER_TO_CONTINUE = 'PRESS ENTER TO CONTINUE. PRESS CTRL+C OR "Q" TO CANCEL.',  
+  PRESS_ENTER_TO_CONTINUE = 'PRESS ENTER TO CONTINUE. PRESS CTRL+C',  
 }
 
 // Function to wait for Enter key in interactive mode
@@ -457,7 +457,7 @@ export async function waitForEnterInInteractiveMode(
       });
     });
 
-    if (input && (input.trim().toLowerCase() === 'q' || input === '^C')) {
+    if (input && (input.trim().toLowerCase() === '0' || input === '^C')) {
       return false;
     }
     return true;

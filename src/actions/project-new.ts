@@ -13,6 +13,14 @@ const logger = CompactLogger.getInstance();
 
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
+// Custom error for user cancellation/navigation
+class UserCancelledError extends Error {
+  constructor(message = 'User cancelled') {
+    super(message);
+    this.name = 'UserCancelledError';
+  }
+}
+
 interface ProjectSetupConfig {
   projectName: string;
   display_name: string;
@@ -31,13 +39,53 @@ function question(prompt: string): Promise<string> {
     input: process.stdin,
     output: process.stdout
   });
-  
+
   return new Promise((resolve) => {
     rl.question(prompt, (answer) => {
       rl.close();
       resolve(answer.trim());
     });
   });
+}
+
+/**
+ * Ask a question with the ability to cancel by pressing Enter twice
+ * First Enter shows confirmation prompt, second Enter throws UserCancelledError
+ */
+async function questionWithCancelOption(prompt: string, cancelMessage: string = 'Press Enter again to go back, or type to continue: '): Promise<string> {
+  while (true) {
+    const answer = await question(prompt);
+
+    if (answer === '') {
+      // First Enter - ask for confirmation
+      const confirm = await question(cancelMessage);
+      if (confirm === '') {
+        // Second Enter - cancel confirmed
+        throw new UserCancelledError();
+      } else {
+        // User typed something, use it as the answer
+        return confirm;
+      }
+    } else {
+      // Valid answer provided
+      return answer;
+    }
+  }
+}
+
+/**
+ * Ask a Y/n or y/N confirmation question
+ * Returns true for yes, false for no
+ */
+async function confirmAction(prompt: string, defaultYes: boolean = true): Promise<boolean> {
+  const suffix = defaultYes ? ' (Y/n): ' : ' (y/N): ';
+  const answer = await question(prompt + suffix);
+
+  if (answer === '') {
+    return defaultYes;
+  }
+
+  return answer.toLowerCase() === 'y';
 }
 
 interface QuestionTemplate {
@@ -84,7 +132,7 @@ async function loadQuestionTemplates(): Promise<QuestionTemplate[]> {
   return templates;
 }
 
-async function selectQuestionTemplate(): Promise<QuestionTemplate | null> {
+async function selectQuestionTemplate(subject: string): Promise<QuestionTemplate> {
   const templates = await loadQuestionTemplates();
 
   if (templates.length === 0) {
@@ -105,12 +153,14 @@ async function selectQuestionTemplate(): Promise<QuestionTemplate | null> {
       //if (index < templates.length - 1) logger.log(''); // Add space between templates
     });
 
-    // Get user selection with option to return to main menu
-    const selection = await question('\nSelect preset with questions to preview (1-' + templates.length + ', 999 for your custom set, or Enter to return): ');
+    logger.log(colorize('[999] Custom set of questions', 'cyan'));
+    logger.log(colorize('Enter 999 to create your own set of questions manually', 'dim'));
 
-    // Handle Enter key - return to main menu
-    if (selection.trim() === '') {
-      return null;
+    // Get user selection with option to go back
+    const selection = await question('\nSelect preset of questions (1-' + templates.length + ', or 0 to cancel): ');
+
+    if (selection.trim() === '0') {
+      throw new UserCancelledError();
     }
 
     // Handle 999 - empty template for custom questions
@@ -136,20 +186,19 @@ async function selectQuestionTemplate(): Promise<QuestionTemplate | null> {
     const selectedTemplate = templates[num - 1];
 
     logger.log('\n' + colorize('─'.repeat(50), 'dim'));
-    logger.log(colorize(`📋 Preview: ${selectedTemplate.display_name}`, 'bright'));
-    logger.log(colorize(`${selectedTemplate.description}`, 'dim'));
-    logger.log('\n' + colorize('Questions:', 'yellow'));
+    logger.log(colorize(`📋 Preview questions to AI:`, 'bright'));
 
     selectedTemplate.questions.forEach((q, i) => {
-      logger.log(`  ${colorize(`${i + 1}.`, 'cyan')} ${q}`);
+      const replacedText = q.replace(/{{SUBJECT}}/g, colorize(subject, 'cyan'));
+      logger.log(`  ${colorize(`${i + 1}.`, 'cyan')} ${replacedText}`);
     });
 
     logger.log('\n' + colorize('─'.repeat(50), 'dim'));
 
     // Ask for confirmation (N is default)
-    const confirm = await question('\nDo you want to use this template? (y/N): ');
+    const confirm = await confirmAction('\nUse these questions? You can edit them on the next step.', false);
 
-    if (confirm.toLowerCase() === 'y') {
+    if (confirm) {
       return selectedTemplate;
     }
 
@@ -163,7 +212,7 @@ async function generateQuestionsFromTemplate(template: QuestionTemplate, subject
   if (template.questions.length === 0) {
     logger.log('\n' + colorize('📝 Let\'s create your questions!', 'bright'));
     logger.log(colorize('Recommended: 3-5 questions minimum for best insights', 'dim'));
-    logger.log(colorize('Type \'done\' when finished', 'dim'));
+    logger.log(colorize('Type \'done\' when finished, or \'back\' to return to template selection', 'dim'));
 
     const questions: string[] = [];
     let questionNumber = 1;
@@ -172,10 +221,17 @@ async function generateQuestionsFromTemplate(template: QuestionTemplate, subject
       const q = await question(`\nQuestion ${questionNumber}: `);
 
       if (q.toLowerCase() === 'done') {
-        break;
-      }
-
-      if (q.trim()) {
+        if (questions.length === 0) {
+          logger.error('Please add at least one question before finishing.');
+          continue;
+        }
+        const confirmDone = await confirmAction('Finish creating questions?', true);
+        if (confirmDone) {
+          break;
+        }
+      } else if (q.toLowerCase() === 'back') {
+        throw new UserCancelledError();
+      } else if (q.trim()) {
         questions.push(q.trim());
         questionNumber++;
       }
@@ -191,18 +247,28 @@ async function generateQuestionsFromTemplate(template: QuestionTemplate, subject
 async function editQuestions(questions: string[]): Promise<string[]> {
   logger.log('\n' + colorize('📝 Review and edit the generated questions:', 'bright'));
   logger.log(colorize('(Press Enter to keep a question, or type a new one to replace it)', 'dim'));
-  logger.log(colorize('(Type "add" to add more questions, "done" to finish)', 'dim'));
-  
+  logger.log(colorize('(Type "add" to add more questions, "done" to finish, "back" to return to template selection)', 'dim'));
+
   const editedQuestions: string[] = [];
-  
+
   for (let i = 0; i < questions.length; i++) {
     logger.log(`\n${colorize(`[${i + 1}]`, 'cyan')} ${questions[i]}`);
     const input = await question('Edit (Press Enter to keep as is): ');
-    
+
     if (input.toLowerCase() === 'done') {
-      // Keep remaining questions as-is
-      editedQuestions.push(...questions.slice(i));
-      break;
+      // Ask for confirmation before finishing
+      const confirmDone = await confirmAction('Finish editing questions?', true);
+      if (confirmDone) {
+        // Keep remaining questions as-is
+        editedQuestions.push(...questions.slice(i));
+        break;
+      } else {
+        // Don't finish, continue editing current question
+        i--; // Stay at current index
+      }
+    } else if (input.toLowerCase() === 'back') {
+      // Go back to template selection
+      throw new UserCancelledError();
     } else if (input.toLowerCase() === 'add') {
       // Add a new question
       const newQuestion = await question('New question: ');
@@ -221,51 +287,54 @@ async function editQuestions(questions: string[]): Promise<string[]> {
   
   // Allow adding more questions
   while (true) {
-    const addMore = await question('\nAdd another question? (y/n): ');
-    if (addMore.toLowerCase() !== 'y') break;
-    
+    const addMore = await confirmAction('\nAdd another question?', false);
+    if (!addMore) break;
+
     const newQuestion = await question('New question: ');
     if (newQuestion) {
       editedQuestions.push(newQuestion);
     }
   }
-  
+
   return editedQuestions;
 }
 
 async function selectProjectAIPreset(projectName: string): Promise<{ ai_preset?: string, models?: string[] }> {
-  logger.log(colorize('Select a preset with AI models for your project:', 'yellow'));
-  logger.log('\n' + colorize('Available presets with AI models presets:', 'bright'));
-  
-  const ai_presets = loadAllAIPresets();
-  const ai_presetList = Array.from(ai_presets.entries());
+  while (true) {
+    logger.log(colorize('Select a preset with AI models for your project:', 'yellow'));
 
-  // Display available ai_presets
-  ai_presetList.forEach(([key, ai_preset], index) => {
-    const modelCount = ai_preset.models?.[ModelType.GET_ANSWER].length || 0;
-    //const modelsNames = ai_preset.models?.[ModelType.GET_ANSWER].join(', ');
-    logger.log(`${index + 1}) ${colorize(ai_preset.name, 'cyan')} (${modelCount} AIs)- ${ai_preset.description}`);
-  });
+    const ai_presets = loadAllAIPresets();
+    const ai_presetList = Array.from(ai_presets.entries());
 
-  const choice = await question('\nSelect option (1-' + (ai_presetList.length) + '): ');
-  const choiceNum = parseInt(choice);
+    // Display available ai_presets
+    ai_presetList.forEach(([key, ai_preset], index) => {
+      const modelCount = ai_preset.models?.[ModelType.GET_ANSWER].length || 0;
+      //const modelsNames = ai_preset.models?.[ModelType.GET_ANSWER].join(', ');
+      logger.log(`${index + 1}) ${colorize(ai_preset.name, 'cyan')} (${modelCount} AIs)- ${ai_preset.description}`);
+    });
 
-  if (choiceNum >= 1 && choiceNum <= ai_presetList.length) {
-    // Use selected ai_preset
-    const [ai_presetKey, ai_preset] = ai_presetList[choiceNum - 1];
+    const choice = await question('\nSelect option (1-' + (ai_presetList.length) + ', or Enter to go back): ');  
 
-    logger.log('\n' + colorize(`Selected AI models preset "${ai_preset.name}" with:`, 'green'));
-    logger.log(`  - ${ai_preset.models[ModelType.GET_ANSWER].length} models for fetching answers`);
-
-    const confirm = await question('\nUse this AI models preset? (Y/n): ');
-    if (confirm.toLowerCase() === 'n') {
-      return selectProjectAIPreset(projectName); // Recursive call to try again
+    if (choice.trim() === '0') {
+      throw new UserCancelledError();
     }
 
-    return { ai_preset: ai_presetKey };
-  } else {
-    // Use DEFAULT_PRESET_NAME ai_preset as default
-    return { ai_preset: DEFAULT_PRESET_NAME };
+    const choiceNum = parseInt(choice);
+
+    if (choiceNum >= 1 && choiceNum <= ai_presetList.length) {
+      // Use selected ai_preset
+      const [ai_presetKey, ai_preset] = ai_presetList[choiceNum - 1];
+
+      logger.log('\n' + colorize(`Selected AI models preset "${ai_preset.name}" with:`, 'green'));
+      logger.log(`  - ${ai_preset.models[ModelType.GET_ANSWER].length} models for fetching answers`);
+
+      return { ai_preset: ai_presetKey };
+      // If not confirmed, loop back to selection
+      logger.log(colorize('\nReturning to preset selection...', 'dim'));
+    } else {
+      // Invalid input - show error and try again
+      logger.error(`Invalid selection. Please enter a number between 1 and ${ai_presetList.length} or zero 0 to cancel. `);
+    }
   }
 }
 
@@ -337,7 +406,7 @@ async function generateUniqueProjectName(baseName: string): Promise<string> {
   const sanitized = sanitizeProjectName(baseName);
   let projectName = sanitized;
   let counter = 1;
-  
+
   while (true) {
     const projectDir = PROJECT_DIR(projectName);
     try {
@@ -352,79 +421,153 @@ async function generateUniqueProjectName(baseName: string): Promise<string> {
   }
 }
 
+// ============================================================================
+// Step Functions for State Machine Navigation
+// ============================================================================
+
+interface StepData {
+  subject?: string;
+  template?: QuestionTemplate;
+  projectName?: string;
+  display_name?: string;
+  description?: string;
+  questions?: string[];
+  ai_preset?: string;
+}
+
+/**
+ * Step 1: Get topic/subject from user
+ * Allows cancellation with double-Enter which asks for exit confirmation
+ */
+async function getTopicStep(): Promise<string> {
+  logger.log('\n' + colorize('Step 1: Enter The Topic/Subject for tracking', 'bright'));
+  logger.log(colorize('Enter topic/subject would you like to track mentions about?', 'dim'));
+  logger.log(colorize('Examples: "Storage APIs", "AI Writing Tools", "Project Management Software", "Electric Vehicles", etc.', 'dim'));
+
+  try {
+    const subject = await questionWithCancelOption('\nEnter the topic/subject: ', 'Press Enter again to exit, or type your topic: ');
+    return subject;
+  } catch (error) {
+    if (error instanceof UserCancelledError) {
+      // Ask if they really want to exit
+      const confirmExit = await confirmAction('Exit project creation?', false);
+      if (confirmExit) {
+        logger.log(colorize('\n✓ Project creation cancelled', 'dim'));
+        process.exit(0);
+      }
+      // Try again
+      return getTopicStep();
+    }
+    throw error;
+  }
+}
+
+/**
+ * Step 2: Select template for questions
+ * Throws UserCancelledError to go back to Step 1
+ */
+async function getTemplateStep(subject: string): Promise<QuestionTemplate> {
+  logger.log('\n' + colorize('Step 2: Select preset of questions', 'bright'));
+  return await selectQuestionTemplate(subject);
+}
+
+/**
+ * Step 3: Generate and edit questions
+ * Throws UserCancelledError to go back to Step 2
+ */
+async function getQuestionsStep(template: QuestionTemplate, subject: string): Promise<string[]> {
+  logger.log('\n' + colorize('Step 3: Review Questions', 'bright'));
+
+  // Generate questions from template
+  const generatedQuestions = await generateQuestionsFromTemplate(template, subject);
+
+  // Edit questions
+  const finalQuestions = await editQuestions(generatedQuestions);
+
+  if (finalQuestions.length === 0) {
+    logger.error('\n✗ At least one question is required');
+    throw new UserCancelledError(); // Go back to template selection
+  }
+
+  return finalQuestions;
+}
+
+/**
+ * Step 4: Select AI preset/models
+ * Throws UserCancelledError to go back to Step 3
+ */
+async function getAIPresetStep(projectName: string): Promise<string> {
+  logger.log('\n' + colorize('Step 4: Select Set of AI Models', 'bright'));
+  const result = await selectProjectAIPreset(projectName);
+  return result.ai_preset || DEFAULT_PRESET_NAME;
+}
+
 async function main() {
   logger.log(colorize('\n🚀 AI Search Watch - New Project Setup', 'bright'));
   logger.log(colorize('━'.repeat(50), 'dim'));
-  
-  // Step 1: Select template first
-  logger.log('\n' + colorize('Step 1: Choose Set for Questions', 'bright'));
-  const template = await selectQuestionTemplate();
-  if (!template) {
-    logger.log(colorize('\n✓ Project creation cancelled', 'dim'));
-    process.exit(0);
+
+  // State machine data
+  const data: StepData = {};
+  let currentStep = 1;
+
+  // State machine loop - navigate through steps with backward navigation support
+  while (true) {
+    try {
+      if (currentStep === 1) {
+        // Step 1: Get topic
+        data.subject = await getTopicStep();
+        currentStep = 2;
+      } else if (currentStep === 2) {
+        // Step 2: Select template
+        data.template = await getTemplateStep(data.subject!);
+
+        // Auto-generate project metadata
+        data.display_name = data.subject!;
+        data.projectName = await generateUniqueProjectName(data.subject!);
+        data.description = `Monitoring ${data.subject} - ${data.template.description}`;        
+
+        currentStep = 3;
+      } else if (currentStep === 3) {
+        // Step 3: Generate and edit questions
+        data.questions = await getQuestionsStep(data.template!, data.subject!);
+        currentStep = 4;
+      } else if (currentStep === 4) {
+        // Step 4: Select AI preset
+        data.ai_preset = await getAIPresetStep(data.projectName!);
+
+        // All steps completed, break out of loop
+        break;
+      }
+    } catch (error) {
+      if (error instanceof UserCancelledError) {
+        // Go back to previous step
+        currentStep = Math.max(1, currentStep - 1);
+        logger.log(colorize(`\nGoing back to Step ${currentStep}...`, 'dim'));
+      } else {
+        // Other error - rethrow
+        throw error;
+      }
+    }
   }
-  
-  // Step 2: Get subject for template
-  logger.log('\n' + colorize('Step 2: Enter The Topic/Subject', 'bright'));
-  logger.log(colorize(`Questions Preset: ${template.display_name}`, 'green'));
-  logger.log(colorize('What topic would you like to monitor?', 'dim'));
-  logger.log(colorize('Examples: "Storage APIs", "AI Writing Tools", "Project Management Software", "Electric Vehicles"', 'dim'));
-  const subject = await question('\nTopic: ');
-  
-  if (!subject) {
-    logger.error('\n✗ Topic is required');
-    process.exit(1);
-  }
-  
-  // Auto-generate project name from subject
-  const display_name = subject;
-  const projectName = await generateUniqueProjectName(subject);
-  
-  // Auto-generate description based on template and subject
-  const description = `Monitoring ${subject} - ${template.description}`;
-  
-  // Show auto-generated project info
-  logger.log('\n' + colorize('Project Details:', 'bright'));
-  logger.log(colorize('━'.repeat(50), 'dim'));
-  logger.log(`  ${colorize('Name:', 'yellow')} ${display_name}`);
-  logger.log(`  ${colorize('Folder:', 'yellow')} ${getProjectDisplayPath(projectName)}`);
-  logger.log(`  ${colorize('Type:', 'yellow')} ${template.display_name}`);
-  logger.log(colorize('━'.repeat(50), 'dim'));
-  
-  // Generate questions from template
-  const generatedQuestions = await generateQuestionsFromTemplate(template, subject);
-  
-  // Step 3: Review and edit questions
-  logger.log('\n' + colorize('Step 3: Review Questions', 'bright'));
-  const finalQuestions = await editQuestions(generatedQuestions);
-  
-  if (finalQuestions.length === 0) {
-    logger.error('\n✗ At least one question is required');
-    process.exit(1);
-  }
-  
-  // Step 4: Model selection
-  logger.log('\n' + colorize('Step 4: Select Set of AI Models To Monitor', 'bright'));
-  const ai_presetSelection = await selectProjectAIPreset(projectName);
 
   // Save project
   try {
     await saveProject({
-      projectName,
-      display_name,
-      description,
-      questions: finalQuestions,
-      ai_preset: ai_presetSelection.ai_preset
+      projectName: data.projectName!,
+      display_name: data.display_name!,
+      description: data.description!,
+      questions: data.questions!,
+      ai_preset: data.ai_preset!
     });
-    
-    logger.success(`\n✓ Project "${display_name}" created successfully! Saved to "${getProjectDisplayPath(projectName)}"`);
-  
+
+    logger.success(`\n✓ Project "${data.display_name}" created successfully! Saved to "${getProjectDisplayPath(data.projectName!)}"`);
+
     // Output marker for pipeline to capture
-    console.log(`AICW_OUTPUT_STRING:${projectName}`);
+    console.log(`AICW_OUTPUT_STRING:${data.projectName}`);
 
     await waitForEnterInInteractiveMode();
 
-    return projectName;
+    return data.projectName;
 
   } catch (error) {
     logger.error('\n✗ Failed to save project');
