@@ -2396,7 +2396,7 @@
     <nav id="navigation-menu" class="fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg transform -translate-x-full transition-transform duration-300 z-40 lg:translate-x-0 lg:static lg:h-auto lg:w-auto lg:shadow-none">
         <div class="p-4 h-full overflow-y-auto">
             <div class="flex justify-between items-center mb-6 lg:hidden">
-                <h3 class="text-lg font-semibold">Table of Contents</h3>
+                <h3 class="text-lg font-semibold">Navigation Menu</h3>
                 <button id="close-menu" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -2450,10 +2450,10 @@
                         <a href="https://aichatwatch.com/cloud"
                         target="_blank"
                         rel="noopener noreferrer"
-                        title="View AI Chat Watch Cloud"
+                        title="Save time - we'll run reports for you automatically"
                         class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
-                            <i class="fas fa-cloud"></i>
-                            Cloud Version
+                            <i class="fas fa-calendar-check"></i>
+                            Schedule a Report
                         </a>                    
                     </div>                    
                 </div>
@@ -2484,15 +2484,15 @@
                         title="View AI Chat Watch on GitHub"
                         class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
                             <i class="fa-brands fa-github"></i>
-                            Github
+                            Source Code
                         </a>
                         <a href="https://aichatwatch.com/cloud"
                         target="_blank"
                         rel="noopener noreferrer"
-                        title="View AI Chat Watch Cloud"
+                        title="Save time - we'll run reports for you automatically"
                         class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
-                            <i class="fas fa-cloud"></i>
-                            Cloud Version
+                            <i class="fas fa-calendar-check"></i>
+                            Schedule a Report
                         </a>                    
                     </div>                        
                 </div>
@@ -2547,7 +2547,7 @@
                             <li><a href="https://github.com/aichatwatch/aicw"
                                     class="hover:text-yellow-300 dark:hover:text-yellow-400 transition duration-300">GitHub Repo</a></li>
                             <li><a href="https://aichatwatch.com/cloud"
-                                class="hover:text-yellow-300 dark:hover:text-yellow-400 transition duration-300">Cloud Version</a></li>
+                                class="hover:text-yellow-300 dark:hover:text-yellow-400 transition duration-300">Schedule a Report</a></li>
     
                             <li><a href="https://aichatwatch.com/#faq"
                                     class="hover:text-yellow-300 dark:hover:text-yellow-400 transition duration-300">Frequently Asked Questions</a></li>
@@ -2707,7 +2707,7 @@
             function buildNavigation() {
                 const sections = [
                     { id: 'explore_projects', title: 'Explore Projects', type: 'main', icon: 'fa-turn-up' },
-                    { id: 'about_report', title: 'Table of Contents', type: 'main', icon: 'fa-list' },
+                    { id: 'about_report', title: 'About This Report', type: 'main', icon: 'fa-info-circle' },
                     
                     /* disabled on 2025 oct 14 as it was replaced with "Top Influencers" block
                     { id: 'text_summary', title: 'AI Summary', type: 'main', icon: 'fa-file-alt' },                                        
@@ -2730,9 +2730,9 @@
                     { id: 'divider2', type: 'divider' },
                     { id: 'dark_mode_toggle', title: 'Dark Mode', type: 'action', icon: 'fa-moon' },
                     { id: 'divider3', type: 'divider' },
-                    { id: 'link_github', title: 'View on GitHub', type: 'action', icon: 'fa-brands fa-github' },
+                    { id: 'link_github', title: 'Source Code', type: 'action', icon: 'fa-brands fa-github' },
                     { id: 'divider4', type: 'divider' },
-                    { id: 'link_cloud', title: 'Cloud Version', type: 'action', icon: 'fa-solid fa-cloud' },
+                    { id: 'link_cloud', title: 'Schedule a Report', type: 'action', icon: 'fa-solid fa-calendar-check' },
 
                 ];
 
