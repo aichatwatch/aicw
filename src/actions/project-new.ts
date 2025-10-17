@@ -476,10 +476,17 @@ async function getTemplateStep(subject: string): Promise<QuestionTemplate> {
  * Throws UserCancelledError to go back to Step 2
  */
 async function getQuestionsStep(template: QuestionTemplate, subject: string): Promise<string[]> {
-  logger.log('\n' + colorize('Step 3: Review Questions', 'bright'));
 
   // Generate questions from template
   const generatedQuestions = await generateQuestionsFromTemplate(template, subject);
+
+  const editGeneratedQuestions = await confirmAction('Do you want to edit the generated questions?', false);
+  if (!editGeneratedQuestions) {
+    logger.log(colorize('\n✓ Generated questions accepted', 'dim'));
+    return generatedQuestions;
+  }
+
+  logger.log('\n' + colorize('Editing Generated Questions', 'bright'));
 
   // Edit questions
   const finalQuestions = await editQuestions(generatedQuestions);
@@ -493,11 +500,11 @@ async function getQuestionsStep(template: QuestionTemplate, subject: string): Pr
 }
 
 /**
- * Step 4: Select AI preset/models
+ * Step 3: Select AI preset/models
  * Throws UserCancelledError to go back to Step 3
  */
 async function getAIPresetStep(projectName: string): Promise<string> {
-  logger.log('\n' + colorize('Step 4: Select Set of AI Models', 'bright'));
+  logger.log('\n' + colorize('Step 3: Select Set of AI Models', 'bright'));
   const result = await selectProjectAIPreset(projectName);
   return result.ai_preset || DEFAULT_PRESET_NAME;
 }

@@ -154,6 +154,7 @@ function displayProviderInstructions(provider: string, envKeyName: string, ai_pr
   console.log(`${info.keysUrl}`);
 
   console.log(`\n${colorize('Step 3: Paste your API key below', 'bright')}`);
+  console.log(colorize('Enter 0 to return to the main menu', 'dim'));
 }
 
 /**
@@ -271,19 +272,29 @@ async function setupSingleApiKey(
     return answer;
   }
 
-  // Key doesn't exist - need to get it
-  const provider = detectProvider(envKeyName);
-  displayProviderInstructions(provider, envKeyName, ai_presetNames);
+  let apiKey = null;
+  for (let i = 0; i < 999; i++) {
+    // Key doesn't exist - need to get it
+    const provider = detectProvider(envKeyName);
+    displayProviderInstructions(provider, envKeyName, ai_presetNames);
 
-  const apiKey = await question(`\nEnter your ${provider} API key: `);
+    apiKey = await question(`\nEnter your API key for "${provider}": `);
 
-  // Validate
-  const validation = validateKeyFormat(apiKey, provider);
+    if(apiKey.toLowerCase() === '0') {
+      return null;
+    }
 
-  if (!validation.isValid) {
-    logger.error(`\n✗ ${validation.message}`);
-    console.log(colorize('Please run setup again with a valid API key.', 'yellow'));
-    throw new Error(`Invalid API key for ${envKeyName}`);
+    // Validate
+    const validation = validateKeyFormat(apiKey, provider);
+
+    if (!validation.isValid) {
+      logger.error(`\n✗ ${validation.message}`);
+      console.log(colorize('Please enter a valid API key.', 'yellow'));
+      //throw new Error(`Invalid API key for ${envKeyName}`);
+      apiKey = null;
+      continue;
+    }
+    break;
   }
 
   return apiKey;

@@ -198,9 +198,9 @@ async function checkApiKeysArePresent(): Promise<boolean> {
   const hasApiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
 
   if (!hasApiKey) {
-    output.writeLine('--------------------------------');
-    output.writeLine(colorize('⚠️  No API keys were set! Please run "Setup: setup API Key" first and then try again.\n', 'yellow'));
-    output.writeLine('--------------------------------');
+    output.writeLine('----!!!!!!!-------------------------');
+    output.writeLine(colorize('⚠️  No API keys were set! Please run "Setup: setup API Key" first and then try again.\n', 'red'));
+    output.writeLine('----!!!!!!!------------------------');
     return false;
   }  
   else { 
@@ -388,7 +388,9 @@ async function executePipelineForMenuItem(pipelineId: string, project?: string):
   if (runNextPipeline) {
       const ExecutionResultNext: ExecutionResult = await executePipelineForMenuItem(pipeline.nextPipeline, executionResult.project);
       if (!ExecutionResultNext.success) {
-        logger.error(`Failed to run next pipeline ${pipeline.nextPipeline} (parent: "${pipelineId}") for project "${executionResult.project}"`);
+        logger.error(`Failed to run the pipeline "${pipeline.nextPipeline}" (parent: "${pipelineId}") for project "${executionResult.project}"
+        \nPlease try again by selecting the pipeline "${pipeline.nextPipeline}" from the main menu.
+          `);
       }
       return ExecutionResultNext;
   }

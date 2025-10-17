@@ -549,8 +549,9 @@ export const PROJECT_PIPELINES: PipelineDefinition[] = [
     description: 'internal use: transforms answer.json files to enhanced answer.md with full citations',
     category: 'project',
     actions: APP_ACTIONS.filter(a => a.id === 'transform-answers-to-md'),
-    requiresApiKeys: false,
-    type: 'advanced'
+    type: 'advanced',
+    // do not require API keys for this action
+    requiresApiKeys: false
   },
 ];
 
@@ -559,26 +560,27 @@ export const UTILITY_PIPELINES: PipelineDefinition[] = [
   {
     id: 'pipeline-utility-report-serve',
     name  : 'Utility: start reports server',
-    description: 'starts web server to view reports in browser locally',
-    
+    description: 'starts web server to view reports in browser locally',    
     category: 'utility',
     actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-utility-report-serve')),
+    // do not require API keys for this action
+    requiresApiKeys: false
   },
 
   {
     id: 'pipeline-utility-show-user-data-location',
     name: 'Utility: show user data location',
-    description: 'shows user data location',
-    
+    description: 'shows user data location',    
     category: 'utility',
     actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-utility-show-user-data-location')),
+    // do not require API keys for this action
+    requiresApiKeys: false
   },
 
   {
     id: 'pipeline-utility-check-models',
     name: 'Utility: check AI Models',
-    description: 'checks all AI Models for deprecation',
-    
+    description: 'checks all AI Models for deprecation',    
     category: 'utility',
     actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-utility-check-models')),
   },
@@ -586,12 +588,12 @@ export const UTILITY_PIPELINES: PipelineDefinition[] = [
   {
     id: 'pipeline-utility-setup-api-key',
     name: 'Setup: setup API Key',
-    description: 'configures API keys for accessing AI models',
-    
+    description: 'configures API keys for accessing AI models',    
     category: 'utility',
     actions: APP_ACTIONS.filter(a => a.pipelines.includes('pipeline-utility-setup-api-key')),
-    nextPipeline: 'pipeline-project-new',
-    requiresApiKeys: true
+    //nextPipeline: 'pipeline-project-new',
+    // do not require API keys for this action
+    requiresApiKeys: false
   },  
 ];
 
