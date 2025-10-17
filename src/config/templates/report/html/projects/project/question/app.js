@@ -5,7 +5,6 @@ const FAVICON_64_TEMPLATE = 'https://www.google.com/s2/favicons?domain={{DOMAIN}
 const FAVICON_128_TEMPLATE = 'https://www.google.com/s2/favicons?domain={{DOMAIN}}&sz=128';
 
 const DEFAULT_GRAPH_NODE_LIMIT = 12; // Default number of top items to show in graphs
-const MIN_CHART_ITEMS = 12; // Maximum number of items to show in charts (link types, domains)
 const TOP_INFLUENCERS_COUNT_PER_SECTION = 1; // max of top influencers to show from each entity category
 
 const ENTITES_CONFIG = [
@@ -485,56 +484,104 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
     },
     // products - end
 
-    // links - begin
+    // linkDomains - begin
     {
-        title: 'Links',
-        description: 'Links mentioned and used by AI engines',
-        id: 'table_links',
+        title: 'Link Domains',
+        description: 'Domains mentioned and used by AI engines',
+        id: 'table_linkDomains',
         type: 'table-with-items',
-        sourceArrayName: 'links',
+        sourceArrayName: 'linkDomains',
         columns: [
             { type: 'marked', caption: '✔️' },
-            { type: 'link', caption: 'Link' },
-            { type: 'linkType', caption: 'Type' },
+            { type: 'link', caption: 'Domain' },
+            { type: 'linkTypeName', caption: 'Type' },
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
-            //{type: 'value', caption: 'Value'},
             { type: 'modelNames', caption: 'AI Models' }
 
         ],
         hasSearchFilter: true,
-        searchFilterFields: ['link'],
+        searchFilterFields: ['value'],
         hasModelFilter: true,
         botFilteredFields: ['bots'],
         hasAppearanceOrderTrendFilter: true,
         defaultSortingColumn: '',
         defaultSortingDirection: 'desc',
-        tocPath: 'Links/Table'
+        tocPath: 'Link Domains/Table'
+
     },
     {
-        title: 'Links Graph',
-        description: 'Visualization of links mentioned and used by AI engines',
-        id: 'graph_links',
+        title: 'Link Domains Graph',
+        description: 'Visualization of domains mentioned and used by AI engines',
+        id: 'graph_linkDomains',
         type: 'graph-with-items',
-        sourceArrayName: 'links',
-        columns: [
-            { type: 'link', caption: 'Link' },
-
-            { type: 'influence', caption: 'Voice' },
-
-        ],
+        sourceArrayName: 'linkDomains',
         hasSearchFilter: true,
-        searchFilterFields: ['link'],
+        searchFilterFields: ['value'],
         hasModelFilter: true,
         botFilteredFields: ['bots'],
         hasAppearanceOrderTrendFilter: true,
-        defaultSortingColumn: '',
+        hasTrendFilter: true,
+        defaultSortingColumn: 'positive',
         defaultSortingDirection: 'desc',
-        tocPath: 'Links/Graph'
+        tocPath: 'Link Domains/Graph'
+
     },
 
-    // links - end
+    {
+        title: 'Link Domains by Influence',
+        description: 'Chart of domains by influence',
+        id: 'chart_linkDomainsByInfluence',
+        type: 'chart-with-items',
+        sourceArrayName: 'linkDomains',
+        chartSpecificConfig: {
+            chartType: 'horizontalBar',
+            formatAsPercentage: true
+        },
+        columns: [
+            // first is always the category
+            { type: 'value', caption: 'Domain', chartAxis: 'x' },
+            { type: 'influence', caption: 'Influence', chartAxis: 'y' }
+        ],
+        hasSearchFilter: true,
+        searchFilterFields: ['value'],
+        hasModelFilter: true,
+        botFilteredFields: ['bots'],
+        hasAppearanceOrderTrendFilter: true,
+        hasTrendFilter: true,
+        defaultSortingColumn: '',
+        defaultSortingDirection: 'desc',
+        tocPath: 'Link Domains/Influence Chart'
+    },
+
+    {
+        title: 'Link Domains by Mentions',
+        description: 'Chart of domains by mentions',
+        id: 'chart_linkDomainsByMentions',
+        type: 'chart-with-items',
+        sourceArrayName: 'linkDomains',
+        chartSpecificConfig: {
+            chartType: 'horizontalBar',
+            formatValuesAsPercentage: false
+        },
+        columns: [
+            // first is always the category
+            { type: 'value', caption: 'Domain', chartAxis: 'x' },
+            { type: 'mentions', caption: 'Mentions', chartAxis: 'y' }
+        ],
+        hasSearchFilter: true,
+        searchFilterFields: ['value'],
+        hasModelFilter: true,
+        botFilteredFields: ['bots'],
+        hasAppearanceOrderTrendFilter: true,
+        hasTrendFilter: true,
+        defaultSortingColumn: 'mentions',
+        defaultSortingDirection: 'desc',
+        tocPath: 'Link Domains/Mentions Chart'
+
+    },
+    // link domains - end    
 
     // linkTypes - begin
     {
@@ -633,104 +680,58 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
     },
     // link types - end    
 
-    // linkDomains - begin
+    // links - begin
     {
-        title: 'Link Domains',
-        description: 'Domains mentioned and used by AI engines',
-        id: 'table_linkDomains',
+        title: 'Links',
+        description: 'Links mentioned and used by AI engines',
+        id: 'table_links',
         type: 'table-with-items',
-        sourceArrayName: 'linkDomains',
+        sourceArrayName: 'links',
         columns: [
             { type: 'marked', caption: '✔️' },
-            { type: 'link', caption: 'Domain' },
-            { type: 'linkTypeName', caption: 'Type' },
+            { type: 'link', caption: 'Link' },
+            { type: 'linkType', caption: 'Type' },
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
+            //{type: 'value', caption: 'Value'},
             { type: 'modelNames', caption: 'AI Models' }
 
         ],
         hasSearchFilter: true,
-        searchFilterFields: ['value'],
+        searchFilterFields: ['link'],
         hasModelFilter: true,
         botFilteredFields: ['bots'],
         hasAppearanceOrderTrendFilter: true,
         defaultSortingColumn: '',
         defaultSortingDirection: 'desc',
-        tocPath: 'Link Domains/Table'
-
+        tocPath: 'Links/Table'
     },
     {
-        title: 'Link Domains Graph',
-        description: 'Visualization of domains mentioned and used by AI engines',
-        id: 'graph_linkDomains',
+        title: 'Links Graph',
+        description: 'Visualization of links mentioned and used by AI engines',
+        id: 'graph_links',
         type: 'graph-with-items',
-        sourceArrayName: 'linkDomains',
-        hasSearchFilter: true,
-        searchFilterFields: ['value'],
-        hasModelFilter: true,
-        botFilteredFields: ['bots'],
-        hasAppearanceOrderTrendFilter: true,
-        hasTrendFilter: true,
-        defaultSortingColumn: 'positive',
-        defaultSortingDirection: 'desc',
-        tocPath: 'Link Domains/Graph'
-
-    },
-
-    {
-        title: 'Link Domains by Influence',
-        description: 'Chart of domains by influence',
-        id: 'chart_linkDomainsByInfluence',
-        type: 'chart-with-items',
-        sourceArrayName: 'linkDomains',
-        chartSpecificConfig: {
-            chartType: 'horizontalBar',
-            formatAsPercentage: true
-        },
+        sourceArrayName: 'links',
         columns: [
-            // first is always the category
-            { type: 'value', caption: 'Domain', chartAxis: 'x' },
-            { type: 'influence', caption: 'Influence', chartAxis: 'y' }
+            { type: 'link', caption: 'Link' },
+
+            { type: 'influence', caption: 'Voice' },
+
         ],
         hasSearchFilter: true,
-        searchFilterFields: ['value'],
+        searchFilterFields: ['link'],
         hasModelFilter: true,
         botFilteredFields: ['bots'],
         hasAppearanceOrderTrendFilter: true,
-        hasTrendFilter: true,
         defaultSortingColumn: '',
         defaultSortingDirection: 'desc',
-        tocPath: 'Link Domains/Influence Chart'
+        tocPath: 'Links/Graph'
     },
 
-    {
-        title: 'Link Domains by Mentions',
-        description: 'Chart of domains by mentions',
-        id: 'chart_linkDomainsByMentions',
-        type: 'chart-with-items',
-        sourceArrayName: 'linkDomains',
-        chartSpecificConfig: {
-            chartType: 'horizontalBar',
-            formatValuesAsPercentage: false
-        },
-        columns: [
-            // first is always the category
-            { type: 'value', caption: 'Domain', chartAxis: 'x' },
-            { type: 'mentions', caption: 'Mentions', chartAxis: 'y' }
-        ],
-        hasSearchFilter: true,
-        searchFilterFields: ['value'],
-        hasModelFilter: true,
-        botFilteredFields: ['bots'],
-        hasAppearanceOrderTrendFilter: true,
-        hasTrendFilter: true,
-        defaultSortingColumn: 'mentions',
-        defaultSortingDirection: 'desc',
-        tocPath: 'Link Domains/Mentions Chart'
+    // links - end    
 
-    },
-    // link domains - end
+
 
 
 ];
@@ -961,14 +962,13 @@ Vue.component('base-section-component', {
                     <a href='#' @click="showReportSelector"
                             class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-500 transition-colors flex items-center gap-1 bg-transparent border-0">
                         <span class="fa fa-exchange-alt"></span>
+                        <template v-if="$root.reportMetadata && $root.reportMetadata.isAggregateReport">
+                            <i class="fa-solid fa-chart-simple"></i> Aggregated
+                        </template>
+                        <template v-else>
+                            {{ $root.report_question }}
+                        </template>
                     </a>
-                    <span class="text-gray-400">|</span>
-                    <template v-if="$root.reportMetadata && $root.reportMetadata.isAggregateReport">
-                        <i class="fa-solid fa-chart-simple"></i> Aggregated
-                    </template>
-                    <template v-else>
-                        {{ $root.report_question }}
-                    </template>
                 </div>
 
                 <!-- Right: Export link -->
@@ -1275,7 +1275,7 @@ Vue.component('about-report', {
                 <div v-if="$root.totalDates.length === 1" class="text-gray-600 dark:text-gray-300 text-sm">
                     <span class="font-medium">Data captured on:</span> {{ $root.dateToString($root.report_date) }}
                     <br/>
-                    <span class="font-medium">Report generated on:</span> {{ $root.dateToString($root.created_at) }}
+                    <span class="font-medium">Report generated on:</span> {{ $root.dateToString($root.report_created_at) }}
                 </div>
                 <div v-else class="space-y-2">
                     <div class="text-gray-600 dark:text-gray-300 text-sm">
@@ -1359,31 +1359,56 @@ Vue.component('about-report', {
             </div>
       </div>
 
-      <!-- Report Methodology Section - AGGREGATE REPORT -->
+      <!-- Report Methodology Section -->
       <div class="border border-blue-100 dark:border-blue-900/30 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-lg p-6 mb-6">
 
                 <!-- Project Overview -->
                 <div class="mb-6">
-                    <div class="flex items-center gap-2 mb-3">
-                        <i class="fa-solid fa-chart-simple"></i>
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Project Overview</h3>
-                    </div>
-                    <div class="mb-3">
-                        <span v-if="isAggregateReport" class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Topic:
-                        </span>                        
-                        <span v-else class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Selected Question:
-                        </span>
-
-                        <span class="font-semibold text-gray-600 dark:text-gray-400">{{ $root.report_question }}</span>
-
-                        <div v-if="isAggregateReport" class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            To get full coverage, AI Chat Watch (AICW) requested answer for each question below from <strong>{{ $root.totalCounts.bots }}</strong> AI models <span class="inline-flex items-center gap-1 ml-2 has-data-hint" v-html="$root.getIconsOfAllBotsInReportHtml()"></span></span>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-md">
+                            <i class="fa-solid fa-chart-simple text-white text-lg"></i>
                         </div>
-                        <div v-else class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            <a href="../index.html">
-                            <i class="fa-solid fa-exchange-alt"></i> <span class="inline-flex items-center gap-1 ml-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">switch to aggregated report view</span>
+                        <div class="flex-1">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                                <span v-if="isAggregateReport">Research Topic</span>
+                                <span v-else>Research Question</span>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 leading-tight">
+                                &quot;{{ $root.report_question }}&quot;
+                            </h3>
+                        </div>
+                    </div>
+                    
+                    <div class="pl-13 space-y-3">
+                        <div v-if="isAggregateReport" class="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                            <p class="mb-2">
+                                This report combines insights from <strong class="text-indigo-600 dark:text-indigo-400">{{ $root.totalCounts.bots * $root.questionsData.totalQuestions }}</strong> responses by AI models. <span class="inline-flex items-center gap-1 has-data-hint" v-html="$root.getIconsOfAllBotsInReportHtml()"></span>
+                            </p>
+                            <p class="flex items-start gap-2">
+                                <span>We analyzed</span>
+                                <strong class="text-indigo-600 dark:text-indigo-400">{{ $root.totalCounts.bots }}</strong>
+                                <span>AI models answering</span>
+                                <strong class="text-indigo-600 dark:text-indigo-400">{{ $root.questionsData.totalQuestions }}</strong>
+                                <span>questions</span>                            
+                            </p>
+                            <p class="mt-2 text-xs text-gray-600 dark:text-gray-400 italic">
+                                <i class="fa-solid fa-info-circle mr-1"></i>
+                                Explore individual question responses by clicking on any question below
+                            </p>
+                        </div>
+                        
+                        <div v-else class="space-y-3">
+                            <p class="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                                This report analyzes how <strong class="text-indigo-600 dark:text-indigo-400">{{ $root.totalCounts.bots }}</strong> AI models <span class="inline-flex items-center gap-1 has-data-hint" v-html="$root.getIconsOfAllBotsInReportHtml()"></span> answered the specific question above.
+                            </p>
+                            <a href="../index.html" 
+                               class="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-indigo-500 to-blue-500 dark:from-indigo-600 dark:to-blue-700 hover:from-indigo-600 hover:to-blue-600 dark:hover:from-indigo-700 dark:hover:to-blue-800 !text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 group no-underline">
+                                <i class="fa-solid fa-chart-line text-white group-hover:scale-110 transition-transform flex-shrink-0"></i>
+                                <div class="flex-1 flex flex-col gap-1">
+                                    <span class="text-white font-medium">Recommended: Switch to the Full Aggregated Report for this topic</span>
+                                    <span class="text-white/80 text-xs">(based on insights from the full set of questions and answers)</span>
+                                </div>
+                                <i class="fa-solid fa-arrow-right text-white group-hover:translate-x-1 transition-transform flex-shrink-0"></i>
                             </a>
                         </div>
                     </div>
@@ -7045,8 +7070,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 filteredItems = this.sortByGivenColumn(filteredItems, obj.defaultSortingColumn, obj.defaultSortingDirection);
 
                 // Limit chart items to avoid cluttering
-                if (filteredItems.length > MIN_CHART_ITEMS) {
-                    filteredItems = filteredItems.slice(0, MIN_CHART_ITEMS);
+                if (filteredItems.length > VISIBLE_COUNT_BY_DEFAULT_MAX) {
+                    filteredItems = filteredItems.slice(0, VISIBLE_COUNT_BY_DEFAULT_MAX);
                 }
 
                 // filter out items with values less than minValueToUseOtherwiseRemove (if need to)
