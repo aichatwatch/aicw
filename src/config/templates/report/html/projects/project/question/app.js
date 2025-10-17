@@ -1477,11 +1477,18 @@ Vue.component('about-report', {
                             <div class="text-xs text-gray-600 dark:text-gray-400">Links</div>
                         </div>
                     </div>
-                    <div v-if="$root.totalCounts.linkTypes > 0" class="flex items-center gap-2 text-sm">
+                    <div v-if="$root.totalCounts.linkDomains > 0" class="flex items-center gap-2 text-sm">
                         <span class="text-xl"><i class="fa-solid fa-globe"></i></span>
                         <div>
+                            <div class="font-bold text-gray-800 dark:text-gray-100">{{ $root.totalCounts.linkDomains }}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">Link Domains</div>
+                        </div>
+                    </div>                    
+                    <div v-if="$root.totalCounts.linkTypes > 0" class="flex items-center gap-2 text-sm">
+                        <span class="text-xl"><i class="fa-solid fa-sitemap"></i></span>
+                        <div>
                             <div class="font-bold text-gray-800 dark:text-gray-100">{{ $root.totalCounts.linkTypes }}</div>
-                            <div class="text-xs text-gray-600 dark:text-gray-400">Source Types</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">Link Types</div>
                         </div>
                     </div>
                 </div>
