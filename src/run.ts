@@ -376,9 +376,12 @@ async function executePipelineForMenuItem(pipelineId: string, project?: string):
   let runNextPipeline = executionResult.success && pipeline.nextPipeline && pipeline.nextPipeline.length > 0;
 
   if (runNextPipeline) {
+
+      const nextPipeline = getPipeline(pipeline.nextPipeline);
       // run the next pipeline
       logger.log('--------------------------------');
-      logger.log(`IMPORTANT: Next we will run the pipeline "${pipeline.nextPipeline}" (parent: ${pipelineId}) for the project "${executionResult.project}"`);
+      logger.log(`IMPORTANT: Next we will run the pipeline "${pipeline.nextPipeline}" (parent: "${pipelineId}") for the project "${executionResult.project}"
+        \nDescription of the next pipeline: ${nextPipeline.description}`);
       logger.log('--------------------------------');
       runNextPipeline = await waitForEnterInInteractiveMode(WaitForEnterMessageType.PRESS_ENTER_TO_CONTINUE, true);
   }

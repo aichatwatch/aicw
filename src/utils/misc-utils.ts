@@ -416,7 +416,7 @@ export function isBackupFileOrFolder(entryName: string, isDirectory: boolean): b
 
 export enum WaitForEnterMessageType {
   PRESS_ENTER_TO_THE_MENU = 'PRESS ENTER TO RETURN TO THE MENU',
-  PRESS_ENTER_TO_CONTINUE = 'PRESS ENTER TO CONTINUE. PRESS CTRL+C',  
+  PRESS_ENTER_TO_CONTINUE = 'PRESS ENTER TO CONTINUE OR PRESS 0 OR CTRL+C TO CANCEL',  
 }
 
 // Function to wait for Enter key in interactive mode
