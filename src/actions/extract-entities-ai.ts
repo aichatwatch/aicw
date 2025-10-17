@@ -4,13 +4,12 @@ import vm from 'node:vm';
 import { DirentLike } from '../config/types.js';
 import { OpenAI } from 'openai';
 import { ModelConfig, getAIAIPresetWithModels } from '../utils/model-config.js';
-import { QUESTIONS_DIR, REPORT_DIR, QUESTION_DATA_COMPILED_DATE_DIR, MIN_VALID_OUTPUT_DATA_SIZE, PROJECT_DIR } from '../config/paths.js';
+import { QUESTIONS_DIR, QUESTION_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
 import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { MAIN_SECTIONS } from '../config/entities.js';
-import { writeFileAtomic, isValidOutputFile } from '../utils/misc-utils.js';
+import { isValidOutputFile } from '../utils/misc-utils.js';
 import { logger } from '../utils/compact-logger.js';
 import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
-
 import { createAiClientInstance, callAIWithRetry } from '../utils/ai-caller.js';
 import { isInterrupted } from '../utils/delay.js';
 import { cleanContentFromAI } from '../utils/content-cleaner.js';

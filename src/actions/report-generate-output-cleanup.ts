@@ -76,9 +76,13 @@ async function deleteDirectoryContents(dirPath: string): Promise<number> {
  * Clean the output directory for the target date
  */
 async function cleanOutputDirectory(project: string, targetDate: string): Promise<void> {
+  const { validatePathIsSafe } = await import('../utils/misc-utils.js');
   const outputDir = OUTPUT_DIR(project, targetDate);
 
   logger.info(`Cleaning report output directory: ${outputDir}`);
+
+  // SECURITY: Validate path is safe and inside USER_DATA_DIR before ANY deletion
+  await validatePathIsSafe(outputDir, `report cleanup for project: ${project}, date: ${targetDate}`);
 
   try {
     // Check if output directory exists

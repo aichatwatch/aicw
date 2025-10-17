@@ -1,5 +1,4 @@
-import path, { dirname } from 'path';
-import { fileURLToPath } from 'url';
+import path from 'path';
 import {
   getUserProjectDir,
   getUserProjectQuestionsDir,
@@ -12,15 +11,11 @@ import {
   getPackageRoot,
   getPackageConfigDir,
   getPackageTemplatesDir,
-  isDevMode,
   USER_DATA_DIR,
   getUserProjectAnswersDirForQuestion,
 } from './user-paths.js';
 
 
-// Base directories
-export const __dirname: string = dirname(fileURLToPath(import.meta.url));
-export const ROOT_DIR: string = getPackageRoot();
 // Config should always be read from package directory
 export const CONFIG_DIR: string = getPackageConfigDir();
 
@@ -81,10 +76,6 @@ export const AGGREGATED_DATA_COMPILED_DIR = (project: string): string =>
   getUserAggregatedDataCompiledDir(project);
 export const AGGREGATED_DATA_COMPILED_DATE_DIR = (project: string, date: string): string => 
   getUserAggregatedDataCompiledDateDir(project, date);
-
-// File size constraints
-export const MIN_VALID_ANSWER_SIZE = 200; // Minimum size in bytes for a valid answer
-export const MIN_VALID_OUTPUT_DATA_SIZE = 200; // Minimum size in bytes for PROMPT.md, COMPILED.js, data.js files
 
 // Retry configuration
 export const RETRY_CONFIG = {

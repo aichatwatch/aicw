@@ -67,6 +67,7 @@ interface SpinnerState {
 class FileLogger {
   private logPath: string;
   private writeStream: NodeJS.WritableStream | null = null;
+  private closing: boolean = false;
 
   constructor(logPath: string) {
     this.logPath = logPath;
@@ -81,7 +82,7 @@ class FileLogger {
   }
 
   log(level: string, message: string): void {
-    if (!this.writeStream) return;
+    if (!this.writeStream || this.closing) return;
 
     const timestamp = new Date().toISOString();
     const logLine = `[${timestamp}] [${level}] ${message}\n`;
@@ -89,6 +90,7 @@ class FileLogger {
   }
 
   async close(): Promise<void> {
+    this.closing = true;
     return new Promise((resolve) => {
       if (this.writeStream) {
         this.writeStream.end(() => {

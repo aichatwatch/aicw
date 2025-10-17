@@ -48,7 +48,7 @@ async function runInterruptible(
   return new Promise((resolve, reject) => {
     // Show interrupt hint unless disabled
     if (showHint) {
-      output.writeLine(colorize('\n💡 Press Ctrl+C to cancel this operation and return to menu', 'dim'));
+      output.writeLine(colorize('\n💡 Press Ctrl+C to cancel operation and return to menu', 'dim'));
     }
 
     // Set environment variable to indicate we're running from interactive mode
@@ -198,9 +198,9 @@ async function checkApiKeysArePresent(): Promise<boolean> {
   const hasApiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
 
   if (!hasApiKey) {
-    output.writeLine('--------------------------------');
-    output.writeLine(colorize('⚠️  No API keys were set! Please run "Setup: setup API Key" first and try again.\n', 'yellow'));
-    output.writeLine('--------------------------------');
+    output.writeLine('----!!!!!!!-------------------------');
+    output.writeLine(colorize('⚠️  No API keys were set! Please run "Setup: setup API Key" first and then try again.\n', 'red'));
+    output.writeLine('----!!!!!!!------------------------');
     return false;
   }  
   else { 
@@ -237,7 +237,7 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
     for (const pipeline of normalPipelines) {
       const numStr = String(choiceNum++);
       menuMap.set(numStr, pipeline);
-      output.writeLine(`${numStr}) ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
+      output.writeLine(`[${numStr}] ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
     }
   }
 
@@ -247,7 +247,7 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
     for (const pipeline of advancedPipelines) {
       const numStr = String(1000+choiceNum++);
       menuMap.set(numStr, pipeline);
-      output.writeLine(`${numStr}) ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
+      output.writeLine(`[${numStr}] ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
     }
   }  
 
@@ -255,17 +255,17 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
   output.writeLine('\n' + colorize('⚙️  More:', 'yellow'));
 
   const demoReportsChoice = String(choiceNum++);
-  output.writeLine(`${demoReportsChoice}) ` + colorize('View Demo Reports', 'cyan') + ' - View Demo Reports');
+  output.writeLine(`[${demoReportsChoice}] ` + colorize('View Demo Reports', 'cyan') + ' - View Demo Reports');
 
 
 
   const helpChoice = String(choiceNum++);
-  output.writeLine(`${helpChoice}) ` + colorize('Help', 'cyan') + ' - Show Help');
+  output.writeLine(`[${helpChoice}] ` + colorize('Help', 'cyan') + ' - Show Help');
 
   const licenseChoice = String(choiceNum++);
-  output.writeLine(`${licenseChoice}) ` + colorize('License', 'cyan') + ' - Show License');
+  output.writeLine(`[${licenseChoice}] ` + colorize('License', 'cyan') + ' - Show License');
 
-  output.writeLine('0) ' + colorize('Exit', 'cyan') + ' - Exit\n');
+  output.writeLine('[0] ' + colorize('Exit', 'cyan') + ' - Exit\n');
 
   // Display server status if running
   if (isServerRunning()) {
@@ -376,16 +376,21 @@ async function executePipelineForMenuItem(pipelineId: string, project?: string):
   let runNextPipeline = executionResult.success && pipeline.nextPipeline && pipeline.nextPipeline.length > 0;
 
   if (runNextPipeline) {
+
+      const nextPipeline = getPipeline(pipeline.nextPipeline);
       // run the next pipeline
       logger.log('--------------------------------');
-      logger.log(`IMPORTANT: Next we will run the pipeline "${pipeline.nextPipeline}" (parent: ${pipelineId}) for the project "${executionResult.project}"`);
+      logger.log(`IMPORTANT: Next we will run the pipeline "${pipeline.nextPipeline}" (parent: "${pipelineId}") for the project "${executionResult.project}"
+        \nDescription of the next pipeline: ${nextPipeline.description}`);
       logger.log('--------------------------------');
       runNextPipeline = await waitForEnterInInteractiveMode(WaitForEnterMessageType.PRESS_ENTER_TO_CONTINUE, true);
   }
   if (runNextPipeline) {
       const ExecutionResultNext: ExecutionResult = await executePipelineForMenuItem(pipeline.nextPipeline, executionResult.project);
       if (!ExecutionResultNext.success) {
-        logger.error(`Failed to run next pipeline ${pipeline.nextPipeline} (parent: ${pipelineId}) for project ${executionResult.project}`);
+        logger.error(`Failed to run the pipeline "${pipeline.nextPipeline}" (parent: "${pipelineId}") for project "${executionResult.project}"
+        \nPlease try again by selecting the pipeline "${pipeline.nextPipeline}" from the main menu.
+          `);
       }
       return ExecutionResultNext;
   }

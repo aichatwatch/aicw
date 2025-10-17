@@ -27,7 +27,7 @@ export async function showUserDataLocation(): Promise<void> {
 
   // Show platform-specific command to open the folder
   const plat = platform();
-  logger.info('\nTo open this folder (copy paste to the Terminal/Console app):');
+  logger.log('\nTo open this folder (copy paste to the Terminal/Console app):');
   let command = '';
   if (plat === 'win32') {
     command = `explorer "${USER_DATA_DIR}"`;
@@ -37,14 +37,6 @@ export async function showUserDataLocation(): Promise<void> {
     command = `xdg-open "${USER_DATA_DIR}"`;
   }
   output.writeLine(`\n${colorize(command, 'green')}\n`);
-
-  // Display key subdirectories
-  logger.info('Key subdirectories:');
-  logger.info(`  projects/ - Your project data`);
-  logger.info(`  reports/  - Generated reports`);
-  logger.info(`  cache/    - Temporary cache`);
-  logger.info(`  config/   - Configuration files`);
-  logger.info(`  logs/     - Application logs`);
 }
 
 async function main(): Promise<void> {

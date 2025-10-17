@@ -12,7 +12,7 @@ import { PROJECT_DIR, QUESTION_DATA_COMPILED_DATE_DIR, GET_ANSWERS_DIR_FOR_QUEST
 import { cleanContentFromAI } from "./content-cleaner.js";
 import vm from "node:vm";
 import { PipelineCriticalError, MissingConfigError } from "./pipeline-errors.js";
-import { MIN_VALID_ANSWER_SIZE } from "../config/paths.js";
+import { MIN_VALID_ANSWER_SIZE } from "../config/user-paths.js";
 import { DEFAULT_PRESET_NAME, getAIPreset } from "../ai-preset-manager.js";
 import { ValidationResult } from "./validation.js";
 import { isValidDate } from "./validation.js";

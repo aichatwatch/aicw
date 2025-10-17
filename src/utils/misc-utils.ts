@@ -1,19 +1,17 @@
 import { promises as fs } from 'fs';
 import path, { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { randomBytes } from 'crypto';
 import { getPackageRoot, isDevMode } from '../config/user-paths.js';
 import { decryptCredentialsFile, isEncryptedCredentials } from './crypto-utils.js';
 import { output } from './output-manager.js';
-import { MIN_VALID_OUTPUT_DATA_SIZE, USER_CONFIG_CREDENTIALS_FILE } from  '../config/paths.js';
+import { USER_CONFIG_CREDENTIALS_FILE } from  '../config/user-paths.js';
 import { PipelineCriticalError } from './pipeline-errors.js';
 import { CompactLogger } from './compact-logger.js';
 import * as readline from 'readline';
 import { spawn } from 'child_process';
+import { MIN_VALID_OUTPUT_DATA_SIZE } from '../config/user-paths.js';
+import { homedir } from 'os';
 const logger = CompactLogger.getInstance();
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT_DIR = join(__dirname, '..');
 
 const MAX_TEMPLATE_PREVIEW_LENGTH_FOR_ERROR_MESSAGES = 400;
 
@@ -414,9 +412,302 @@ export function isBackupFileOrFolder(entryName: string, isDirectory: boolean): b
   return false;
 }
 
+/**
+ * Validate that a path is safe for file operations and within USER_DATA_DIR boundary.
+ * This critical security function prevents accidental operations on system files or outside the app's data folder.
+ *
+ * SECURITY CHECKS:
+ * 1. Rejects system directories (/System, /Windows, /usr, /etc, etc.)
+ * 2. Rejects root directory and home directory root
+ * 3. Resolves symlinks to prevent escape attacks
+ * 4. REQUIRES path to be inside USER_DATA_DIR (~/Library/Application Support/aicw/{username}/data/)
+ * 5. Checks for suspicious patterns (.git, node_modules, ..)
+ *
+ * @param targetPath - Path to validate (can be relative or absolute)
+ * @param operationDescription - Description of operation for error messages
+ * @throws PipelineCriticalError if path is dangerous or outside USER_DATA_DIR boundary
+ *
+ * @example
+ * await validatePathIsSafe('/Users/x/Library/Application Support/aicw/user/data/projects/foo', 'project dir');
+ * // PASS - inside USER_DATA_DIR
+ *
+ * await validatePathIsSafe('/etc/passwd', 'project dir');
+ * // THROW - system directory
+ *
+ * await validatePathIsSafe('/Users/x/Documents/foo', 'project dir');
+ * // THROW - outside USER_DATA_DIR boundary
+ */
+export async function validatePathIsSafe(
+  targetPath: string,
+  operationDescription: string
+): Promise<void> {
+  const { USER_DATA_DIR } = await import('../config/user-paths.js');
+
+  // Normalize path for checking
+  const normalizedPath = path.normalize(targetPath);
+
+  // CHECK 1: Dangerous system directories
+  const dangerousPatterns = {
+    darwin: [
+      '/System', '/Library', '/Applications', '/usr', '/etc', '/bin',
+      '/sbin', '/var', '/private', '/dev', '/cores'
+    ],
+    win32: [
+      'C:\\Windows', 'C:\\Program Files', 'C:\\Program Files (x86)',
+      'C:\\ProgramData', 'C:\\System32'
+    ],
+    linux: [
+      '/usr', '/etc', '/bin', '/sbin', '/lib', '/lib64', '/boot',
+      '/sys', '/proc', '/dev', '/run', '/root'
+    ]
+  };
+
+  const platform = process.platform;
+  const systemDirs = dangerousPatterns[platform as keyof typeof dangerousPatterns] || dangerousPatterns.linux;
+
+  for (const sysDir of systemDirs) {
+    const normalizedSysDir = path.normalize(sysDir);
+    if (normalizedPath === normalizedSysDir || normalizedPath.startsWith(normalizedSysDir + path.sep)) {
+      throw new PipelineCriticalError(
+        `SECURITY: Cannot operate on system directory!\n` +
+        `  Operation: ${operationDescription}\n` +
+        `  Target path: ${normalizedPath}\n` +
+        `  Detected system directory: ${normalizedSysDir}\n` +
+        `  This operation is BLOCKED to prevent system damage.`,
+        'validatePathIsSafe'
+      );
+    }
+  }
+
+  // CHECK 2: Root directory or home directory root  
+  const homeDir = homedir();
+  if (normalizedPath === '/' || normalizedPath === 'C:\\' || normalizedPath === homeDir) {
+    throw new PipelineCriticalError(
+      `SECURITY: Cannot operate on root/home directory!\n` +
+      `  Operation: ${operationDescription}\n` +
+      `  Target path: ${normalizedPath}\n` +
+      `  This operation is BLOCKED to prevent data loss.`,
+      'validatePathIsSafe'
+    );
+  }
+
+  // CHECK 3 & 4: Resolve real paths and validate boundary
+  try {
+    // Resolve target path - handle non-existent paths by resolving parent
+    let resolvedTarget: string;
+    try {
+      resolvedTarget = await fs.realpath(targetPath);
+    } catch (error) {
+      // Path doesn't exist yet - resolve parent and append basename
+      const parentPath = path.dirname(targetPath);
+      const baseName = path.basename(targetPath);
+      try {
+        const resolvedParent = await fs.realpath(parentPath);
+        resolvedTarget = path.join(resolvedParent, baseName);
+      } catch {
+        // Parent doesn't exist either - use normalized absolute path
+        resolvedTarget = path.resolve(normalizedPath);
+      }
+    }
+
+    // Resolve USER_DATA_DIR boundary
+    const resolvedBoundary = await fs.realpath(USER_DATA_DIR);
+
+    // Normalize both paths
+    const normalizedTarget = path.normalize(resolvedTarget);
+    const normalizedBoundary = path.normalize(resolvedBoundary);
+
+    // Check if target is inside boundary
+    const boundaryWithSep = normalizedBoundary.endsWith(path.sep)
+      ? normalizedBoundary
+      : normalizedBoundary + path.sep;
+
+    const isInside = normalizedTarget === normalizedBoundary ||
+                     normalizedTarget.startsWith(boundaryWithSep);
+
+    if (!isInside) {
+      throw new PipelineCriticalError(
+        `SECURITY: Path is outside allowed boundary!\n` +
+        `  Operation: ${operationDescription}\n` +
+        `  Target path: ${normalizedTarget}\n` +
+        `  Required boundary: ${normalizedBoundary}\n` +
+        `  ALL operations must be inside: <userdatapath>/aicw/<username>/data/\n` +
+        `  This operation is BLOCKED to prevent accidental data loss outside app folder.`,
+        'validatePathIsSafe'
+      );
+    }
+
+  } catch (error) {
+    if (error instanceof PipelineCriticalError) {
+      throw error;
+    }
+    // If we can't resolve paths, fail safe
+    throw new PipelineCriticalError(
+      `Failed to validate path safety: ${error instanceof Error ? error.message : String(error)}\n` +
+      `  Operation: ${operationDescription}\n` +
+      `  Target path: ${targetPath}\n` +
+      `  Cannot verify path is safe - operation BLOCKED.`,
+      'validatePathIsSafe'
+    );
+  }
+
+  // CHECK 5: Suspicious patterns
+  const suspiciousPatterns = ['.git', 'node_modules', '..'];
+  for (const pattern of suspiciousPatterns) {
+    if (normalizedPath.includes(path.sep + pattern + path.sep) ||
+        normalizedPath.endsWith(path.sep + pattern)) {
+      logger.warn(`Path contains suspicious pattern "${pattern}": ${normalizedPath} for operation: ${operationDescription}`);
+    }
+  }
+
+  logger.debug(`Path validation PASSED: ${normalizedPath} is safe for ${operationDescription}`);
+}
+
+/**
+ * Convert Node.js file system error codes into user-friendly explanations.
+ * Provides platform-specific troubleshooting guidance.
+ *
+ * @param error - The error object from fs operations
+ * @param operationDescription - Description of what was being attempted
+ * @returns Formatted error message with explanation and fix suggestions
+ *
+ * @example
+ * try {
+ *   mkdirSync('/restricted/path');
+ * } catch (error) {
+ *   console.error(explainFileSystemError(error, 'creating directory'));
+ * }
+ * // Output:
+ * // ❌ Permission denied when creating directory
+ * //    Error Code: EACCES
+ * //    Cause: You don't have write access to this location
+ * //    Fix (macOS): Check permissions...
+ */
+export function explainFileSystemError(
+  error: any,
+  operationDescription: string
+): string {
+  const errorCode = error.code || error.errno || 'UNKNOWN';
+  const errorMessage = error.message || String(error);
+  const platform = process.platform;
+
+  // Error code explanations with platform-specific fixes
+  const errorExplanations: Record<string, {
+    message: string;
+    cause: string;
+    fix: Record<string, string>;
+  }> = {
+    EACCES: {
+      message: 'Permission denied',
+      cause: "You don't have write/read access to this location",
+      fix: {
+        darwin: 'Check permissions: ls -la "$(dirname <path>)" or use chmod/chown to fix permissions',
+        win32: 'Run terminal as Administrator or check folder Properties > Security tab',
+        linux: 'Check permissions: ls -la "$(dirname <path>)" or use sudo/chmod to fix'
+      }
+    },
+    EPERM: {
+      message: 'Operation not permitted',
+      cause: 'Insufficient privileges, file is locked, or protected by system',
+      fix: {
+        darwin: 'File may be locked or require admin access. Try: sudo or check System Preferences > Security',
+        win32: 'Run as Administrator or check if file is in use by another program',
+        linux: 'Try with sudo or check if file is immutable (lsattr/chattr)'
+      }
+    },
+    ENOENT: {
+      message: 'File or directory not found',
+      cause: 'Path does not exist, or parent directory is missing',
+      fix: {
+        darwin: 'Verify path exists: ls -la "$(dirname <path>)"',
+        win32: 'Verify path exists in File Explorer',
+        linux: 'Verify path exists: ls -la "$(dirname <path>)"'
+      }
+    },
+    ENOSPC: {
+      message: 'No space left on device',
+      cause: 'Disk is full - insufficient storage space',
+      fix: {
+        darwin: 'Free up space: Check storage in  > About This Mac > Storage',
+        win32: 'Free up space: Check C:\\ drive in File Explorer',
+        linux: 'Free up space: df -h to check disk usage, rm unnecessary files'
+      }
+    },
+    EROFS: {
+      message: 'Read-only file system',
+      cause: 'Cannot write to read-only mounted filesystem',
+      fix: {
+        darwin: 'Check if volume is mounted read-only: mount | grep <path>',
+        win32: 'Check drive properties and ensure it\'s not write-protected',
+        linux: 'Remount with write permissions: sudo mount -o remount,rw <path>'
+      }
+    },
+    ENOTDIR: {
+      message: 'Not a directory',
+      cause: 'Expected a directory but found a file at this path',
+      fix: {
+        darwin: 'Check path: file <path> to see what it is',
+        win32: 'Verify path in File Explorer',
+        linux: 'Check path: file <path> or ls -la <path>'
+      }
+    },
+    EISDIR: {
+      message: 'Is a directory',
+      cause: 'Expected a file but found a directory at this path',
+      fix: {
+        darwin: 'Check if you need to operate on directory instead: ls -la <path>',
+        win32: 'Verify path in File Explorer points to a file',
+        linux: 'Check path: ls -ld <path>'
+      }
+    },
+    EEXIST: {
+      message: 'File already exists',
+      cause: 'Cannot create file/directory - already exists at this location',
+      fix: {
+        darwin: 'Remove existing file first or choose different name',
+        win32: 'Delete existing file in File Explorer or choose different name',
+        linux: 'Remove existing file: rm <path> or choose different name'
+      }
+    },
+    EMFILE: {
+      message: 'Too many open files',
+      cause: 'Process has opened too many files simultaneously',
+      fix: {
+        darwin: 'Close some files or increase limit: ulimit -n',
+        win32: 'Close some applications or restart the program',
+        linux: 'Close files or increase limit: ulimit -n <number>'
+      }
+    }
+  };
+
+  const explanation = errorExplanations[errorCode] || {
+    message: 'Unknown file system error',
+    cause: `Unexpected error: ${errorMessage}`,
+    fix: {
+      darwin: 'Check system logs: Console.app or contact support',
+      win32: 'Check Event Viewer or contact support',
+      linux: 'Check system logs: journalctl or dmesg'
+    }
+  };
+
+  const platformFix = explanation.fix[platform as keyof typeof explanation.fix] ||
+                      explanation.fix.linux ||
+                      'Contact system administrator';
+
+  // Format the error message
+  const formattedMessage = [
+    `❌ ${explanation.message} when ${operationDescription}`,
+    `   Error Code: ${errorCode}`,
+    `   Cause: ${explanation.cause}`,
+    `   Fix: ${platformFix}`
+  ];
+
+  return formattedMessage.join('\n');
+}
+
 export enum WaitForEnterMessageType {
   PRESS_ENTER_TO_THE_MENU = 'PRESS ENTER TO RETURN TO THE MENU',
-  PRESS_ENTER_TO_CONTINUE = 'PRESS ENTER TO CONTINUE. PRESS CTRL+C OR "Q" TO CANCEL.',  
+  PRESS_ENTER_TO_CONTINUE = 'PRESS ENTER TO CONTINUE OR PRESS 0 OR CTRL+C TO CANCEL',  
 }
 
 // Function to wait for Enter key in interactive mode
@@ -457,7 +748,7 @@ export async function waitForEnterInInteractiveMode(
       });
     });
 
-    if (input && (input.trim().toLowerCase() === 'q' || input === '^C')) {
+    if (input && (input.trim().toLowerCase() === '0' || input === '^C')) {
       return false;
     }
     return true;

@@ -3,7 +3,7 @@ import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import { PROJECT_DIR as USER_PROJECT_DIR } from '../config/paths.js';
-import { waitForEnterInInteractiveMode, writeFileAtomic } from '../utils/misc-utils.js';
+import { colorize, waitForEnterInInteractiveMode, writeFileAtomic } from '../utils/misc-utils.js';
 import { getUserProjectQuestionFileContent, getUserProjectQuestionsFile, getUserProjectQuestionFilePath } from '../config/user-paths.js';
 import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, validateAndLoadProject } from '../utils/project-utils.js';
 // get action name for the current module
@@ -159,12 +159,13 @@ async function main(): Promise<void> {
       await fs.mkdir(path.join(destDir, folderName, 'answers'), { recursive: true });
       created++;
     }
-
+    
     const total = lines.length - duplicates;
-    logger.info(`Questions prepared: ${total} prompts processed in ${destDir}`);
-    if (created > 0) logger.info(`  • Created: ${created}`);
-    if (reused > 0) logger.info(`  • Reused existing: ${reused}`);
-    if (duplicates > 0) logger.info(`  • Skipped duplicates in input: ${duplicates}`);
+    logger.info(`Questions prepared: ${total} questions saved into the folder:\n\n${destDir}\n\n`);
+    if (created > 0) logger.info(`• Created folders for questions: ${created}`);
+    if (reused > 0) logger.info(`• Reused existing folders for questions: ${reused}`);
+    if (duplicates > 0) logger.info(`• Skipped duplicates in input: ${duplicates}`);
+
   } catch (error) {
     console.error(`Error reading questions file: ${questionsFile}`);
     console.error(error);
