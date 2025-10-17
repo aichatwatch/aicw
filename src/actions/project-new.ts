@@ -153,8 +153,8 @@ async function selectQuestionTemplate(subject: string): Promise<QuestionTemplate
       //if (index < templates.length - 1) logger.log(''); // Add space between templates
     });
 
-    logger.log(colorize('[999] Custom set of questions', 'cyan'));
-    logger.log(colorize('Enter 999 to create your own set of questions manually', 'dim'));
+    logger.log(colorize('[999] Custom set of questions', 'bright'));
+    logger.log(colorize('create your own set of questions manually', 'dim'));
 
     // Get user selection with option to go back
     const selection = await question('\nSelect preset of questions (1-' + templates.length + ', or 0 to cancel): ');
@@ -485,10 +485,9 @@ async function getQuestionsStep(template: QuestionTemplate, subject: string): Pr
     logger.log(colorize('\n✓ Generated questions accepted', 'dim'));
     return generatedQuestions;
   }
+  logger.log('\n' + colorize('Editing Questions', 'bright'));
 
-  logger.log('\n' + colorize('Editing Generated Questions', 'bright'));
-
-  // Edit questions
+    // Edit questions
   const finalQuestions = await editQuestions(generatedQuestions);
 
   if (finalQuestions.length === 0) {
