@@ -18,6 +18,7 @@ AI Chat Watch (aka AICW) is the tool for GEO (Generative Engine Optimization) ma
 - [📊 Pipeline Architecture](#-pipeline-architecture) ⭐ _NEW_
 - [🤝 Support](#-support)
 - [📄 License](#-license)
+- [🔔 Schedule a Report](#-schedule-a-report)
 - [Contacts](#contacts)
 
 ---
@@ -298,6 +299,11 @@ flowchart TD
 - ✅ **You control all costs** - Only pay for AI API usage through OpenRouter/OpenAI/Perplexity as you consume it
 - ❌ Cannot offer AICW as a hosted service to others
 
+# 🔔 Schedule a Report
+
+To create a report for the current date, run "project-build" pipeline and it will run full pipeline for the current date. The new report will be created and will indicate trend (growing, declining, stable) for every item where possible using newly captured data and data from previous reports.
+
+If want to schedule capturing new data and generating a report with trends to be sent weekly or monthly to your inbox automatically, please visit https://aichatwatch.com/cloud for more information.
 
 # Contacts
 

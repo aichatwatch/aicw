@@ -306,7 +306,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
             { type: 'modelNames', caption: 'AI Models' }
-            
+
 
         ],
         hasSearchFilter: true,
@@ -354,7 +354,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
             { type: 'modelNames', caption: 'AI Models' },
-            
+
 
         ],
         hasSearchFilter: true,
@@ -545,7 +545,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         sourceArrayName: 'linkTypes',
         columns: [
             { type: 'marked', caption: '✔️' },
-            { type: 'value', caption: 'Type' },            
+            { type: 'value', caption: 'Type' },
             { type: 'influence', caption: 'Voice' },
             { type: 'appearanceOrder', caption: 'Order' },
             { type: 'mentions', caption: 'Mentions' },
@@ -604,7 +604,7 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
         defaultSortingColumn: '',
         defaultSortingDirection: 'desc',
         tocPath: 'Link Types/Influence Chart'
-    },    
+    },
     {
         title: 'Link Type by Mentions',
         description: 'Chart of source types by mentions',
@@ -773,11 +773,11 @@ const TRENDS = Object.freeze({
 });
 
 const NUMERIC_COLUMN_HEADERS = [
-    'appearanceOrder', 
+    'appearanceOrder',
     'mentions',
     'influence',
-    'positive', 
-    'neutral', 
+    'positive',
+    'neutral',
     'negative'
 ];
 
@@ -961,14 +961,13 @@ Vue.component('base-section-component', {
                     <a href='#' @click="showReportSelector"
                             class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-500 transition-colors flex items-center gap-1 bg-transparent border-0">
                         <span class="fa fa-exchange-alt"></span>
-                        <span>Switch</span>
                     </a>
                     <span class="text-gray-400">|</span>
                     <template v-if="$root.reportMetadata && $root.reportMetadata.isAggregateReport">
-                        📊 Aggregated ({{ $root.reportMetadata.totalQuestions }} questions)
+                        <i class="fa-solid fa-chart-simple"></i> Aggregated
                     </template>
                     <template v-else>
-                        📝 Question: {{ $root.report_question }}
+                        {{ $root.report_question }}
                     </template>
                 </div>
 
@@ -1250,16 +1249,12 @@ Vue.component('about-report', {
     extends: baseProps,
     data() {
         return {
-            tocSectionExpanded: localStorage.getItem('tocSectionExpanded') === 'true', // Default to false
-            dataSectionExpanded: localStorage.getItem('dataSectionExpanded') === 'false', // Default to false
+            dataSectionExpanded: localStorage.getItem('dataSectionExpanded') === 'false', // Default to false (collapsed)
             questionsExpanded: true, // Default to expanded for easy access
             questionSearch: '' // Search query for questions
         }
     },
     watch: {
-        tocSectionExpanded(val) {
-            localStorage.setItem('tocSectionExpanded', val);
-        },
         dataSectionExpanded(val) {
             localStorage.setItem('dataSectionExpanded', val);
         }
@@ -1272,7 +1267,7 @@ Vue.component('about-report', {
                 {{ $root.report_title || $root.report_question }}
             </h1>
             <p v-if="$root.report_type === 'aggregate'" class="text-gray-500 dark:text-gray-400 text-lg mb-4">
-                Comprehensive Analysis Across All Questions
+                Aggregate Report (from all {{$root.report_question_number}} questions)
             </p>
 
             <!-- Enhanced Date Display -->
@@ -1364,194 +1359,144 @@ Vue.component('about-report', {
             </div>
       </div>
 
-      <!-- Table of Contents Section -->
-      <div class="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg mb-6">
-            <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center justify-between">
-                <button @click="tocSectionExpanded = !tocSectionExpanded"
-                        class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                    <span class="font-semibold text-gray-700 dark:text-gray-200">Table of Contents</span>
-                </button>
+      <!-- Report Methodology Section - AGGREGATE REPORT -->
+      <div class="border border-blue-100 dark:border-blue-900/30 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-lg p-6 mb-6">
 
-                <div class="flex items-center gap-3">
+                <!-- Project Overview -->
+                <div class="mb-6">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-chart-simple"></i>
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Project Overview</h3>
+                    </div>
+                    <div class="mb-3">
+                        <span v-if="isAggregateReport" class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Topic:
+                        </span>                        
+                        <span v-else class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Selected Question:
+                        </span>
 
-                    <!-- Expand/Collapse Icon -->
-                    <button @click="tocSectionExpanded = !tocSectionExpanded">
-                        <svg class="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform" :class="tocSectionExpanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
+                        <span class="font-semibold text-gray-600 dark:text-gray-400">{{ $root.report_question }}</span>
 
-            <div v-show="tocSectionExpanded" class="p-4 relative">
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    <div v-for="(items, groupName) in groupedOptionsWithCounts" :key="groupName"
-                         class="border-l-4 border-gray-200 pl-3">
-                        <h3 class="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
-                            <span>{{ groupName.split(' (')[0] }}</span>
-                            <span v-if="groupName.includes('(')" class="text-xs font-normal text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
-                                {{ groupName.match(/\\(([^)]+)\\)/)?.[1] }}
-                            </span>
-                        </h3>
-                        <div class="space-y-1">
-                            <a v-for="item in items"
-                               :key="item.id"
-                               :href="'#parent_div_for_' + item.id"
-                               @click.prevent="$root.scrollToElement('parent_div_for_' + item.id)"
-                               class="block text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 rounded transition-colors">
-                                <span class="flex items-center gap-2">
-                                    <svg v-if="item.type === 'table-with-items'" class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                    </svg>
-                                    <svg v-else-if="item.type === 'graph-with-items'" class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                    </svg>
-                                    <svg v-else class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    {{ item.title.replace(' Table', '').replace(' Graph', '') }}
-                                </span>
+                        <div v-if="isAggregateReport" class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                            To get full coverage, AI Chat Watch (AICW) requested answer for each question below from <strong>{{ $root.totalCounts.bots }}</strong> AI models <span class="inline-flex items-center gap-1 ml-2 has-data-hint" v-html="$root.getIconsOfAllBotsInReportHtml()"></span></span>
+                        </div>
+                        <div v-else class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                            <a href="../index.html">
+                            <i class="fa-solid fa-exchange-alt"></i> <span class="inline-flex items-center gap-1 ml-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">switch to aggregated report view</span>
                             </a>
                         </div>
                     </div>
-                </div>
-                <!-- Questions Section for Aggregate Reports -->
-                <div v-if="$root.report_type === 'aggregate' && $root.questionsData" class="mt-4 pt-4 border-t border-gray-200">
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between">
-                            <div class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Questions Analyzed ({{ questions_count }})
+                </div>            
+                <div class="mb-6">
+                    <template v-if="filteredQuestions.length > 0">                    
+                        <a v-for="(question, index) in (questionsExpanded ? filteredQuestions : filteredQuestions.slice(0, 3))"
+                           :key="question.id"
+                           :href="question.reportUrl"
+                           class="block p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-md transition-all group">
+                            <div class="flex items-start gap-3">
+                                <span class="flex-shrink-0 inline-flex items-center justify-center w-7 h-7 text-sm font-bold bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-full">
+                                    {{ index + 1 }}
+                                </span>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-indigo-700 dark:group-hover:text-indigo-300">
+                                            {{ question.text }}
+                                    </p>
+                                </div>
+                                view per question report <i class="fa-solid fa-arrow-right"></i>
                             </div>
-                            <button @click="questionsExpanded = !questionsExpanded"
-                                    class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
-                                {{ questionsExpanded ? 'Hide' : 'Show' }} Questions
+                        </a>
+                        <div v-if="!questionsExpanded && filteredQuestions.length > 3" class="text-center pt-2">
+                            <button @click="questionsExpanded = true"
+                                    class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
+                                + {{ filteredQuestions.length - 3 }} more questions
                             </button>
                         </div>
+                    </template>
+                </div>
+            </div>
 
-                        <div v-show="questionsExpanded" class="space-y-2">
-                            <input v-if="questions_count > 5"
-                                   v-model="questionSearch"
-                                   type="text"
-                                   placeholder="Search questions..."
-                                   class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500">
-
-                            <div class="max-h-64 overflow-y-auto space-y-1">
-                                <a v-for="question in filteredQuestions"
-                                   :key="question.id"
-                                   :href="question.reportUrl"
-                                   class="block p-2 rounded bg-gray-50/50 dark:bg-gray-700/30 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group">
-                                    <div class="flex items-start gap-3">
-                                        <span class="flex-shrink-0 inline-flex items-center justify-center w-7 h-7 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full group-hover:bg-blue-100 dark:group-hover:bg-blue-900 group-hover:text-blue-700 dark:group-hover:text-blue-300">
-                                            {{ question.number }}
-                                        </span>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-700 dark:group-hover:text-blue-300 truncate">
-                                                {{ question.text }}
-                                            </p>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                                                {{ question.answerCount }} answers
-                                            </p>
-                                        </div>
-                                        <svg class="flex-shrink-0 w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </div>
-                                </a>
-                            </div>
+            <!-- Mentions Detected -->
+            <div class="mb-6 p-4">
+                <div class="flex items-center gap-2 mb-3">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Mentions Detected In Responses From AI Models 
+                        <span class="inline-flex items-center gap-1 ml-2" v-html="$root.getIconsOfAllBotsInReportHtml()"></span>
+                    </h3>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    From analyzing all AI responses, we automatically identified and ranked mentions of:
+                </p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div v-if="$root.totalCounts.products > 0" class="flex items-center gap-2 text-sm">
+                        <span class="text-xl"><i class="fa-solid fa-box"></i></span>
+                        <div>
+                            <div class="font-bold text-gray-800 dark:text-gray-100">{{ $root.totalCounts.products }}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">Products</div>
+                        </div>
+                    </div>
+                    <div v-if="$root.totalCounts.organizations > 0" class="flex items-center gap-2 text-sm">
+                        <span class="text-xl"><i class="fa-solid fa-building"></i></span>
+                        <div>
+                            <div class="font-bold text-gray-800 dark:text-gray-100">{{ $root.totalCounts.organizations }}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">Organizations</div>
+                        </div>
+                    </div>
+                    <div v-if="$root.totalCounts.persons > 0" class="flex items-center gap-2 text-sm">
+                        <span class="text-xl"><i class="fa-solid fa-user"></i></span>
+                        <div>
+                            <div class="font-bold text-gray-800 dark:text-gray-100">{{ $root.totalCounts.persons }}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">Persons</div>
+                        </div>
+                    </div>
+                    <div v-if="$root.totalCounts.places > 0" class="flex items-center gap-2 text-sm">
+                        <span class="text-xl"><i class="fa-solid fa-location-dot"></i></span>
+                        <div>
+                            <div class="font-bold text-gray-800 dark:text-gray-100">{{ $root.totalCounts.places }}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">Places</div>
+                        </div>
+                    </div>
+                    <div v-if="$root.totalCounts.events > 0" class="flex items-center gap-2 text-sm">
+                        <span class="text-xl"><i class="fa-solid fa-calendar"></i></span>
+                        <div>
+                            <div class="font-bold text-gray-800 dark:text-gray-100">{{ $root.totalCounts.events }}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">Events</div>
+                        </div>
+                    </div>
+                    <div v-if="$root.totalCounts.keywords > 0" class="flex items-center gap-2 text-sm">
+                        <span class="text-xl"><i class="fa-solid fa-hashtag"></i></span>
+                        <div>
+                            <div class="font-bold text-gray-800 dark:text-gray-100">{{ $root.totalCounts.keywords }}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">Keywords</div>
+                        </div>
+                    </div>
+                    <div v-if="$root.totalCounts.links > 0" class="flex items-center gap-2 text-sm">
+                        <span class="text-xl"><i class="fa-solid fa-link"></i></span>
+                        <div>
+                            <div class="font-bold text-gray-800 dark:text-gray-100">{{ $root.totalCounts.links }}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">Links</div>
+                        </div>
+                    </div>
+                    <div v-if="$root.totalCounts.linkDomains > 0" class="flex items-center gap-2 text-sm">
+                        <span class="text-xl"><i class="fa-solid fa-globe"></i></span>
+                        <div>
+                            <div class="font-bold text-gray-800 dark:text-gray-100">{{ $root.totalCounts.linkDomains }}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">Link Domains</div>
+                        </div>
+                    </div>                    
+                    <div v-if="$root.totalCounts.linkTypes > 0" class="flex items-center gap-2 text-sm">
+                        <span class="text-xl"><i class="fa-solid fa-sitemap"></i></span>
+                        <div>
+                            <div class="font-bold text-gray-800 dark:text-gray-100">{{ $root.totalCounts.linkTypes }}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">Link Types</div>
                         </div>
                     </div>
                 </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-4 italic">
+                    All entities are ranked by influence, mention frequency, and trends in the sections below.
+                </p>
             </div>
       </div>
-
-      <!-- Data Coverage Section -->
-      <div class="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg">
-            <button @click="dataSectionExpanded = !dataSectionExpanded"
-                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v1a1 1 0 001 1h4a1 1 0 001-1v-1m3-2V8a2 2 0 00-2-2H8a2 2 0 00-2 2v6m0 0a2 2 0 002 2h8a2 2 0 002-2m-6-6v6" />
-                    </svg>
-                    <span class="font-semibold text-gray-700 dark:text-gray-200">AI Models & Data Coverage Details</span>
-                </div>
-                <svg class="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform" :class="dataSectionExpanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-            </button>
-
-            <div v-show="dataSectionExpanded" class="p-4">
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <div v-for="bot in $root.bots" :key="bot.id"
-                         class="flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <img v-if="bot.url"
-                             :src="'https://www.google.com/s2/favicons?domain=' + extractDomain(bot.url) + '&sz=16'"
-                             class="w-5 h-5 flex-shrink-0"
-                             :alt="bot.name">
-                        <div class="min-w-0 flex-1">
-                            <div class="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{{ bot.name }}</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                                <template v-if="bot.estimated_mau">
-                                    {{ formatUsers(bot.estimated_mau) }} users
-                                </template>
-                                <template v-if="bot.tags">
-                                    <span class="ml-2">{{ bot.tags }}</span>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div v-if="$root.totalCounts.products > 0">
-                        <div class="text-xs text-gray-500 dark:text-gray-400 uppercase">Products</div>
-                        <div class="text-xl font-semibold text-gray-700 dark:text-gray-300">{{ $root.totalCounts.products }}</div>
-                    </div>
-                    <div v-if="$root.totalCounts.organizations > 0">
-                        <div class="text-xs text-gray-500 dark:text-gray-400 uppercase">Organizations</div>
-                        <div class="text-xl font-semibold text-gray-700 dark:text-gray-300">{{ $root.totalCounts.organizations }}</div>
-                    </div>
-                    <div v-if="$root.totalCounts.persons > 0">
-                        <div class="text-xs text-gray-500 dark:text-gray-400 uppercase"> Persons</div>
-                        <div class="text-xl font-semibold text-gray-700 dark:text-gray-300">{{ $root.totalCounts.persons }}</div>
-                    </div>
-                    <div v-if="$root.totalCounts.places > 0">
-                        <div class="text-xs text-gray-500 dark:text-gray-400 uppercase">Places</div>
-                        <div class="text-xl font-semibold text-gray-700 dark:text-gray-300">{{ $root.totalCounts.places }}</div>
-                    </div>
-                    <div v-if="$root.totalCounts.events > 0">
-                        <div class="text-xs text-gray-500 dark:text-gray-400 uppercase">Events</div>
-                        <div class="text-xl font-semibold text-gray-700 dark:text-gray-300">{{ $root.totalCounts.events }}</div>
-                    </div>
-                    <div v-if="$root.totalCounts.keywords > 0">
-                        <div class="text-xs text-gray-500 dark:text-gray-400 uppercase">Keywords</div>
-                        <div class="text-xl font-semibold text-gray-700 dark:text-gray-300">{{ $root.totalCounts.keywords }}</div>
-                    </div>
-                    <div v-if="$root.totalCounts.links > 0">
-                        <div class="text-xs text-gray-500 dark:text-gray-400 uppercase">Links</div>
-                        <div class="text-xl font-semibold text-gray-700 dark:text-gray-300">{{ $root.totalCounts.links }}</div>
-                    </div>
-                    <div v-if="$root.totalCounts.linkTypes > 0">
-                        <div class="text-xs text-gray-500 dark:text-gray-400 uppercase">Link Types</div>
-                        <div class="text-xl font-semibold text-gray-700 dark:text-gray-300">{{ $root.totalCounts.linkTypes }}</div>
-                    </div>
-                </div>
-
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400">
-                    <div class="flex items-center gap-2">
-                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>Time saved calculated as 5 minutes per data point analyzed</span>
-                    </div>
-                </div>
-            </div>
       </div>
     </base-section-component>
 `,
@@ -1572,37 +1517,23 @@ Vue.component('about-report', {
         }
     },
     computed: {
-        groupedOptions() {
-            const groups = {};
-            this.obj.options.forEach(option => {
-                const pathParts = option.path.split('/');
-                const groupName = pathParts[0];
-                if (!groups[groupName]) {
-                    groups[groupName] = [];
-                }
-                groups[groupName].push(option);
-            });
-            return groups;
+        isAggregateReport() {
+            return this.$root.report_type === 'aggregate';
         },
-        groupedOptionsWithCounts() {
-            const groups = this.groupedOptions;
-            const result = {};
-
-            Object.entries(groups).forEach(([groupName, items]) => {
-                // Convert groupName to lowercase and remove 's' at the end for matching with totalCounts
-                const countKey = groups[groupName][0]?.sourceArrayName;
-                const count = (countKey === undefined || !countKey) ? '' : ` (${this.$root.totalCounts?.[countKey]})`;
-                result[`${groupName}${count}`] = items;
-            });
-
-            return result;
+        isSingleQuestionReport() {
+            return this.$root.report_type !== 'aggregate';
         },
-        mainSections() {
-            const mainSections = {};
-            Object.entries(this.groupedOptionsWithCounts).forEach(([groupName, items]) => {
-                mainSections[groupName] = [items[0]];
-            });
-            return mainSections;
+        totalMonthlyReach() {
+            return this.$root.bots.reduce((sum, bot) => {
+                return sum + (bot.estimated_mau || 0);
+            }, 0);
+        },
+        formattedReach() {
+            const count = this.totalMonthlyReach;
+            if (count >= 1000000000) return (count / 1000000000).toFixed(1) + ' billion';
+            if (count >= 1000000) return (count / 1000000).toFixed(0) + ' million';
+            if (count >= 1000) return (count / 1000).toFixed(0) + ' thousand';
+            return count.toLocaleString();
         },
         questions_count() {
             return this.$root.questionsData?.totalQuestions || 0;
@@ -3377,7 +3308,7 @@ Vue.component('top-influencers', {
             // push top influencers to selectedItems to select by default
             this.topInfluencers.forEach(item => {
                 this.$root.selectedItems.push(item);
-            });            
+            });
         }
     },
     computed: {
@@ -4877,6 +4808,26 @@ document.addEventListener('DOMContentLoaded', function () {
                 return `${months[date.getMonth()]} ${date.getDate()}`;
             },
 
+            getIconsOfAllBotsInReport() {
+                return this.bots.map(bot => {
+                    const botIconUrl = this.getModelIconUrl(bot.id);
+                    return {
+                        id: bot.id,
+                        iconUrl: botIconUrl,
+                        name: bot.name
+                    };
+                });
+            },
+
+            // Returns HTML string with icons of all AI models used in the report
+            getIconsOfAllBotsInReportHtml() {
+                return this.bots.map(bot => {
+                    const botIconUrl = this.getModelIconUrl(bot.id);
+                    const botName = bot.name || bot.id;
+                    return `<img src="${botIconUrl}" class="w-6 h-6 inline-block has-data-hint" data-title="${botName}" alt="${botName}" onerror="this.style.display='none'">`;
+                }).join(' ');
+            },
+
             renderVisualObjects() {
                 this.CURRENT_VISUAL_OBJECTS_ARRAY.forEach(obj => {
                     if (obj.type === 'table-with-items') {
@@ -5119,7 +5070,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             showExcerptPopup(item, highlightField = 'value') {
                 // Determine if value is a link?
-                const isLink = item[highlightField].toLowerCase().match(/http|www/);                
+                const isLink = item[highlightField].toLowerCase().match(/http|www/);
                 const searchTerm = isLink ? this.cleanAndMinimizeUrl(item[highlightField].toLowerCase()) : item[highlightField];
                 if (!searchTerm || searchTerm.length === 0) {
                     console.error(`No search term found for item ${highlightField}, item: ${JSON.stringify(item)}`);
@@ -7937,7 +7888,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         ${modelIconsHtml}
                     </div>
                 `;
-                    
+
                 cell.setAttribute('data-column', 'modelNames');
                 cell.setAttribute('data-value', uniqueCount);
             },

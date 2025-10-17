@@ -124,7 +124,7 @@ export function drawBox(lines: string[], options: BoxOptions = {}): string {
     borderColor = 'green',
     padding = 1,
     width,
-    align = 'center'
+    align = 'left'
   } = options;
 
   // Find the longest line to determine border width
