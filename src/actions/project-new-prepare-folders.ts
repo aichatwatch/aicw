@@ -162,13 +162,9 @@ async function main(): Promise<void> {
     
     const total = lines.length - duplicates;
     logger.info(`Questions prepared: ${total} questions saved into the folder:\n\n${destDir}\n\n`);
-    if (created > 0) logger.info(`  • Created: ${created}`);
-    if (reused > 0) logger.info(`  • Reused existing: ${reused}`);
-    if (duplicates > 0) logger.info(`  • Skipped duplicates in input: ${duplicates}`);
-
-    logger.info(colorize(`Questions saved into the folder:\n${destDir}`, 'green'));
-    logger.info(colorize(`Project: ${project}`, 'green'));
-    logger.info(colorize(`Project folder: ${destDir}`, 'green'));
+    if (created > 0) logger.info(`• Created folders for questions: ${created}`);
+    if (reused > 0) logger.info(`• Reused existing folders for questions: ${reused}`);
+    if (duplicates > 0) logger.info(`• Skipped duplicates in input: ${duplicates}`);
 
   } catch (error) {
     console.error(`Error reading questions file: ${questionsFile}`);

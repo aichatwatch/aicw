@@ -310,7 +310,7 @@ async function selectProjectAIPreset(projectName: string): Promise<{ ai_preset?:
     ai_presetList.forEach(([key, ai_preset], index) => {
       const modelCount = ai_preset.models?.[ModelType.GET_ANSWER].length || 0;
       //const modelsNames = ai_preset.models?.[ModelType.GET_ANSWER].join(', ');
-      logger.log(`${index + 1}) ${colorize(ai_preset.name, 'cyan')} (${modelCount} AIs)- ${ai_preset.description}`);
+      logger.log(`[${index + 1}] ${colorize(ai_preset.name, 'cyan')} (${modelCount} AIs)- ${ai_preset.description}`);
     });
 
     const choice = await question('\nSelect option (1-' + (ai_presetList.length) + ', or Enter to go back): ');  

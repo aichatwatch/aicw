@@ -237,7 +237,7 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
     for (const pipeline of normalPipelines) {
       const numStr = String(choiceNum++);
       menuMap.set(numStr, pipeline);
-      output.writeLine(`${numStr}) ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
+      output.writeLine(`[${numStr}] ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
     }
   }
 
@@ -247,7 +247,7 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
     for (const pipeline of advancedPipelines) {
       const numStr = String(1000+choiceNum++);
       menuMap.set(numStr, pipeline);
-      output.writeLine(`${numStr}) ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
+      output.writeLine(`[${numStr}] ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
     }
   }  
 
@@ -255,17 +255,17 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
   output.writeLine('\n' + colorize('⚙️  More:', 'yellow'));
 
   const demoReportsChoice = String(choiceNum++);
-  output.writeLine(`${demoReportsChoice}) ` + colorize('View Demo Reports', 'cyan') + ' - View Demo Reports');
+  output.writeLine(`[${demoReportsChoice}] ` + colorize('View Demo Reports', 'cyan') + ' - View Demo Reports');
 
 
 
   const helpChoice = String(choiceNum++);
-  output.writeLine(`${helpChoice}) ` + colorize('Help', 'cyan') + ' - Show Help');
+  output.writeLine(`[${helpChoice}] ` + colorize('Help', 'cyan') + ' - Show Help');
 
   const licenseChoice = String(choiceNum++);
-  output.writeLine(`${licenseChoice}) ` + colorize('License', 'cyan') + ' - Show License');
+  output.writeLine(`[${licenseChoice}] ` + colorize('License', 'cyan') + ' - Show License');
 
-  output.writeLine('0) ' + colorize('Exit', 'cyan') + ' - Exit\n');
+  output.writeLine('[0] ' + colorize('Exit', 'cyan') + ' - Exit\n');
 
   // Display server status if running
   if (isServerRunning()) {
