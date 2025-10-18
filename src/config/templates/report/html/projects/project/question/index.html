@@ -1815,7 +1815,38 @@
             .scroll-hint::after,
             .combobox-select,
             .feedback-link,
-            .subscribe-link {
+            .subscribe-link,
+            #navigation-menu,
+            #mobile-menu-toggle,
+            #desktop-menu-toggle,
+            #menu-overlay,
+            multi-select-combobox,
+            div.w-80:has(multi-select-combobox),
+            input[placeholder^="type to filter"],
+            div.mb-3:has(input[placeholder^="type to filter"]),
+            div.flex.border-b.mb-4,
+            .sort-icon,                          /* Sorting arrows in table headers */
+            .text-gray-500.text-sm,              /* Item counts and filter info (Σ 60, 12/60 reset) */
+            a:has(.fa-exchange-alt),             /* Switch report link */
+            .fa-exchange-alt,                     /* Switch report icon */
+            a[href="#"]:has(.fa-chart-simple),   /* Aggregated link */
+            .fa-chart-simple,                     /* Aggregated icon */
+            a:contains("to csv"),                 /* CSV export links */
+            a[href="#"][class*="text-blue"] {    /* Generic blue action links in headers */
+                display: none !important;
+            }
+
+            /* Hide sorting indicators and other interactive elements in headers */
+            th .ml-1,
+            th span.ml-1,
+            .sortable-table th span {
+                display: none !important;
+            }
+
+            /* Hide section header action links more robustly */
+            .base-section-component a[href="#"],
+            div:has(> a[href="#"]) a.text-blue-600.text-sm,
+            div.text-right a[href="#"] {
                 display: none !important;
             }
             
@@ -1844,25 +1875,68 @@
             h2 { font-size: 18pt; margin-bottom: 10pt; page-break-after: avoid; }
             h3 { font-size: 14pt; margin-bottom: 8pt; page-break-after: avoid; }
             
-            /* Section handling */
+            /* Section handling - remove decorative borders and excess spacing */
             .section, .base-section-component {
                 page-break-inside: avoid;
-                margin-bottom: 20pt;
+                margin-bottom: 10pt !important; /* Reduced from 20pt */
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
                 box-shadow: none !important;
-                border: 1px solid #e5e7eb;
+                border: none !important; /* Remove gray borders around sections */
+            }
+
+            /* Remove container margins and padding */
+            .container,
+            .mx-auto,
+            .px-4,
+            .py-4,
+            .report-container,
+            main {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+                max-width: 100% !important;
+            }
+
+            /* Remove rounded corners and decorative effects */
+            .rounded,
+            .rounded-lg,
+            .shadow,
+            .shadow-lg {
+                border-radius: 0 !important;
+                box-shadow: none !important;
+            }
+
+            /* Remove background colors from containers (keep content white) */
+            .bg-gray-50,
+            .bg-gray-100,
+            .bg-blue-50 {
+                background-color: white !important;
             }
             
-            /* Tables */
+            /* Tables - denser formatting for better vertical fit */
             table {
                 page-break-inside: avoid;
                 border-collapse: collapse;
                 width: 100%;
+                font-size: 9pt; /* Smaller font */
             }
-            
+
             table th, table td {
                 border: 1px solid #d1d5db;
-                padding: 6pt;
-                font-size: 10pt;
+                padding: 3pt 4pt !important; /* Reduced from 6pt - much more compact */
+                font-size: 9pt !important; /* Smaller than screen (10pt) */
+                line-height: 1.2 !important; /* Tighter line spacing */
+            }
+
+            /* Even more compact for Links table */
+            #table_links th,
+            #table_links td {
+                padding: 2pt 3pt !important;
+                font-size: 8pt !important;
             }
             
             /* Charts - show placeholder text */
@@ -1886,13 +1960,29 @@
                 text-decoration: underline !important;
             }
             
-            /* Show URLs for important links */
+            /* Don't show URLs after links when printing - keep it clean */
+            /* Commented out to prevent URL expansion like: blogural.ai (https://blogural.ai)
             a[href^="http"]:after {
                 content: " (" attr(href) ")";
                 font-size: 9pt;
                 color: #6b7280;
             }
-            
+            */
+
+            /* Prevent browsers from showing URLs in Sources column - force icon-only display */
+            td[data-column="sources"] a {
+                font-size: 0 !important; /* Hide any text content */
+                text-decoration: none !important;
+                line-height: 0 !important;
+                color: transparent !important;
+            }
+
+            /* Ensure source icons display at normal size */
+            td[data-column="sources"] a img {
+                display: inline-block !important;
+                font-size: 16px !important; /* Reset for images */
+            }
+
             /* Print-only elements */
             .print-only {
                 display: block !important;

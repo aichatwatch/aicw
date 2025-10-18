@@ -205,9 +205,9 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             { type: 'sources', caption: 'Sources' },
             //{ type: 'link', caption: 'Link' },
             { type: 'influence', caption: 'Voice' },
-            { type: 'appearanceOrder', caption: 'Order' },
+            { type: 'appearanceOrder', caption: 'Pos' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'modelNames', caption: 'AI Models' },
+            { type: 'modelNames', caption: 'AI' },
 
 
         ],
@@ -253,10 +253,10 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             { type: 'value', caption: 'Keyword' },
             { type: 'sources', caption: 'Sources' },
             { type: 'influence', caption: 'Voice' },
-            { type: 'appearanceOrder', caption: 'Order' },
+            { type: 'appearanceOrder', caption: 'Pos' },
             { type: 'mentions', caption: 'Mentions' },
             //{ type: 'similar', caption: 'Similar', subType2: 'commaSeparated' },
-            { type: 'modelNames', caption: 'AI Models' },
+            { type: 'modelNames', caption: 'AI' },
 
 
         ],
@@ -302,9 +302,9 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             //{ type: 'link', caption: 'Link' },
             { type: 'sources', caption: 'Sources' },
             { type: 'influence', caption: 'Voice' },
-            { type: 'appearanceOrder', caption: 'Order' },
+            { type: 'appearanceOrder', caption: 'Pos' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'modelNames', caption: 'AI Models' }
+            { type: 'modelNames', caption: 'AI' }
 
 
         ],
@@ -350,9 +350,9 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             //{ type: 'link', caption: 'Link' },
             { type: 'sources', caption: 'Sources' },
             { type: 'influence', caption: 'Voice' },
-            { type: 'appearanceOrder', caption: 'Order' },
+            { type: 'appearanceOrder', caption: 'Pos' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'modelNames', caption: 'AI Models' },
+            { type: 'modelNames', caption: 'AI' },
 
 
         ],
@@ -400,9 +400,9 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             //{ type: 'link', caption: 'Link' },
             { type: 'sources', caption: 'Sources' },
             { type: 'influence', caption: 'Voice' },
-            { type: 'appearanceOrder', caption: 'Order' },
+            { type: 'appearanceOrder', caption: 'Pos' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'modelNames', caption: 'AI Models' },
+            { type: 'modelNames', caption: 'AI' },
 
         ],
         hasSearchFilter: true,
@@ -449,9 +449,9 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             //{ type: 'link', caption: 'Link' },
             { type: 'sources', caption: 'Sources' },
             { type: 'influence', caption: 'Voice' },
-            { type: 'appearanceOrder', caption: 'Order' },
+            { type: 'appearanceOrder', caption: 'Pos' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'modelNames', caption: 'AI Models' }
+            { type: 'modelNames', caption: 'AI' }
 
         ],
         hasSearchFilter: true,
@@ -496,9 +496,9 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             { type: 'link', caption: 'Domain' },
             { type: 'linkTypeName', caption: 'Type' },
             { type: 'influence', caption: 'Voice' },
-            { type: 'appearanceOrder', caption: 'Order' },
+            { type: 'appearanceOrder', caption: 'Pos' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'modelNames', caption: 'AI Models' }
+            { type: 'modelNames', caption: 'AI' }
 
         ],
         hasSearchFilter: true,
@@ -594,9 +594,9 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             { type: 'marked', caption: '✔️' },
             { type: 'value', caption: 'Type' },
             { type: 'influence', caption: 'Voice' },
-            { type: 'appearanceOrder', caption: 'Order' },
+            { type: 'appearanceOrder', caption: 'Pos' },
             { type: 'mentions', caption: 'Mentions' },
-            { type: 'modelNames', caption: 'AI Models' }
+            { type: 'modelNames', caption: 'AI' }
 
         ],
         hasSearchFilter: true,
@@ -692,10 +692,10 @@ const DEFAULT_VISUAL_OBJECTS_ARRAY = [
             { type: 'link', caption: 'Link' },
             { type: 'linkType', caption: 'Type' },
             { type: 'influence', caption: 'Voice' },
-            { type: 'appearanceOrder', caption: 'Order' },
+            { type: 'appearanceOrder', caption: 'Pos' },
             { type: 'mentions', caption: 'Mentions' },
             //{type: 'value', caption: 'Value'},
-            { type: 'modelNames', caption: 'AI Models' }
+            { type: 'modelNames', caption: 'AI' }
 
         ],
         hasSearchFilter: true,
@@ -752,8 +752,6 @@ const ERROR_VALUE = '!!ERROR!!';
 const NA_VALUE_CAPTION = 'N/A';
 const NA_VALUE_HTML_FOR_CELL = `<span class="text-gray-300 text-sm muted">N/A</span>`;
 
-const VISIBLE_COUNT_BY_DEFAULT_IN_PERCENTS = 30;
-const VISIBLE_COUNT_BY_DEFAULT_HARD_MIN_LIMIT = 3;
 const VISIBLE_COUNT_BY_DEFAULT_MAX = 12; // Maximum items to show initially
 
 const URL_DETECTION_PATTERN = /^(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9-]+\.(?:[a-zA-Z]{2,}))(?:\/[a-zA-Z0-9-]+)*(?:\/[a-zA-Z0-9-]+(?:-[a-zA-Z0-9]+)*)?$/;
@@ -5948,12 +5946,7 @@ document.addEventListener('DOMContentLoaded', function () {
             },
 
             get_default_max_visible_item_count(itemCount) {
-                const percentLimit = Math.floor(itemCount * VISIBLE_COUNT_BY_DEFAULT_IN_PERCENTS / 100);
-                const limit = Math.min(percentLimit, VISIBLE_COUNT_BY_DEFAULT_MAX); // Cap at max visible items
-                if (IS_DEBUG) {
-                    console.debug(`DEBUG: get_default_max_visible_item_count(${itemCount}): ${limit}`);
-                }
-                return limit > VISIBLE_COUNT_BY_DEFAULT_HARD_MIN_LIMIT ? limit : VISIBLE_COUNT_BY_DEFAULT_HARD_MIN_LIMIT;
+                return itemCount > VISIBLE_COUNT_BY_DEFAULT_MAX ? VISIBLE_COUNT_BY_DEFAULT_MAX : itemCount;
             },
 
             filterBySelected_AIModels(obj, items, selectedEngines) {
@@ -7669,7 +7662,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (this[`current_visible_items_count_${containerId}`] > filteredItems.length) {
                     this[`current_visible_items_count_${containerId}`] = filteredItems.length;
                 }
-                else if (this[`current_visible_items_count_${containerId}`] < VISIBLE_COUNT_BY_DEFAULT_HARD_MIN_LIMIT) {
+                else if (this[`current_visible_items_count_${containerId}`] < VISIBLE_COUNT_BY_DEFAULT_MAX) {
                     this[`current_visible_items_count_${containerId}`] = this.get_default_max_visible_item_count(filteredItems.length);
                 }
 
