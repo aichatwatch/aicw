@@ -1,22 +1,19 @@
-import { spawnSync, spawn, ChildProcess } from 'child_process';
-import { existsSync, readFileSync, promises as fs } from 'fs';
-import path, { resolve, join } from 'path';
-import { homedir } from 'os';
+import { spawn, ChildProcess } from 'child_process';
+import { readFileSync, promises as fs } from 'fs';
+import path from 'path';
 import { getPackageRoot } from './config/user-paths.js';
 import * as readline from 'readline';
 import { loadEnvFile, drawBox, waitForEnterInInteractiveMode, getModuleNameFromUrl, createCleanReadline } from './utils/misc-utils.js';
 import { logger } from './utils/compact-logger.js';
 import { output } from './utils/output-manager.js';
-import { OUTPUT_DIR, QUESTIONS_DIR, QUESTION_DATA_COMPILED_DIR } from './config/paths.js';
-import { AGGREGATED_DIR_NAME } from './config/constants.js';
-import { getUpdateNotification, checkForUpdates, getCurrentVersion } from './utils/update-checker.js';
+import { getUpdateNotification, getCurrentVersion } from './utils/update-checker.js';
 import { performUpdate, showVersion } from './utils/update-installer.js';
 import { getCliMenuItems, getActionByCommand, CliMenuItem, getPipeline } from './config/pipelines-and-actions.js';
 import { PipelineExecutor, ExecutionOptions, ExecutionResult } from './utils/pipeline-executor.js';
-import { startServer, stopServer, isServerRunning, getServerPort } from './actions/utils/report-serve.js';
+import { stopServer, isServerRunning, getServerPort } from './actions/utils/report-serve.js';
 import { initializeUserDirectories } from './config/user-paths.js';
 import { PipelineCriticalError } from './utils/pipeline-errors.js';
-import { getScriptPath, COLORS } from './utils/misc-utils.js';
+import { COLORS } from './utils/misc-utils.js';
 import { AICW_GITHUB_URL } from './config/constants.js';
 import { WaitForEnterMessageType, openInDefaultBrowser } from './utils/misc-utils.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
@@ -32,9 +29,6 @@ enum MenuState {
   EXIT = 'exit',
   CONTINUE = 'continue'
 }
-
-// Track the running server process
-let serverProcess: ChildProcess | null = null;
 
 // Track current child process for interrupt handling
 let currentChildProcess: ChildProcess | null = null;
@@ -81,63 +75,6 @@ async function runInterruptible(
   });
 }
 
-// Helper function for non-critical menu operations (setup, config, etc)
-async function runMenuOperation(args: string[], description?: string): Promise<boolean> {
-  if (description) {
-    output.writeLine(colorize(`\n${description}`, 'green'));
-  }
-  output.writeLine(colorize('💡 Press Ctrl+C to cancel and return to menu', 'dim'));
-
-  try {
-    return await runInterruptible(args, false); // false = don't show hint again
-  } catch (error: any) {
-    if (error.message === 'Operation cancelled') {
-      output.writeLine(colorize('\n↩️ Cancelled, returning to menu...', 'yellow'));
-      return false;
-    }
-    throw error;
-  }
-}
-
-// Helper function for delays
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// Helper function to start the web server in background
-async function startWebServer(): Promise<void> {
-  if (isServerRunning()) {
-    const port = getServerPort();
-    output.warn(`⚠️  Server is already running at http://localhost:${port}/`);
-    return;
-  }
-
-  try {
-    // Start the server and get the actual port
-    const port = await startServer();
-
-    // Mark that we have a server running (using a dummy process for compatibility)
-    serverProcess = {} as ChildProcess;
-    // Store the actual port immediately so it's available for menu display
-    (serverProcess as any).port = port;
-
-    // Give server time to fully start then open browser
-    await new Promise<void>(async resolve => {
-      setTimeout(() => {
-        openInDefaultBrowser(`http://localhost:${port}`);
-        resolve();
-      }, 1500);
-    });
-
-    // Wait for user to press Enter before returning to menu
-    const rl = createCleanReadline();
-    await new Promise(resolve => rl.question('\nReports server is running in background. Press Enter to return to menu...', () => { rl.close(); process.stdin.pause(); resolve(null); }));
-  } catch (error) {
-    output.error(`❌ Failed to start server: ${error}`);
-    serverProcess = null;
-  }
-}
-
 // Helper function to stop the web server
 function stopWebServer(): boolean {
   if (!isServerRunning()) {
@@ -145,7 +82,6 @@ function stopWebServer(): boolean {
   }
 
   stopServer(); // Call real server stop function
-  serverProcess = null;
   output.success('Server stopped');
   return true;
 }
@@ -167,6 +103,33 @@ async function printHelp(): Promise<void> {
   const quickStartPath = path.join(getPackageRoot(), 'README.md');
   const quickStartContent = readFileSync(quickStartPath, 'utf8');
   output.writeLine(quickStartContent);
+
+  // now also write the list of available pipelines
+  output.writeLine(colorize('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'dim'));
+  const allPipelines = getCliMenuItems(false);
+  output.writeLine(colorize('Available pipelines:\n', 'yellow'));
+  
+  // Group pipelines by category
+  const grouped = new Map<string, typeof allPipelines>();
+  for (const pipeline of allPipelines) {
+    const category = pipeline.category;
+    if (!grouped.has(category)) {
+      grouped.set(category, []);
+    }
+    grouped.get(category)!.push(pipeline);
+  }
+
+  // Display pipelines grouped by category
+  for (const [category, pipelines] of grouped) {
+    output.writeLine(colorize(`➡ ${category.toUpperCase()}:`, 'cyan'));
+    for (const pipeline of pipelines) {
+      output.writeLine(`  ${colorize(`[${pipeline.id}] ${pipeline.name} - ${pipeline.description}`, 'dim')}`);
+      output.writeLine(`  To run use: ${colorize(`aicw ${pipeline.id} <project-name>`, 'bright')}`);
+      output.writeLine('');
+    }
+  }
+  output.writeLine(colorize('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'dim'));
+
     // Wait for Enter in interactive mode
   await waitForEnterInInteractiveMode(WaitForEnterMessageType.PRESS_ENTER_TO_THE_MENU, true);
 }
@@ -526,8 +489,8 @@ async function main(): Promise<void> {
   // SPECIAL COMMANDS
   switch (resolvedCommand) {
     default:
-      console.error(colorize(`\n✗ Oops! I don't know the command '${command}'`, 'red'));
-      console.error(colorize('Try "aicw help" to see what I can do.\n', 'dim'));
+      console.error(colorize(`\n✗ Oops! I don't know the command or a pipeline "${command}"`, 'red'));
+      console.error(colorize(`Try "aicw help" to see what I can do.`, 'dim'));
       process.exit(1);
   }
 }
