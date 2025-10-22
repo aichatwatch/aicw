@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { DirentLike } from '../config/types.js';
 import { REPORT_HTML_TEMPLATE_DIR, QUESTIONS_DIR, REPORT_DIR, OUTPUT_DIR, PROJECT_REPORTS_DIR, QUESTION_DATA_COMPILED_DATE_DIR, AGGREGATED_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
-import { getCategoriesForItemsByType, MAIN_SECTIONS } from '../config/entities.js';
+import { ENTITIES_CONFIG, getCategoriesForItemsByType, MAIN_SECTIONS } from '../config/constants-entities.js';
 import { replaceMacrosInTemplate, writeFileAtomic } from './misc-utils.js';
 import { logger } from './compact-logger.js';
 import {
@@ -146,6 +146,16 @@ async function mergeItems(project: string, itemsByPrompt: Record<string, any[]>,
     
     // Clean up internal tracking field
     delete item._uniqueMentionsByModel;
+  });
+
+  // Recalculate bots/botCount based on final aggregated mentionsByModel
+  mergedArray.forEach(item => {
+    const botsWithMentions = Object.entries(item.mentionsByModel || {})
+      .filter(([botId, mentions]) => (mentions as number) > 0)
+      .map(([botId]) => botId);
+    item.bots = botsWithMentions.join(',');
+    item.botCount = botsWithMentions.length;
+    item.uniqueModelCount = botsWithMentions.length;
   });
   
   // Merge excerpts from all prompts into a single excerptsByModel with question info
@@ -357,99 +367,52 @@ export async function generateAggregateReport(project: string, date: string): Pr
     // Collect questions data with answer counts
     const questionsData = await collectQuestionsData(project, date, questions);
     logger.info(`Collected questions data: ${questionsData.totalQuestions} questions, ${questionsData.totalAnswers} total answers`);
-    
-    // Load all enriched data files
-    const dataByPrompt: Record<string, any> = {};
-    const validPrompts: string[] = [];
-    
-    for (const promptId of promptIds) {
-      // Try to load from OUTPUT directory first (which has excerpts with line/column info)
-      const outputDataPath = path.join(OUTPUT_DIR(project, date), promptId, `${date}-data.js`);
-      const compiledDataPath = path.join(QUESTION_DATA_COMPILED_DATE_DIR(project, promptId, date), `${date}-data.js`);
-      
-      try {
-        let data;
-        try {
-          // First try OUTPUT directory which has excerpts
-          data = await loadEnrichedData(outputDataPath);
-          logger.info(`Loaded data for ${promptId} from OUTPUT directory (with excerpts)`);
-        } catch (outputError) {
-          // Fallback to data-compiled directory
-          data = await loadEnrichedData(compiledDataPath);
-          logger.info(`Loaded data for ${promptId} from data-compiled directory (no excerpts)`);
-        }
-        
-        dataByPrompt[promptId] = data;
-        validPrompts.push(promptId);
-      } catch (error) {
-        logger.warn(`Failed to load data for ${promptId}: ${error}`);
-      }
+
+    // Load the pre-enriched aggregate data (already calculated in enrichment pipeline)
+    const aggregatedCompiledPath = path.join(AGGREGATED_DATA_COMPILED_DATE_DIR(project, date), `${date}-data.js`);
+    let aggregatedData: any;
+
+    try {
+      aggregatedData = await loadEnrichedData(aggregatedCompiledPath);
+      logger.info(`Loaded pre-enriched aggregate data from ${aggregatedCompiledPath}`);
+    } catch (error) {
+      throw new Error(`Failed to load pre-enriched aggregate data: ${error}`);
     }
-    
-    if (validPrompts.length === 0) {
-      throw new Error('No valid prompt data found to aggregate');
-    }
-    
-    logger.info(`Successfully loaded data from ${validPrompts.length} prompts`);
-    
-    // Extract data by type from each prompt
-    const itemsByType: Record<string, Record<string, any[]>> = {};
-    
-    // Initialize itemsByType with categories
-    for (const category of getCategoriesForItemsByType()) {
-      itemsByType[category] = {};
-    }
-    
-    const questionsByPrompt: Record<string, string> = {};
 
-    // Collect items from each prompt
-    for (const [promptId, data] of Object.entries(dataByPrompt)) {
-      for (const arrayName of Object.keys(itemsByType)) {
-        itemsByType[arrayName][promptId] = data[arrayName] || [];
-      }
-      questionsByPrompt[promptId] = data.report_question || promptId;
-    }
-    
-    // Take base structure from first valid prompt
-    const baseData = dataByPrompt[validPrompts[0]];
+    // Use promptIds as validPrompts (for metadata)
+    const validPrompts = promptIds;
 
-    // Create aggregated data structure
-    const aggregatedData = {
-      ...baseData,
-      report_type: 'aggregate',
-      report_date: date,
-      report_question: project, // Use project name instead of generic text
-      report_title: project,     // Also set report_title for consistency
-      prompts: validPrompts,
-      promptQuestions: questions,
-      questionsData: questionsData,  // Add questions data with answer counts
+    // Add metadata to the pre-enriched aggregate data
+    // (Entity data is already calculated correctly in the enrichment pipeline)
+    aggregatedData.report_type = 'aggregate';
+    aggregatedData.report_date = date;
+    aggregatedData.report_question = project;
+    aggregatedData.report_title = project;
+    aggregatedData.prompts = validPrompts;
+    aggregatedData.promptQuestions = questions;
+    aggregatedData.questionsData = questionsData;
 
-      // Fix report metadata for aggregate reports
-      reportMetadata: {
-        isQuestionReport: false,
-        isAggregateReport: true,
-        totalQuestions: validPrompts.length,
-        questionsIncluded: validPrompts
-      },
-
-      // Include bots array from base data (all questions use the same bots)
-      bots: baseData.bots || [],
-
-      // Update counts
-      totalDataPoints: 0,
-      totalCounts: {}
+    // Fix report metadata for aggregate reports
+    aggregatedData.reportMetadata = {
+      isQuestionReport: false,
+      isAggregateReport: true,
+      totalQuestions: validPrompts.length,
+      questionsIncluded: validPrompts
     };
 
-    // Aggregate arrays
-
-    // Merge items and recalculate total counts
-    for (const name of MAIN_SECTIONS) {
-      aggregatedData[name] = await mergeItems(project, itemsByType[name], name, questionsByPrompt, baseData);
-      aggregatedData.totalCounts[name] = aggregatedData[name].length;
-      aggregatedData.totalDataPoints += aggregatedData[name].length;
+    // Recalculate total counts from already-enriched data
+    if (!aggregatedData.totalCounts) {
+      aggregatedData.totalCounts = {};
     }
 
-    // Add bots count to totalCounts
+    aggregatedData.totalDataPoints = 0;
+    for (const name of MAIN_SECTIONS) {
+      if (aggregatedData[name] && Array.isArray(aggregatedData[name])) {
+        aggregatedData.totalCounts[name] = aggregatedData[name].length;
+        aggregatedData.totalDataPoints += aggregatedData[name].length;
+      }
+    }
+
     aggregatedData.totalCounts.bots = aggregatedData.bots ? aggregatedData.bots.length : 0;
     
     // Recalculate itemCountPerModel and itemCountPerAppearanceOrderTrend
@@ -526,22 +489,30 @@ export async function generateAggregateReport(project: string, date: string): Pr
 window.AppDataAggregate${date.replace(/-/g, '')} = ${JSON.stringify(aggregatedData, null, 2)};
 window.AppData = window.AppDataAggregate${date.replace(/-/g, '')};`;
 
-    // Process HTML template
-    let htmlContent = await fs.readFile(path.join(REPORT_HTML_TEMPLATE_DIR, 'index.html'), 'utf-8');
+  await fileManager.writeDataFile(dataContent, `${date}-data.js`);
 
-    // Replace template macros
-    htmlContent = await replaceMacrosInTemplate(htmlContent, {
-      '{{REPORT_TITLE}}': aggregatedData.report_title || project,
-      '{{PROJECT_NAME}}': getProjectNameFromProjectFolder(project), 
-      '{{REPORT_DATE}}': date,
-//      '{{REPORT_QUESTION_ID}}': 'aggregate',
-      '{{REPORT_DATE_WITHOUT_DASHES}}': date.replace(/-/g, ''),
-      '{{REPORT_CREATED_AT_DATETIME}}': getCurrentDateTimeAsStringISO()   
-    }); 
+    // Write all report files with replacements using file manager
+    await fileManager.writeReportFiles([
+      {
+        filename: 'index.html',
+        replacements: {
+          '{{REPORT_TITLE}}': aggregatedData.report_title || project,
+          '{{PROJECT_NAME}}': getProjectNameFromProjectFolder(project), 
+          '{{REPORT_DATE}}': date,
+            //      '{{REPORT_QUESTION_ID}}': 'aggregate',
+          '{{REPORT_DATE_WITHOUT_DASHES}}': date.replace(/-/g, ''),
+          '{{REPORT_CREATED_AT_DATETIME}}': getCurrentDateTimeAsStringISO()   
+    
+        }
+      },
+      {
+        filename: 'app.js',
+        replacements: {
+          '{{ENTITIES_CONFIG_JSON}}': JSON.stringify(ENTITIES_CONFIG)
+        }
+      }
+    ]);
 
-    // Write all standard files using file manager
-    await fileManager.writeStandardReportFiles(htmlContent);
-    await fileManager.writeDataFile(dataContent, `${date}-data.js`);
 
     // copy answers file 
     const answersFile = path.join(AGGREGATED_DATA_COMPILED_DATE_DIR(project, date), `${date}-answers.js`);

@@ -326,3 +326,49 @@ export async function markItemAsAISourced(item: any, attrName: string) {
   item.sources[attrName] = "AI";
   return item;
 }
+
+/**
+ * Normalize computed/aggregated influences using market share approach
+ * Sum of all influences = 1.0 (100%)
+ * Used for sections that aggregate data from multiple sources (linkTypes, linkDomains)
+ *
+ * Different from normalizeInfluences() which divides by MAX for relative ranking.
+ * This function ensures all items' influences sum to 100% (market share semantics).
+ */
+export function normalizeAggregatedInfluences(items: any[]): void {
+  if (!items || items.length === 0) return;
+
+  // 1. Calculate total influence across all items
+  const totalInfluence = items.reduce((sum, item) => sum + (item.influence || 0), 0);
+  if (totalInfluence === 0) return;
+
+  // 2. Calculate total influence per model (for per-model normalization)
+  const totalByModel: { [key: string]: number } = {};
+  items.forEach(item => {
+    if (item.influenceByModel) {
+      for (const [modelId, influence] of Object.entries(item.influenceByModel)) {
+        totalByModel[modelId] = (totalByModel[modelId] || 0) + (influence as number);
+      }
+    }
+  });
+
+  // 3. Normalize each item
+  items.forEach(item => {
+    // Normalize overall influence (market share of total)
+    if (item.influence) {
+      item.influence = Number((item.influence / totalInfluence).toFixed(5));
+      item.weightedInfluence = item.influence;
+    }
+
+    // Normalize per-model influences (each model's market share distribution)
+    if (item.influenceByModel) {
+      for (const modelId in item.influenceByModel) {
+        if (totalByModel[modelId] > 0) {
+          item.influenceByModel[modelId] = Number(
+            (item.influenceByModel[modelId] / totalByModel[modelId]).toFixed(5)
+          );
+        }
+      }
+    }
+  });
+}

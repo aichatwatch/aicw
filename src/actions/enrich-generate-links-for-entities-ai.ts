@@ -12,7 +12,7 @@ import { isValidLink } from '../utils/validate-links.js';
 import { ModelType } from '../utils/project-utils.js';
 import { ModelConfig } from '../utils/model-config.js';
 import { collectEntitiesForSection, needsToEnrichAttribute, getTotalInSection, extractLinksFromMarkdownInAnswers } from '../utils/enrich-entity-utils.js';
-import { MAIN_SECTIONS } from '../config/entities.js';
+import { MAIN_SECTIONS } from '../config/constants-entities.js';
 import { getEnrichmentPromptPath } from '../utils/enrich-prompt-discovery.js';
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';

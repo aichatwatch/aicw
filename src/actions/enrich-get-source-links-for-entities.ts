@@ -1,9 +1,11 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { DirentLike } from '../config/types.js';
 import { logger } from '../utils/compact-logger.js';
 import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { QUESTIONS_DIR, QUESTION_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
-import { MAIN_SECTIONS } from '../config/entities.js';
+import { AGGREGATED_DIR_NAME } from '../config/constants.js';
+import { MAIN_SECTIONS } from '../config/constants-entities.js';
 import { PipelineCriticalError, createMissingFileError } from '../utils/pipeline-errors.js';
 import { loadDataJs, saveDataJs, readQuestions } from '../utils/project-utils.js';
 import { getProjectNameFromCommandLine, validateAndLoadProject, getTargetDateFromProjectOrEnvironment } from '../utils/project-utils.js';
@@ -656,6 +658,28 @@ async function loadAnswerJsonFiles(
   return files;
 }
 
+/**
+ * Load all answer.json files from ALL questions for aggregated processing
+ * Used when processing _all-questions-combined folder
+ */
+async function loadAllAnswerFilesForAllQuestions(
+  project: string,
+  questions: any[],
+  targetDate: string
+): Promise<AnswerFileInfo[]> {
+  const allFiles: AnswerFileInfo[] = [];
+
+  for (const question of questions) {
+    // Skip the aggregated folder itself
+    if (question.folder === AGGREGATED_DIR_NAME) continue;
+
+    const files = await loadAnswerJsonFiles(project, question.folder, targetDate);
+    allFiles.push(...files);
+  }
+
+  return allFiles;
+}
+
 // ============================================================================
 // MAIN ORCHESTRATOR
 // ============================================================================
@@ -672,23 +696,28 @@ export async function enrichGetSourceLinksForEntities(
   // Non-computed sections to process
   const NON_COMPUTED_SECTIONS = ['products', 'organizations', 'persons', 'keywords', 'places', 'events', 'links'];
 
-  // Read all questions
-  const questions = await readQuestions(project);
+  // Read all question directories (including _all-questions-combined)
+  const questionsDir = QUESTIONS_DIR(project);
+  const questionDirs = await fs.readdir(questionsDir, { withFileTypes: true }) as DirentLike[];
+  const actualQuestions = questionDirs.filter(d => d.isDirectory());
 
-  logger.info(`Processing ${questions.length} questions`);
-  logger.startProgress(questions.length, 'questions');
+  // Also get question metadata for aggregated processing
+  const questionsList = await readQuestions(project);
+
+  logger.info(`Processing ${actualQuestions.length} question folders`);
+  logger.startProgress(actualQuestions.length, 'questions');
 
   let processedCount = 0;
   let totalEntitiesProcessed = 0;
   let totalSourcesFound = 0;
 
-  for (const [index, question] of questions.entries()) {
+  for (const [index, dir] of actualQuestions.entries()) {
     const currentIndex = index + 1;
-    logger.updateProgress(currentIndex, `Processing ${question.folder}...`);
+    logger.updateProgress(currentIndex, `Processing ${dir.name}...`);
 
     // Path to compiled data file
     const compiledFile = path.join(
-      QUESTION_DATA_COMPILED_DATE_DIR(project, question.folder, targetDate),
+      QUESTION_DATA_COMPILED_DATE_DIR(project, dir.name, targetDate),
       `${targetDate}-data.js`
     );
 
@@ -696,22 +725,26 @@ export async function enrichGetSourceLinksForEntities(
     try {
       await fs.access(compiledFile);
     } catch {
-      throw createMissingFileError(question.folder, compiledFile, CURRENT_MODULE_NAME);
+      throw createMissingFileError(dir.name, compiledFile, CURRENT_MODULE_NAME);
     }
 
     try {
       // Load compiled data
       const { data, dataKey } = await loadDataJs(compiledFile);
 
-      // Load all answer.json files for this question
-      const answerFiles = await loadAnswerJsonFiles(project, question.folder, targetDate);
+      // Load answer.json files
+      // For aggregated folder, load ALL answers from ALL questions
+      // For individual questions, load only that question's answers
+      const answerFiles = dir.name === AGGREGATED_DIR_NAME
+        ? await loadAllAnswerFilesForAllQuestions(project, questionsList, targetDate)
+        : await loadAnswerJsonFiles(project, dir.name, targetDate);
 
       if (answerFiles.length === 0) {
-        logger.warn(`No answer.json files found for ${question.folder}`);
+        logger.warn(`No answer.json files found for ${dir.name}`);
         continue;
       }
 
-      logger.debug(`  Found ${answerFiles.length} answer files for ${question.folder}`);
+      logger.debug(`  Found ${answerFiles.length} answer files for ${dir.name}`);
 
       // Process each non-computed section
       for (const sectionName of NON_COMPUTED_SECTIONS) {
@@ -808,12 +841,12 @@ export async function enrichGetSourceLinksForEntities(
       await saveDataJs(compiledFile, dataKey, data, comment);
 
       processedCount++;
-      logger.updateProgress(currentIndex, `${question.folder} - ✓`);
+      logger.updateProgress(currentIndex, `${dir.name} - ✓`);
 
     } catch (error) {
-      logger.error(`Failed to process ${question.folder}: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error(`Failed to process ${dir.name}: ${error instanceof Error ? error.message : String(error)}`);
       throw new PipelineCriticalError(
-        `Failed to process ${question.folder}: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to process ${dir.name}: ${error instanceof Error ? error.message : String(error)}`,
         CURRENT_MODULE_NAME,
         project
       );

@@ -14,7 +14,7 @@ import { logger } from '../utils/compact-logger.js';
 import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { extractHostname } from '../utils/link-classifier.js';
 import { isInterrupted } from '../utils/delay.js';
-import { MAIN_SECTIONS } from '../config/entities.js';
+import { MAIN_SECTIONS } from '../config/constants-entities.js';
 import { PipelineCriticalError, createMissingFileError } from '../utils/pipeline-errors.js';
 import {
   EnrichedItem,
@@ -354,11 +354,21 @@ function calculateMentions(
 
       // Only count mentions from the current date's answers
       if (!answer.date || answer.date === currentDate) {
-        mentionsByModel[answer.modelId] = count;
-        excerptsByModel[answer.modelId] = excerpts;
+        // Accumulate mentions across all questions (for aggregated data)
+        mentionsByModel[answer.modelId] = (mentionsByModel[answer.modelId] || 0) + count;
+
+        // Collect all excerpts
+        if (!excerptsByModel[answer.modelId]) {
+          excerptsByModel[answer.modelId] = [];
+        }
+        excerptsByModel[answer.modelId].push(...excerpts);
+
         if (count > 0) {
           totalMentions += count;
-          firstAppearanceOrderCharByModel[answer.modelId] = firstAppearanceOrder;
+          // Track earliest appearance order
+          if (firstAppearanceOrderCharByModel[answer.modelId] === -1 || firstAppearanceOrder < firstAppearanceOrderCharByModel[answer.modelId]) {
+            firstAppearanceOrderCharByModel[answer.modelId] = firstAppearanceOrder;
+          }
         }
       }
     }

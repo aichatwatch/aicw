@@ -18,7 +18,7 @@ import path from 'path';
 import { DirentLike } from '../config/types.js';
 import { QUESTIONS_DIR, QUESTION_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
 import { AGGREGATED_DIR_NAME } from '../config/constants.js';
-import { MAIN_SECTIONS } from '../config/entities.js';
+import { MAIN_SECTIONS } from '../config/constants-entities.js';
 import { logger } from '../utils/compact-logger.js';
 import { getEntityTypeFromSectionName, waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { isInterrupted } from '../utils/delay.js';

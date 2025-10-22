@@ -11,7 +11,7 @@ import { cleanContentFromAI } from '../utils/content-cleaner.js';
 import {   getTargetDateFromProjectOrEnvironment, getProjectNameFromCommandLine, validateAndLoadProject  } from '../utils/project-utils.js';
 import { loadDataJs, saveDataJs, readQuestions } from '../utils/project-utils.js';
 import { PipelineCriticalError, createMissingFileError, createMissingDataError } from '../utils/pipeline-errors.js';
-import { prepareStepFiles } from '../utils/enrich-data-utils.js';
+import { prepareStepFiles, normalizeAggregatedInfluences } from '../utils/enrich-data-utils.js';
 import { ModelType } from '../utils/project-utils.js';
 
 // get action name for the current module
@@ -49,6 +49,9 @@ function calculateInfluenceForLinkDomains(linkDomains: any[]): void {
       }
     }
   });
+
+  // Normalize influences so they sum to 1.0 (market share distribution)
+  normalizeAggregatedInfluences(linkDomains);
 
   // Sort by influence (descending) for display purposes
   linkDomains.sort((a, b) => (b.influence || 0) - (a.influence || 0));

@@ -18,7 +18,7 @@ import { collectEntitiesForSection, needsToEnrichAttribute, getTotalInSection } 
 import { getEnrichmentPromptPath } from '../utils/enrich-prompt-discovery.js';
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
-import { MAIN_SECTIONS } from '../config/entities.js';
+import { MAIN_SECTIONS } from '../config/constants-entities.js';
 import { filterSectionsToProcess } from '../utils/action-utils.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 

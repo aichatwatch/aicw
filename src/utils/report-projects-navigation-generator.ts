@@ -298,7 +298,6 @@ async function generateProjectDetail(outputDir: string, projectName: string): Pr
     </div>`;
   }
 
-
   let html = await replaceMacrosInTemplate(template, {
     "{{PROJECT_NAME}}": getProjectNameFromProjectFolder(projectName),
     "{{DATE_ENTRIES}}": dateEntries,
