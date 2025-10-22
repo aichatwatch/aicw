@@ -3,7 +3,9 @@ import path from 'path';
 import { writeFileAtomic } from './misc-utils.js';
 import { injectlinkTypeNames } from './report-utils.js';
 import { REPORT_HTML_TEMPLATE_DIR } from '../config/paths.js';
-
+import { replaceMacrosInTemplate } from './misc-utils.js';
+import { CompactLogger } from './compact-logger.js';
+const logger = CompactLogger.getInstance();
 /**
  * Configuration for report file operations
  */
@@ -27,41 +29,14 @@ export class ReportFileManager {
   }
 
   /**
-   * Copy standard template files to both output directories
-   */
-  async copyTemplateFiles(): Promise<void> {
-    const templateFiles = [
-      'app.js',
-      'app-modular.js',
-      'data-config.js'
-    ];
-
-    for (const filename of templateFiles) {
-      const sourcePath = path.join(this.config.templateDir!, filename);
-
-      try {
-        // Copy to output directory
-        await fs.copyFile(sourcePath, path.join(this.config.outputDir, filename));
-
-      } catch (error) {
-        // Some files may not exist (app-modular.js, data-config.js), ignore errors
-        if (filename === 'app.js') {
-          // app.js should always exist, re-throw the error
-          throw error;
-        }
-      }
-    }
-  }
-
-  /**
    * Process and write data-static.js with link type names injection to both directories
    */
   async writeDataStaticFile(): Promise<void> {
     const dataStaticTemplate = await fs.readFile(path.join(this.config.templateDir!, 'data-static.js'), 'utf-8');
-    const dataStaticWithPersons = injectlinkTypeNames(dataStaticTemplate);
+    const dataStaticWithLinkTypeNames = injectlinkTypeNames(dataStaticTemplate);
     const filename = `${this.config.date}-data-static.js`;
 
-    await writeFileAtomic(path.join(this.config.outputDir, filename), dataStaticWithPersons);
+    await writeFileAtomic(path.join(this.config.outputDir, filename), dataStaticWithLinkTypeNames);
   }
 
   /**
@@ -69,6 +44,24 @@ export class ReportFileManager {
    */
   async writeHtmlFile(content: string, filename: string = 'index.html'): Promise<void> {
     await writeFileAtomic(path.join(this.config.outputDir, filename), content);
+  }
+
+  async writeReportFiles(files: { filename: string, replacements: Record<string, string> }[]): Promise<void> {
+
+    await this.createDirectories();
+    await this.writeDataStaticFile();    
+
+    // write given files with replacements
+    for (const file of files) {
+      const content = await fs.readFile(path.join(this.config.templateDir!, file.filename), 'utf-8');
+      const processedContent = await replaceMacrosInTemplate(
+        content, 
+        file.replacements, 
+        false // turn off verifications of unreplaced macros (but it will verify the original macro anyway)
+      );
+      logger.info(`Writing file ${file.filename} to ${path.join(this.config.outputDir, file.filename)}`);
+      await writeFileAtomic(path.join(this.config.outputDir, file.filename), processedContent);
+    }
   }
 
   /**
@@ -85,14 +78,4 @@ export class ReportFileManager {
     await fs.mkdir(this.config.outputDir, { recursive: true });
   }
 
-  /**
-   * Complete standard report file operations
-   * This combines the most common operations done in both report generation files
-   */
-  async writeStandardReportFiles(htmlContent: string): Promise<void> {
-    await this.createDirectories();
-    await this.writeHtmlFile(htmlContent);
-    await this.copyTemplateFiles();
-    await this.writeDataStaticFile();
-  }
 }

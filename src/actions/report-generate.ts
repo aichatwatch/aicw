@@ -16,6 +16,7 @@ import { ModelType } from '../utils/project-utils.js';
 
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
+import { ENTITIES_CONFIG } from '../config/constants-entities.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
 
@@ -85,25 +86,27 @@ async function main(projectArg?: string): Promise<void> {
       // Create output directory if it doesn't exist
       await fs.mkdir(outputDir, { recursive: true });
 
-      // Read and process the template
-      const templatePath = path.join(REPORT_HTML_TEMPLATE_DIR, 'index.html');
-      const htmlContent = await fs.readFile(templatePath, 'utf-8');
-
-      // Process template with replacements
-      const processedContent = await replaceMacrosInTemplate(htmlContent, {
-        '{{REPORT_DATE}}': targetDate,
-        '{{REPORT_DATE_WITHOUT_DASHES}}': targetDate.replace(/-/g, ''),
-        '{{PROJECT_NAME}': project,
-        // current datetime with format 2025 Oct 04 12:00:00  
-        '{{REPORT_CREATED_AT_DATETIME}}': getCurrentDateTimeAsStringISO(),  
-        '{{REPORT_TITLE}}': questionContent
-      });
-
-      // Write processed content to output
-      await writeFileAtomic(outputHtmlFile, processedContent);
-
-      // Copy associated template files
-      await reportFileManager.copyTemplateFiles();
+      // Read and process the template index.html
+      await reportFileManager.writeReportFiles(
+        [
+          {
+            "filename": "index.html",
+            "replacements": {
+              "{{REPORT_DATE}}": targetDate,
+              "{{REPORT_DATE_WITHOUT_DASHES}}": targetDate.replace(/-/g, ''),
+              "{{PROJECT_NAME}": project,
+              "{{REPORT_CREATED_AT_DATETIME}}": getCurrentDateTimeAsStringISO(),  
+              "{{REPORT_TITLE}}": questionContent
+            }
+          },
+          {
+            "filename": "app.js",
+              "replacements": {
+                "{{ENTITIES_CONFIG_JSON}}": JSON.stringify(ENTITIES_CONFIG)
+              }
+          }
+        ]        
+      );
 
       // Write data-static.js file
       await reportFileManager.writeDataStaticFile();

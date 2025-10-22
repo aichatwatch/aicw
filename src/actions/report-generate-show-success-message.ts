@@ -42,11 +42,10 @@ async function showSuccessBox(project:string, targetDate:string): Promise<void> 
       colorize(reportPath, 'cyan'),
       '',
       colorize('👀 To View Your Report:', 'yellow'),
-      '  • select ' + colorize('"Reports: run reports server "', 'cyan') + ' from the main menu',
+      '  • select ' + colorize('"Reports: run reports server"', 'cyan') + ' from the main menu',
       '  • or run ' + colorize('aicw serve', 'cyan') + ' to run reports server separately',
       '',
-      colorize('💡 Tip:', 'yellow') + ' Too busy to run this manually? Visit ' + colorize('https://aichatwatch.com/cloud', 'cyan'),
-      '    for scheduled reports landing to your inbox automatically!',
+      colorize('💡 Tip:', 'yellow') + ' We can run scheduled reports and scans for you, more info at ' + colorize('https://aichatwatch.com/cloud', 'cyan'),
       ''
     ], { borderColor: 'green', width: 66 });
   

@@ -6,7 +6,7 @@ import { OpenAI } from 'openai';
 import { ModelConfig, getAIAIPresetWithModels } from '../utils/model-config.js';
 import { QUESTIONS_DIR, QUESTION_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
 import { AGGREGATED_DIR_NAME } from '../config/constants.js';
-import { MAIN_SECTIONS } from '../config/entities.js';
+import { MAIN_SECTIONS } from '../config/constants-entities.js';
 import { isValidOutputFile as isValidDataJsFile } from '../utils/misc-utils.js';
 import { logger } from '../utils/compact-logger.js';
 import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
@@ -18,6 +18,7 @@ import { PipelineCriticalError } from '../utils/pipeline-errors.js';
 import { loadProjectModelConfigs } from '../utils/project-utils.js';
 import { loadProjectModelConfigs_FIRST } from '../utils/project-utils.js';
 import { ModelType } from '../utils/project-utils.js';
+import { getEntityTypeFromSectionName } from '../utils/misc-utils.js';
 
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
@@ -369,10 +370,23 @@ export async function extractEntities(project: string, targetDate: string): Prom
           if (!MAIN_SECTIONS.includes(arrayType as any)) continue;
 
           if (Array.isArray(data[arrayType])) {
-            data[arrayType] = data[arrayType].map((item: any) => ({ 
+            const entityType = getEntityTypeFromSectionName(arrayType);
+            data[arrayType] = data[arrayType]
+            .filter((item: any) => {
+              if (item !== undefined && 
+                typeof item === 'string' &&
+                item.trim() !== '' && item.length > 1){ // at least 2 characters
+                return true;
+              }
+              else {
+                logger.warn(`Skipping item: ${JSON.stringify(item)} because it is undefined, null, empty, or less than 2 characters`);
+                return false;
+              }
+            })
+            .map((item: any) => ({ 
               value: item,
-              type: arrayType.slice(0, -1) // Remove plural 's' so "keywords" becomes "keyword"
-            }));
+              type: entityType
+            }))
           }
         }
         // Save updated data

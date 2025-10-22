@@ -27,6 +27,11 @@ export const COLORS = {
   magenta: '\x1b[35m'
 };
 
+export function getEntityTypeFromSectionName(arrayType: string): string {
+  // simply turning "links" into "link"
+  // check MAIN_SECTIONS for array types
+  return arrayType.slice(0, -1);
+}
 
 export async function openInDefaultBrowser(url: string): Promise<boolean> {
   const platform = process.platform;

@@ -3,7 +3,7 @@ import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import vm from 'node:vm';
 import { colorize, writeFileAtomic } from './misc-utils.js';
-import { MAIN_SECTIONS } from '../config/entities.js';
+import { MAIN_SECTIONS } from '../config/constants-entities.js';
 import { getUserProjectQuestionsDir, getUserProjectReportsDir } from '../config/user-paths.js';
 import { ProgressTracker } from './compact-logger.js';
 import { PipelineCriticalError } from './pipeline-errors.js';

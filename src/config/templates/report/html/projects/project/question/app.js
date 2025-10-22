@@ -7,46 +7,9 @@ const FAVICON_128_TEMPLATE = 'https://www.google.com/s2/favicons?domain={{DOMAIN
 const DEFAULT_GRAPH_NODE_LIMIT = 12; // Default number of top items to show in graphs
 const TOP_INFLUENCERS_COUNT_PER_SECTION = 1; // max of top influencers to show from each entity category
 
-const ENTITES_CONFIG = [
-    {
-        name: 'products',
-        isComputed: false
-    },
-    {
-        name: 'organizations',
-        isComputed: false
-    },
-    {
-        name: 'persons',
-        isComputed: false
-    },
-    {
-        name: 'keywords',
-        isComputed: false
-    },
-    {
-        name: 'places',
-        isComputed: false
-    },
-    {
-        name: 'events',
-        isComputed: false
-    },
-    {
-        name: 'links',
-        isComputed: false
-    },
-    {
-        // this one is computed
-        name: 'linkTypes',
-        isComputed: true
-    },
-    {
-        // this one is computed
-        name: 'linkDomains',
-        isComputed: true
-    }
-]
+// replaced by the report generator
+// with the array like [ { name: "links", isComputed: false}, .. ]
+const ENTITES_CONFIG = {{ENTITIES_CONFIG_JSON}};
 
 // returns array of strings with entities names
 const ENTITES_NON_COMPUTED = ENTITES_CONFIG.filter(entity => !entity.isComputed).map(entity => entity.name);
@@ -9857,7 +9820,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 return items.filter(item => {
-                    return item.mentionsByPrompt && item.mentionsByPrompt[selectedPrompt] > 0;
+                    return item.mentionsByPrompt && item.mentionsByPrompt[selectedPrompt] >= 0;
                 });
             },
 

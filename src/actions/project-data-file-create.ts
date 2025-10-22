@@ -7,7 +7,7 @@ import { replaceMacrosInTemplate, waitForEnterInInteractiveMode } from '../utils
 import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, loadProjectModelConfigs, ModelType, readQuestions, validateAndLoadProject } from '../utils/project-utils.js';
 import { writeFileAtomic } from '../utils/misc-utils.js';
 import { PipelineCriticalError } from '../utils/pipeline-errors.js';
-import { MAIN_SECTIONS } from '../config/entities.js';
+import { MAIN_SECTIONS } from '../config/constants-entities.js';
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
 import { getCurrentDateTimeAsString, MIN_VALID_OUTPUT_DATA_SIZE } from '../config/user-paths.js';

@@ -183,7 +183,7 @@ export function getUserQuestionDataCompiledDateDir(projectName: string, question
 }
 
 export function getUserAggregatedDataDir(projectName: string): string {
-  return path.join(getUserProjectDir(projectName), AGGREGATED_DIR_NAME);
+  return path.join(getUserProjectQuestionsDir(projectName), AGGREGATED_DIR_NAME);
 }
 
 export function getUserAggregatedDataCompiledDir(projectName: string): string {

@@ -5,7 +5,7 @@ import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { logger } from '../utils/compact-logger.js';
 import { isInterrupted } from '../utils/delay.js';
-import { MAIN_SECTIONS } from '../config/entities.js';
+import { MAIN_SECTIONS } from '../config/constants-entities.js';
 import { PipelineCriticalError, createMissingFileError } from '../utils/pipeline-errors.js';
 import {
   loadProjectModelConfigs,
