@@ -103,7 +103,8 @@ export async function generateAnswersFile(project: string, targetDate: string): 
     for (const questionDir of questionDirs) {
 
       if (!questionDir.isDirectory()) continue;
-      //if (questionDir.name === AGGREGATED_DIR_NAME) continue;  
+      // Skip aggregate folder - it doesn't have answers directory
+      if (questionDir.name === AGGREGATED_DIR_NAME) continue;
 
       // get the compiled directory for the question
       const compiledDir = QUESTION_DATA_COMPILED_DATE_DIR(project, questionDir.name, targetDate);

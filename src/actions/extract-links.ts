@@ -25,51 +25,98 @@ import { extractLinksFromContent } from '../utils/link-extraction.js';
  * Read all answers from original answer.md files for a question and date
  */
 async function readAnswersFromOriginalFiles(project: string, questionFolder: string, targetDate: string): Promise<string> {
-  
+
   const aiModelsForAnswerInProject = await loadProjectModelConfigs(project, ModelType.GET_ANSWER);
-  const answersBaseDir = path.join(QUESTIONS_DIR(project), questionFolder, 'answers');
   let allAnswersContent = '';
 
-  try {
-    const dateDirs = await fs.readdir(answersBaseDir, { withFileTypes: true });
+  if (questionFolder === AGGREGATED_DIR_NAME) {
+    // Aggregate: read from ALL questions
+    const questions = await readQuestions(project);
 
-    for (const dateDir of dateDirs) {
-      if (!dateDir.isDirectory() || !/^\d{4}-\d{2}-\d{2}$/.test(dateDir.name)) {
-        continue;
-      }
+    for (const question of questions) {
+      const answersBaseDir = path.join(QUESTIONS_DIR(project), question.folder, 'answers');
+      try {
+        const dateDirs = await fs.readdir(answersBaseDir, { withFileTypes: true });
 
-      // Only process the target date
-      if (dateDir.name !== targetDate) {
-        continue;
-      }
+        for (const dateDir of dateDirs) {
+          if (!dateDir.isDirectory() || !/^\d{4}-\d{2}-\d{2}$/.test(dateDir.name)) {
+            continue;
+          }
 
-      const dateAnswersDir = path.join(answersBaseDir, dateDir.name);
+          // Only process the target date
+          if (dateDir.name !== targetDate) {
+            continue;
+          }
 
-      const modelDirs = 
-        await removeNonProjectModels(
-          await fs.readdir(dateAnswersDir, { withFileTypes: true }),
-          aiModelsForAnswerInProject
-        );      
+          const dateAnswersDir = path.join(answersBaseDir, dateDir.name);
 
-      for (const modelDir of modelDirs) {
+          const modelDirs =
+            await removeNonProjectModels(
+              await fs.readdir(dateAnswersDir, { withFileTypes: true }),
+              aiModelsForAnswerInProject
+            );
 
-        const answerFile = path.join(dateAnswersDir, modelDir.name, 'answer.md');
-        try {
-          const text = await fs.readFile(answerFile, 'utf-8');
-          allAnswersContent += text + '\n';
-        } catch (error) {
-          // Skip if answer.md doesn't exist for this model
-          logger.debug(`No answer.md found for ${questionFolder}/${targetDate}/${modelDir.name}`);
+          for (const modelDir of modelDirs) {
+            const answerFile = path.join(dateAnswersDir, modelDir.name, 'answer.md');
+            try {
+              const text = await fs.readFile(answerFile, 'utf-8');
+              allAnswersContent += text + '\n';
+            } catch (error) {
+              // Skip if answer.md doesn't exist for this model
+              logger.debug(`No answer.md found for ${question.folder}/${targetDate}/${modelDir.name}`);
+            }
+          }
         }
+      } catch (error) {
+        // Skip question if it doesn't have answers for this date
+        logger.debug(`Skipping question ${question.folder} - no answers directory`);
       }
     }
-  } catch (error) {
-    logger.warn(`Error reading answers for ${questionFolder}: ${error}`);
-    throw new PipelineCriticalError(
-      `Error reading original answer files for ${questionFolder}: ${error}`,
-      CURRENT_MODULE_NAME,
-      project
-    );
+  } else {
+    // Normal question
+    const answersBaseDir = path.join(QUESTIONS_DIR(project), questionFolder, 'answers');
+
+    try {
+      const dateDirs = await fs.readdir(answersBaseDir, { withFileTypes: true });
+
+      for (const dateDir of dateDirs) {
+        if (!dateDir.isDirectory() || !/^\d{4}-\d{2}-\d{2}$/.test(dateDir.name)) {
+          continue;
+        }
+
+        // Only process the target date
+        if (dateDir.name !== targetDate) {
+          continue;
+        }
+
+        const dateAnswersDir = path.join(answersBaseDir, dateDir.name);
+
+        const modelDirs =
+          await removeNonProjectModels(
+            await fs.readdir(dateAnswersDir, { withFileTypes: true }),
+            aiModelsForAnswerInProject
+          );
+
+        for (const modelDir of modelDirs) {
+
+          const answerFile = path.join(dateAnswersDir, modelDir.name, 'answer.md');
+          try {
+            const text = await fs.readFile(answerFile, 'utf-8');
+            allAnswersContent += text + '\n';
+          } catch (error) {
+            // Skip if answer.md doesn't exist for this model
+            logger.debug(`No answer.md found for ${questionFolder}/${targetDate}/${modelDir.name}`);
+          }
+        }
+      }
+    } catch (error) {
+      logger.warn(`Error reading answers for ${questionFolder}: ${error}`);
+      throw new PipelineCriticalError(
+        `Error reading original answer files for ${questionFolder}: ${error}`,
+        CURRENT_MODULE_NAME,
+        project
+      );
+    }
   }
 
   return allAnswersContent;
@@ -83,6 +130,13 @@ export async function extractLinks(project: string, targetDate: string): Promise
   logger.info(`Extracting links from original answer.md files for project: ${project}`);
 
   const questions = await readQuestions(project);
+
+  // Add aggregate as a synthetic question entry (will be processed last due to underscore prefix)
+  questions.push({
+    folder: AGGREGATED_DIR_NAME,
+    question: `${project} - Aggregate Report`,
+
+  });
 
   logger.info(`Processing ${questions.length} questions for date: ${targetDate}`);
 

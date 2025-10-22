@@ -83,6 +83,81 @@ async function compilePromptWithFallback(project: string, file: string, cfg: Mod
 
 }
 
+/**
+ * Merge entities from all questions into aggregate
+ */
+async function mergeEntitiesForAggregate(
+  project: string,
+  targetDate: string,
+  questionDirs: DirentLike[]
+): Promise<any> {
+  logger.info('Merging entities from all questions for aggregate report');
+
+  const mergedData: any = {};
+
+  // Maps to deduplicate items by their key
+  const itemMaps: Record<string, Map<string, any>> = {};
+  for (const section of MAIN_SECTIONS) {
+    itemMaps[section] = new Map();
+  }
+
+  // Read each question's data
+  const actualQuestions = questionDirs.filter(d => d.isDirectory() && d.name !== AGGREGATED_DIR_NAME);
+
+  for (const dir of actualQuestions) {
+    try {
+      const dataPath = path.join(
+        QUESTION_DATA_COMPILED_DATE_DIR(project, dir.name, targetDate),
+        `${targetDate}-data.js`
+      );
+
+      const { data } = await loadDataJs(dataPath);
+
+      // Copy structure from first question
+      if (!mergedData.report_date) {
+        mergedData.report_date = data.report_date || targetDate;
+        mergedData.report_question = `${project} - Aggregate Report`;
+        mergedData.report_title = `${project} - Aggregate Report`;
+        mergedData.report_type = 'aggregate';
+        mergedData.bots = data.bots || [];
+        // Copy other metadata
+        if (data.reportMetadata) {
+          mergedData.reportMetadata = { ...data.reportMetadata };
+        }
+      }
+
+      // Merge items from each section
+      for (const section of MAIN_SECTIONS) {
+        if (data[section] && Array.isArray(data[section])) {
+          for (const item of data[section]) {
+            // Generate key for deduplication (same logic as trends calculation)
+            const itemKey = (item.value || item.link || item.keyword || item.organization || item.source || '').toLowerCase();
+            if (!itemKey) continue;
+
+            // Keep first occurrence
+            if (!itemMaps[section].has(itemKey)) {
+              itemMaps[section].set(itemKey, { ...item });
+            }
+          }
+        }
+      }
+    } catch (error) {
+      logger.debug(`Could not load data for ${dir.name}: ${error}`);
+    }
+  }
+
+  // Convert maps to arrays
+  for (const section of MAIN_SECTIONS) {
+    mergedData[section] = Array.from(itemMaps[section].values());
+    logger.debug(`Merged ${section}: ${mergedData[section].length} items`);
+  }
+
+  const totalItems = MAIN_SECTIONS.reduce((sum, section) => sum + (mergedData[section]?.length || 0), 0);
+  logger.info(`Merged ${totalItems} total entities from ${actualQuestions.length} questions`);
+
+  return mergedData;
+}
+
 export async function extractEntities(project: string, targetDate: string): Promise<void> {
   
   logger.info(`Starting extract entities process for project: ${project}`);
@@ -93,8 +168,8 @@ export async function extractEntities(project: string, targetDate: string): Prom
   try {
     const questionDirs: DirentLike[] = await fs.readdir(baseQ, { withFileTypes: true }) as DirentLike[];
     logger.debug(`Found ${questionDirs.length} items in questions directory`);
-    
-    const directories = questionDirs.filter(dirent => dirent.isDirectory() && dirent.name !== AGGREGATED_DIR_NAME);
+
+    const directories = questionDirs.filter(dirent => dirent.isDirectory());
     logger.info(`Found ${directories.length} directories to process`);
     
     // Start progress tracking
@@ -117,15 +192,30 @@ export async function extractEntities(project: string, targetDate: string): Prom
         continue;
       }
 
-      // Skip the aggregated directory
-      if (dirent.name === AGGREGATED_DIR_NAME) {
-        logger.debug(`Skipping aggregated directory: ${dirent.name}`);
-        continue;
-      }
-      
       currentIndex++;
       logger.updateProgress(currentIndex, `Compiling ${dirent.name}...`);
-      
+
+      // Handle aggregate - merge entities instead of running AI
+      if (dirent.name === AGGREGATED_DIR_NAME) {
+        logger.info(`Processing aggregate - merging entities from all questions`);
+
+        const compiledDir: string = QUESTION_DATA_COMPILED_DATE_DIR(project, dirent.name, targetDate);
+        const compiledJsFile: string = `${targetDate}-data.js`;
+        const outputPath = path.join(compiledDir, compiledJsFile);
+
+        // Merge entities from all questions
+        const mergedData = await mergeEntitiesForAggregate(project, targetDate, questionDirs);
+
+        // Save to aggregate's data.js
+        const dataKey = `AppData${targetDate.replace(/-/g, '')}`;
+        const comment = `// Aggregate entities merged on ${new Date().toISOString()}`;
+        await saveDataJs(outputPath, dataKey, mergedData, comment);
+
+        processedCount++;
+        logger.updateProgress(currentIndex, `${dirent.name} - ✓ (merged)`);
+        continue; // Skip AI processing
+      }
+
       // Look for prompts in the new location
       const compiledDir: string = QUESTION_DATA_COMPILED_DATE_DIR(project, dirent.name, targetDate);
       logger.debug(`Looking for prompts in: ${compiledDir}`);

@@ -105,7 +105,7 @@ export async function enrichCalculateAppearanceOrder(project: string, targetDate
   // Get questions
   const questionsDir = QUESTIONS_DIR(project);
   const questionDirs = await fs.readdir(questionsDir, { withFileTypes: true }) as DirentLike[];
-  const actualQuestions = questionDirs.filter(d => d.isDirectory() && d.name !== AGGREGATED_DIR_NAME);
+  const actualQuestions = questionDirs.filter(d => d.isDirectory());
 
   // Start progress tracking
   logger.startProgress(actualQuestions.length, 'questions');

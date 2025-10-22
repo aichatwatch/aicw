@@ -426,7 +426,7 @@ export async function enrichCalculateMentions(project: string, targetDate: strin
   // Get questions
   const questionsDir = QUESTIONS_DIR(project);
   const questionDirs = await fs.readdir(questionsDir, { withFileTypes: true }) as DirentLike[];
-  const actualQuestions = questionDirs.filter(d => d.isDirectory() && d.name !== AGGREGATED_DIR_NAME);
+  const actualQuestions = questionDirs.filter(d => d.isDirectory());
 
   // Start progress tracking
   logger.startProgress(actualQuestions.length, 'questions');
@@ -463,8 +463,20 @@ export async function enrichCalculateMentions(project: string, targetDate: strin
       const currentDate = files.date;
 
       // Read answers for this question
-      const captureDir = path.join(CAPTURE_DIR(project), dir.name);
-      const answers = await readAnswers(captureDir, currentDate, projectModelsForAnswer);
+      let answers: AnswerData[] = [];
+      if (dir.name === AGGREGATED_DIR_NAME) {
+        // Aggregate: read from ALL questions
+        const allQuestions = questionDirs.filter(d => d.isDirectory() && d.name !== AGGREGATED_DIR_NAME);
+        for (const q of allQuestions) {
+          const questionCaptureDir = path.join(CAPTURE_DIR(project), q.name);
+          const questionAnswers = await readAnswers(questionCaptureDir, currentDate, projectModelsForAnswer);
+          answers.push(...questionAnswers);
+        }
+      } else {
+        // Normal question
+        const captureDir = path.join(CAPTURE_DIR(project), dir.name);
+        answers = await readAnswers(captureDir, currentDate, projectModelsForAnswer);
+      }
 
       // calculate
       for (const arrayType of MAIN_SECTIONS) {

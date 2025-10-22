@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { DirentLike } from '../config/types.js';
 import { QUESTION_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
+import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { logger } from '../utils/compact-logger.js';
 import { loadProjectModelConfigs } from '../utils/project-utils.js';
@@ -314,6 +315,12 @@ export async function enrichLinkTypesCalculateTrends(project: string, targetDate
 
   const questions = await readQuestions(project);
 
+  // Add aggregate as a synthetic question entry (will be processed last due to underscore prefix)
+  questions.push({
+    folder: AGGREGATED_DIR_NAME,
+    question: `${project} - Aggregate Report`,
+
+  });
 
   logger.info(`Processing ${questions.length} questions for date: ${targetDate}`);
 

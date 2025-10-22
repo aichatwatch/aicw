@@ -1,6 +1,7 @@
 import { logger } from '../utils/compact-logger.js';
 import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { LINK_TYPE_NAMES } from '../utils/link-classifier.js';
+import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { extractDomainFromUrl } from '../utils/url-utils.js';
 import { getTargetDateFromProjectOrEnvironment, getProjectNameFromCommandLine, validateAndLoadProject } from '../utils/project-utils.js';
 import { readQuestions, loadDataJs, saveDataJs } from '../utils/project-utils.js';
@@ -53,6 +54,13 @@ export async function generateLinkDomains(project: string, targetDate: string): 
   logger.info(`Generating linkDomains from classified links for project: ${project}`);
 
   const questions = await readQuestions(project);
+
+  // Add aggregate as a synthetic question entry (will be processed last due to underscore prefix)
+  questions.push({
+    folder: AGGREGATED_DIR_NAME,
+    question: `${project} - Aggregate Report`,
+
+  });
 
   logger.info(`Processing ${questions.length} questions for date: ${targetDate}`);
 

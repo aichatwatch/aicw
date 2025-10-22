@@ -3,6 +3,7 @@ import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import { PROJECT_DIR as USER_PROJECT_DIR } from '../config/paths.js';
+import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { colorize, waitForEnterInInteractiveMode, writeFileAtomic } from '../utils/misc-utils.js';
 import { getUserProjectQuestionFileContent, getUserProjectQuestionsFile, getUserProjectQuestionFilePath } from '../config/user-paths.js';
 import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, validateAndLoadProject } from '../utils/project-utils.js';
@@ -50,6 +51,8 @@ async function loadExistingQuestionMap(destDir: string): Promise<Map<string, str
     const entries = await fs.readdir(destDir, { withFileTypes: true });
     for (const ent of entries as any[]) {
       if (!ent.isDirectory()) continue;
+      // Skip aggregate folder - it doesn't have question.md file
+      if (ent.name === AGGREGATED_DIR_NAME) continue;
       try {
         // Read question file directly instead of using getUserProjectQuestionFileContent
         // which expects (projectName, questionId) not (questionsDir, questionId)

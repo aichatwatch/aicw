@@ -3,6 +3,7 @@ import { DirentLike } from '../config/types.js';
 import path from 'path';
 import { QuestionEntry } from '../config/types.js';
 import { EXTRACT_ENTITIES_PROMPT_TEMPLATE_PATH, CAPTURE_DIR, QUESTION_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
+import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { logger } from '../utils/compact-logger.js';
 import { replaceMacrosInTemplate, waitForEnterInInteractiveMode, writeFileAtomic, formatSingleAnswer } from '../utils/misc-utils.js';
 import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, loadProjectModelConfigs, removeNonProjectModels, validateAndLoadProject } from '../utils/project-utils.js';
@@ -27,6 +28,13 @@ export async function extractEntitiesPreparePrompt(project: string, targetDate: 
   const template: string = await fs.readFile(EXTRACT_ENTITIES_PROMPT_TEMPLATE_PATH, 'utf-8');
   const questions: QuestionEntry[] = await readQuestions(project);
 
+  // Add aggregate as a synthetic question entry (will be processed last due to underscore prefix)
+  questions.push({
+    folder: AGGREGATED_DIR_NAME,
+    question: `${project} - Aggregate Report`,
+
+  });
+
   // Load project-specific models
   const projectModelsForAnswer = await loadProjectModelConfigs(project, ModelType.GET_ANSWER);
 
@@ -43,11 +51,24 @@ export async function extractEntitiesPreparePrompt(project: string, targetDate: 
   for (const q of questions) {
     questionIndex++;
 
+    // Update progress
+    logger.updateProgress(questionIndex, `${q.folder} - Processing...`);
+
+    // Skip aggregate - it will merge entities from all questions, not extract them
+    if (q.folder === AGGREGATED_DIR_NAME) {
+      logger.debug(`Skipping prompt creation for aggregate - will merge entities instead`);
+      processedCount++;
+      logger.updateProgress(questionIndex, `${q.folder} - ✓ (will merge later)`);
+      continue;
+    }
+
+    // Normal question: existing logic
+    let answersSection: string = '';
+    let answerDate: string | undefined = targetDate;
     const answersBase: string = path.join(CAPTURE_DIR(project), q.folder, 'answers');
 
     // When a target date is specified, check if this question has answers for that specific date
     // Otherwise use the latest date for this question
-    let answerDate: string | undefined;
     if (targetDate) {
       // Check if this question has answers for the target date
       const answerDir = path.join(answersBase, targetDate);
@@ -66,25 +87,16 @@ export async function extractEntitiesPreparePrompt(project: string, targetDate: 
 
     if (!answerDate) {
       throw new PipelineCriticalError(
-        `No answers found for ${q.folder} for date "${targetDate || 'any date'}'`, 
-        CURRENT_MODULE_NAME, 
+        `No answers found for ${q.folder} for date "${targetDate || 'any date'}'`,
+        CURRENT_MODULE_NAME,
         project
       );
     }
-
-    // Check if prompt already exists
-    const compiledDir = QUESTION_DATA_COMPILED_DATE_DIR(project, q.folder, targetDate);
-    const destFile = path.join(compiledDir, `${targetDate}-data.js.PROMPT.md`);
-
-    // Update progress
-    logger.updateProgress(questionIndex, `${q.folder} - Processing...`);
 
     const modelDirs = await removeNonProjectModels(
       await fs.readdir(path.join(answersBase, answerDate), { withFileTypes: true }),
       projectModelsForAnswer
     );
-
-    let answersSection: string = '';
 
     for (const modelDir of modelDirs) {
       const bot = modelDir.name;
@@ -100,6 +112,8 @@ export async function extractEntitiesPreparePrompt(project: string, targetDate: 
 
     // Use new folder structure: /questions/<question>/data-compiled/<date>/
     // Create the directory first before saving any files
+    const compiledDir = QUESTION_DATA_COMPILED_DATE_DIR(project, q.folder, targetDate);
+    const destFile = path.join(compiledDir, `${targetDate}-data.js.PROMPT.md`);
     await fs.mkdir(compiledDir, { recursive: true });
 
     const filled = await replaceMacrosInTemplate(template, {
