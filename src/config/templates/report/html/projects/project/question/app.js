@@ -9857,7 +9857,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 return items.filter(item => {
-                    return item.mentionsByPrompt && item.mentionsByPrompt[selectedPrompt] > 0;
+                    return item.mentionsByPrompt && item.mentionsByPrompt[selectedPrompt] >= 0;
                 });
             },
 

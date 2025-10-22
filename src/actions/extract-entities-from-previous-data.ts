@@ -20,7 +20,7 @@ import { QUESTIONS_DIR, QUESTION_DATA_COMPILED_DATE_DIR } from '../config/paths.
 import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { MAIN_SECTIONS } from '../config/entities.js';
 import { logger } from '../utils/compact-logger.js';
-import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
+import { getEntityTypeFromSectionName, waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { isInterrupted } from '../utils/delay.js';
 import {
   loadDataJs,
@@ -126,6 +126,8 @@ async function mergeEntitiesFromPrevious(
 
     logger.debug(`Section ${section}: ${currentData[section].length} existing entities`);
 
+    const sectionItemType = getEntityTypeFromSectionName(section);
+
     // Scan previous dates (newest to oldest)
     for (const prevFile of previousFiles) {
       try {
@@ -154,7 +156,7 @@ async function mergeEntitiesFromPrevious(
             // Add as normalized object format
             currentData[section].push({
               value: prevValue,
-              type: section.slice(0, -1) // Remove plural 's' (e.g., "keywords" -> "keyword")
+              type: sectionItemType
             });
 
             existingNormalized.add(normalized);

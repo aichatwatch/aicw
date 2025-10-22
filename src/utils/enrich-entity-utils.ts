@@ -9,6 +9,7 @@ import { logger } from './compact-logger.js';
 import { extractDomainFromUrl } from '../utils/url-utils.js';
 import { PipelineCriticalError } from './pipeline-errors.js';
 import { GET_ANSWERS_DIR_FOR_QUESTION } from '../config/paths.js';
+import { getEntityTypeFromSectionName } from './misc-utils.js';
 /**
  * Entity interface for enrichment operations
  */
@@ -185,7 +186,7 @@ export function collectEntitiesForSection(
     if (entityValue && needsToEnrichAttribute(item, attrName)) {
       entities.push({
         id: globalId++,
-        type: item.type || sectionName.slice(0, -1), // Remove plural 's' if no type specified
+        type: item.type || getEntityTypeFromSectionName(sectionName),
         value: entityValue,
         link: item.link,
         similar: item.similar,

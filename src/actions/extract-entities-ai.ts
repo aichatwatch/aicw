@@ -369,10 +369,23 @@ export async function extractEntities(project: string, targetDate: string): Prom
           if (!MAIN_SECTIONS.includes(arrayType as any)) continue;
 
           if (Array.isArray(data[arrayType])) {
-            data[arrayType] = data[arrayType].map((item: any) => ({ 
+            const entityType = arrayType.slice(0, -1) // Remove plural 's' so "keywords" becomes "keyword"
+            data[arrayType] = data[arrayType]
+            .filter((item: any) => {
+              if (item !== undefined && 
+                typeof item === 'string' &&
+                item.trim() !== '' && item.length > 1){ // at least 2 characters
+                return true;
+              }
+              else {
+                logger.warn(`Skipping item: ${JSON.stringify(item)} because it is undefined, null, empty, or less than 2 characters`);
+                return false;
+              }
+            })
+            .map((item: any) => ({ 
               value: item,
-              type: arrayType.slice(0, -1) // Remove plural 's' so "keywords" becomes "keyword"
-            }));
+              type: entityType
+            }))
           }
         }
         // Save updated data

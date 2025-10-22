@@ -156,8 +156,8 @@ export const APP_ACTIONS: AppAction[] = [
   },
 
   {
-    id: 'extract-entities-prepare-prompt',
-    cmd: 'actions/extract-entities-prepare-prompt',
+    id: 'extract-entities-ai-prepare-prompt',
+    cmd: 'actions/extract-entities-ai-prepare-prompt',
     name: 'Extract entities: prepare prompts',
     desc: 'Extract entities: prepare prompts',
     pipelines: ['build', 'rebuild'],
@@ -176,11 +176,21 @@ export const APP_ACTIONS: AppAction[] = [
   },
 
   {
+    id: 'extract-links',
+    cmd: 'actions/extract-links',
+    name: 'Extract Links',
+    desc: 'Extracting links from original answer files',
+    pipelines: ['build', 'rebuild'],
+    category: 'project',
+    requiresProject: true,
+  },    
+
+  {
     id: 'extract-entities-from-previous-data',
     cmd: 'actions/extract-entities-from-previous-data',
     name: 'Extract Entities: merge from previous dates',
     desc: 'Recovering missing entities from previous complete dates',
-    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
+    pipelines: ['build', 'rebuild'],
     category: 'project',
     requiresProject: true,
   },
@@ -194,27 +204,6 @@ export const APP_ACTIONS: AppAction[] = [
     category: 'project',
     requiresProject: true,
   },
-
-  /*
-  {
-    id: 'action-stop',
-    cmd: 'actions/action-stop',
-    name: 'Debug: stop pipeline',
-    desc: 'Stopping pipeline',
-    pipelines: ['build', 'rebuild'],
-    category: 'project',
-    requiresProject: true,
-  },
-*/
-  {
-    id: 'extract-links',
-    cmd: 'actions/extract-links',
-    name: 'Extract Links',
-    desc: 'Extracting links from original answer files',
-    pipelines: ['build', 'rebuild'],
-    category: 'project',
-    requiresProject: true,
-  },    
 
 
   {
@@ -289,16 +278,6 @@ export const APP_ACTIONS: AppAction[] = [
   },
 
   {
-    id: 'enrich-calculate-trends',
-    cmd: 'actions/enrich-calculate-trends',
-    name: 'Calculate Trends',
-    desc: 'Calculating historical trends',
-    pipelines: ['build', 'rebuild', 'rebuild-report-only'],
-    category: 'project',
-    requiresProject: true,
-  },
-
-  {
     id: 'enrich-link-types-calculate-mentions',
     cmd: 'actions/enrich-link-types-calculate-mentions',
     name: 'Calculate LinkTypes Mentions',
@@ -349,14 +328,15 @@ export const APP_ACTIONS: AppAction[] = [
   },  
   
   {
-    id: 'enrich-link-types-calculate-trends',
-    cmd: 'actions/enrich-link-types-calculate-trends',
-    name: 'Calculate LinkTypes Trends',
-    desc: 'Calculating linkTypes trends',
+    id: 'enrich-calculate-trends',
+    cmd: 'actions/enrich-calculate-trends',
+    name: 'Calculate Trends',
+    desc: 'Calculating historical trends',
     pipelines: ['build', 'rebuild', 'rebuild-report-only'],
     category: 'project',
     requiresProject: true,
   },
+
   {
     id: 'enrich-generate-links-for-entities',
     cmd: 'actions/enrich-generate-links-for-entities',
