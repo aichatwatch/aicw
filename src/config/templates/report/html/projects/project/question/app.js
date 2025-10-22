@@ -1382,18 +1382,16 @@ Vue.component('about-report', {
                     <div class="pl-13 space-y-3">
                         <div v-if="isAggregateReport" class="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
                             <p class="mb-2">
-                                This report combines insights from <strong class="text-indigo-600 dark:text-indigo-400">{{ $root.totalCounts.bots * $root.questionsData.totalQuestions }}</strong> responses by AI models. <span class="inline-flex items-center gap-1 has-data-hint" v-html="$root.getIconsOfAllBotsInReportHtml()"></span>
+                                This report combines insights from <strong class="text-indigo-600 dark:text-indigo-400">{{ $root.totalCounts.bots * $root.questionsData.totalQuestions }}</strong> responses by <strong class="text-indigo-600 dark:text-indigo-400">{{ $root.totalCounts.bots }}</strong> AI models: <span class="inline-flex items-center gap-1 has-data-hint" v-html="$root.getIconsOfAllBotsInReportHtml()"></span>.
                             </p>
                             <p class="flex items-start gap-2">
-                                <span>We analyzed</span>
-                                <strong class="text-indigo-600 dark:text-indigo-400">{{ $root.totalCounts.bots }}</strong>
-                                <span>AI models answering</span>
+                                <span>Each AI model answered</span>
                                 <strong class="text-indigo-600 dark:text-indigo-400">{{ $root.questionsData.totalQuestions }}</strong>
-                                <span>questions</span>                            
+                                <span>questions below</span>                            
                             </p>
                             <p class="mt-2 text-xs text-gray-600 dark:text-gray-400 italic">
                                 <i class="fa-solid fa-info-circle mr-1"></i>
-                                Explore individual question responses by clicking on any question below
+                                Explore report for specific questions by clicking on any question title below
                             </p>
                         </div>
                         
@@ -1428,7 +1426,7 @@ Vue.component('about-report', {
                                             {{ question.text }}
                                     </p>
                                 </div>
-                                view per question report <i class="fa-solid fa-arrow-right"></i>
+                                <i class="fa-solid fa-arrow-right"></i>
                             </div>
                         </a>
                         <div v-if="!questionsExpanded && filteredQuestions.length > 3" class="text-center pt-2">

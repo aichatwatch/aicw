@@ -160,6 +160,13 @@ export async function enrichLinkDomainsCalculateMentions(project: string, target
 
   const questions = await readQuestions(project);
 
+  // Add aggregate as a synthetic question entry (will be processed last due to underscore prefix)
+  questions.push({
+    folder: AGGREGATED_DIR_NAME,
+    question: `${project} - Aggregate Report`,
+
+  });
+
   logger.info(`Processing ${questions.length} questions for date: ${targetDate}`);
 
   // Start progress tracking

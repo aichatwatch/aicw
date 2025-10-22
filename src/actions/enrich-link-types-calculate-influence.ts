@@ -65,7 +65,14 @@ export async function enrichLinkTypesCalculateInfluence(project: string, targetD
 
   logger.info(`Starting linkTypes influence calculation for project: ${project}`);
 
-  const questions = await readQuestions(project);      
+  const questions = await readQuestions(project);
+
+  // Add aggregate as a synthetic question entry (will be processed last due to underscore prefix)
+  questions.push({
+    folder: AGGREGATED_DIR_NAME,
+    question: `${project} - Aggregate Report`,
+
+  });
 
   logger.info(`Processing ${questions.length} questions for date: ${targetDate}`);
 

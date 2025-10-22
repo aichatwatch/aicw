@@ -274,7 +274,7 @@ export async function getTargetDateFromProjectOrEnvironment(project: string): Pr
   // first parse from args
   const dateIndex = args.indexOf('--date');
   if (dateIndex !== -1 && args[dateIndex + 1]) {
-    logger.debug(`getTargetDateFromProjectOrEnvironment: Target date found in command-line params: ${args[dateIndex + 1]}`);
+    logger.warn(`Target date found in command-line params: ${args[dateIndex + 1]}`);
     const date = args[dateIndex + 1];
     // check if this data in the list of dates with complete answers
     if (!completeAnswersDates.includes(date)) {
@@ -284,13 +284,13 @@ export async function getTargetDateFromProjectOrEnvironment(project: string): Pr
         project
       );
     }
-    logger.info(`getTargetDateFromProjectOrEnvironment: Target date used from --date cmd params: ${date}`);
+    logger.warn(`Target date used from --date cmd params: ${date}`);
     finalDate = date;
   }
   // if not then trying to use from ENV
   else if (process.env.AICW_TARGET_DATE) {
     const date = process.env.AICW_TARGET_DATE;
-    logger.info(`getTargetDateFromProjectOrEnvironment: Target date detected in AICW_TARGET_DATE env var: ${date}`);
+    logger.warn(`Target date detected in AICW_TARGET_DATE env var: ${date}`);
     // check if this date can be used and it is in complete answers dates
     if (!completeAnswersDates.includes(date)) {
       throw new PipelineCriticalError(
