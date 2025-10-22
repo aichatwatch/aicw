@@ -4,7 +4,7 @@ import { DirentLike } from '../config/types.js';
 import { logger } from '../utils/compact-logger.js';
 import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { QUESTIONS_DIR, QUESTION_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
-import { AGGREGATED_DIR_NAME } from '../config/constants.js';
+import { AGGREGATED_DIR_NAME, MAX_PREVIOUS_DATES } from '../config/constants.js';
 import { MAIN_SECTIONS } from '../config/constants-entities.js';
 import { PipelineCriticalError, createMissingFileError } from '../utils/pipeline-errors.js';
 import { loadDataJs, saveDataJs, readQuestions } from '../utils/project-utils.js';
@@ -30,11 +30,12 @@ const SOURCE_DETECTION_MAX_WORDS_FROM_SOURCE = 250;
 // ============================================================================
 
 /**
- * Entity source with bots tracking
+ * Entity source with bots and dates tracking
  */
 export interface EntitySource {
   url: string;      // Cleaned URL (no protocol, www, query params, anchors)
-  bots: string;    // Model ID like "openai_chatgpt_with_search_latest"
+  bots: string;     // Model ID like "openai_chatgpt_with_search_latest"
+  dates: string[];  // Dates this source appeared (e.g., ["2025-10-10", "2025-10-21"])
 }
 
 /**
@@ -51,25 +52,30 @@ interface AnswerFileInfo {
 // Note: Using cleanUrl from url-utils.js for consistent URL normalization
 
 /**
- * Deduplicate sources and aggregate bot IDs
- * Groups by URL and combines all bot IDs as comma-separated string
+ * Deduplicate sources and aggregate bot IDs and dates
+ * Groups by URL and combines all bot IDs and dates
  */
 function deduplicateSources(sources: EntitySource[]): EntitySource[] {
-  const urlMap = new Map<string, Set<string>>();
+  const urlMap = new Map<string, { bots: Set<string>, dates: Set<string> }>();
 
   for (const source of sources) {
     const cleanedUrl = cleanUrl(source.url);
     if (!urlMap.has(cleanedUrl)) {
-      urlMap.set(cleanedUrl, new Set<string>());
+      urlMap.set(cleanedUrl, { bots: new Set(), dates: new Set() });
     }
-    urlMap.get(cleanedUrl)!.add(source.bots);
+    const entry = urlMap.get(cleanedUrl)!;
+    entry.bots.add(source.bots);
+    for (const date of source.dates || []) {
+      entry.dates.add(date);
+    }
   }
 
   const result: EntitySource[] = [];
-  for (const [url, botsSet] of urlMap.entries()) {
+  for (const [url, { bots, dates }] of urlMap.entries()) {
     result.push({
       url,
-      bots: Array.from(botsSet).sort().join(',')
+      bots: Array.from(bots).sort().join(','),
+      dates: Array.from(dates).sort()
     });
   }
 
@@ -680,6 +686,32 @@ async function loadAllAnswerFilesForAllQuestions(
   return allFiles;
 }
 
+/**
+ * Get valid previous dates for scanning historical sources
+ * Only includes dates with complete answers from all models
+ */
+async function getPreviousDates(
+  project: string,
+  targetDate: string
+): Promise<string[]> {
+  try {
+    const { getDatesWithCompleteAnswers } = await import('../utils/project-utils.js');
+    const allCompleteDates = await getDatesWithCompleteAnswers(project);
+
+    if (!allCompleteDates || allCompleteDates.length === 0) {
+      return [];
+    }
+
+    // Filter to dates before target date and take first MAX_PREVIOUS_DATES
+    return allCompleteDates
+      .filter(date => date < targetDate)
+      .slice(0, MAX_PREVIOUS_DATES);
+  } catch (error) {
+    logger.debug(`Could not get previous dates: ${error}`);
+    return [];
+  }
+}
+
 // ============================================================================
 // MAIN ORCHESTRATOR
 // ============================================================================
@@ -732,10 +764,15 @@ export async function enrichGetSourceLinksForEntities(
       // Load compiled data
       const { data, dataKey } = await loadDataJs(compiledFile);
 
+      // Variables for previous dates scanning
+      let previousDates: string[] | null = null;
+      const isAggregated = dir.name === AGGREGATED_DIR_NAME;
+      const scannedPreviousDates = false; // Kept for future per-question optimization
+
       // Load answer.json files
       // For aggregated folder, load ALL answers from ALL questions
       // For individual questions, load only that question's answers
-      const answerFiles = dir.name === AGGREGATED_DIR_NAME
+      const answerFiles = isAggregated
         ? await loadAllAnswerFilesForAllQuestions(project, questionsList, targetDate)
         : await loadAnswerJsonFiles(project, dir.name, targetDate);
 
@@ -778,13 +815,13 @@ export async function enrichGetSourceLinksForEntities(
               // Strategy 1: Annotations (title + content + url)
               const annotationLinks = findLinksInAnnotations(item.value, annotations);
               for (const url of annotationLinks) {
-                allSources.push({ url, bots: answerFile.bots });
+                allSources.push({ url, bots: answerFile.bots, dates: [targetDate] });
               }
 
               // Strategy 3: Content proximity (citation markers)
               const contentLinks = findLinksNearEntityInContent(content, item.value, citations);
               for (const url of contentLinks) {
-                allSources.push({ url, bots: answerFile.bots });
+                allSources.push({ url, bots: answerFile.bots, dates: [targetDate] });
               }
 
               // Mark as found if either Strategy 1 or 3 found anything
@@ -797,7 +834,7 @@ export async function enrichGetSourceLinksForEntities(
                 const sentenceStartLinks = findLinksAtSentenceStart(content, item.value, citations);
                 if (sentenceStartLinks.length > 0) {
                   for (const url of sentenceStartLinks) {
-                    allSources.push({ url, bots: answerFile.bots });
+                    allSources.push({ url, bots: answerFile.bots, dates: [targetDate] });
                   }
                   foundInThisAnswer = true;
                 }
@@ -807,13 +844,88 @@ export async function enrichGetSourceLinksForEntities(
               if (!foundInThisAnswer) {
                 const citationLinks = findLinksInCitations(item.value, citations);
                 for (const url of citationLinks) {
-                  allSources.push({ url, bots: answerFile.bots });
+                  allSources.push({ url, bots: answerFile.bots, dates: [targetDate] });
                 }
               }
 
             } catch (error) {
               logger.debug(`Error reading answer file ${answerFile.path}: ${error}`);
               continue;
+            }
+          }
+
+          // If no sources found or item has zero mentions (disappeared), scan previous dates
+          const hasZeroMentions = (item.mentions === 0 || item.mentions === '0');
+          if ((allSources.length === 0 || hasZeroMentions) && !scannedPreviousDates) {
+            // Get previous dates (lazy load once per question)
+            if (!previousDates) {
+              previousDates = await getPreviousDates(project, targetDate);
+            }
+
+            if (previousDates.length > 0) {
+              logger.debug(`Scanning ${previousDates.length} previous dates for sources of "${item.value}"`);
+
+              // Scan each previous date
+              for (const prevDate of previousDates) {
+                const prevAnswerFiles = isAggregated
+                  ? await loadAllAnswerFilesForAllQuestions(project, questionsList, prevDate)
+                  : await loadAnswerJsonFiles(project, dir.name, prevDate);
+
+                if (prevAnswerFiles.length === 0) continue;
+
+                // Process each answer file from previous date
+                for (const answerFile of prevAnswerFiles) {
+                  try {
+                    const answerContent = await fs.readFile(answerFile.path, 'utf-8');
+                    const answer = JSON.parse(answerContent);
+
+                    const choice = answer.choices?.[0];
+                    if (!choice) continue;
+
+                    const content = choice.message?.content || '';
+                    const annotations = choice.message?.annotations || [];
+                    const citations = answer.citations || [];
+
+                    let foundInPrevAnswer = false;
+
+                    // Use same strategies for previous dates
+                    const annotationLinks = findLinksInAnnotations(item.value, annotations);
+                    for (const url of annotationLinks) {
+                      allSources.push({ url, bots: answerFile.bots, dates: [prevDate] });
+                    }
+
+                    const contentLinks = findLinksNearEntityInContent(content, item.value, citations);
+                    for (const url of contentLinks) {
+                      allSources.push({ url, bots: answerFile.bots, dates: [prevDate] });
+                    }
+
+                    if (annotationLinks.length > 0 || contentLinks.length > 0) {
+                      foundInPrevAnswer = true;
+                    }
+
+                    if (!foundInPrevAnswer) {
+                      const sentenceStartLinks = findLinksAtSentenceStart(content, item.value, citations);
+                      if (sentenceStartLinks.length > 0) {
+                        for (const url of sentenceStartLinks) {
+                          allSources.push({ url, bots: answerFile.bots, dates: [prevDate] });
+                        }
+                        foundInPrevAnswer = true;
+                      }
+                    }
+
+                    if (!foundInPrevAnswer) {
+                      const citationLinks = findLinksInCitations(item.value, citations);
+                      for (const url of citationLinks) {
+                        allSources.push({ url, bots: answerFile.bots, dates: [prevDate] });
+                      }
+                    }
+
+                  } catch (error) {
+                    logger.debug(`Error reading previous answer file ${answerFile.path}: ${error}`);
+                    continue;
+                  }
+                }
+              }
             }
           }
 

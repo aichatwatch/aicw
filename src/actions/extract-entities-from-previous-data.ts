@@ -17,7 +17,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { DirentLike } from '../config/types.js';
 import { QUESTIONS_DIR, QUESTION_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
-import { AGGREGATED_DIR_NAME } from '../config/constants.js';
+import { AGGREGATED_DIR_NAME, MAX_PREVIOUS_DATES } from '../config/constants.js';
 import { MAIN_SECTIONS } from '../config/constants-entities.js';
 import { logger } from '../utils/compact-logger.js';
 import { getEntityTypeFromSectionName, waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
@@ -34,12 +34,6 @@ import { PipelineCriticalError } from '../utils/pipeline-errors.js';
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
-
-/**
- * Maximum number of previous dates to scan for missing entities.
- * Only dates with complete answers from all models are considered.
- */
-const MAX_PREVIOUS_DATES = 10;
 
 /**
  * Find valid previous dates with complete model coverage.
