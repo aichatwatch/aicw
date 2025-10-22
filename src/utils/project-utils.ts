@@ -486,7 +486,7 @@ async function questionHasCompleteAnswers(answersDir: string, date: string, proj
  * @returns Latest complete answer date in YYYY-MM-DD format, or null if no complete answers found
  * @throws Error if no complete answer dates are found
  */
-async function getDatesWithCompleteAnswers(project: string): Promise<string[] | null> {
+export async function getDatesWithCompleteAnswers(project: string): Promise<string[] | null> {
   const questionsDir = QUESTIONS_DIR(project);
 
     const questionDirs = await fs.readdir(questionsDir, { withFileTypes: true });

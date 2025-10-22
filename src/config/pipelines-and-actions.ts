@@ -176,6 +176,16 @@ export const APP_ACTIONS: AppAction[] = [
   },
 
   {
+    id: 'extract-entities-from-previous-data',
+    cmd: 'actions/extract-entities-from-previous-data',
+    name: 'Extract Entities: merge from previous dates',
+    desc: 'Recovering missing entities from previous complete dates',
+    pipelines: ['pipeline-project-build', 'pipeline-project-rebuild'],
+    category: 'project',
+    requiresProject: true,
+  },
+
+  {
     id: 'enrich-get-source-links-for-entities',
     cmd: 'actions/enrich-get-source-links-for-entities',
     name: 'Get Source Links for Entities',

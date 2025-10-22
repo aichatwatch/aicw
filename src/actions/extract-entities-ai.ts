@@ -7,7 +7,7 @@ import { ModelConfig, getAIAIPresetWithModels } from '../utils/model-config.js';
 import { QUESTIONS_DIR, QUESTION_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
 import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { MAIN_SECTIONS } from '../config/entities.js';
-import { isValidOutputFile } from '../utils/misc-utils.js';
+import { isValidOutputFile as isValidDataJsFile } from '../utils/misc-utils.js';
 import { logger } from '../utils/compact-logger.js';
 import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { createAiClientInstance, callAIWithRetry } from '../utils/ai-caller.js';
@@ -251,7 +251,7 @@ export async function extractEntities(project: string, targetDate: string): Prom
         // Check if already compiled
         // Check if the output file exists and is larger than 5 bytes; throw error if it does NOT exist
         const MIN_EXISTING_FILE_SIZE = 5;
-        const fileExists = await isValidOutputFile(outputPath, MIN_EXISTING_FILE_SIZE, false);
+        const fileExists = await isValidDataJsFile(outputPath, MIN_EXISTING_FILE_SIZE, false);
         if (!fileExists) {
           logger.error(`Required data.js file does NOT exist or is too small: ${outputPath}`);
           throw new PipelineCriticalError(
