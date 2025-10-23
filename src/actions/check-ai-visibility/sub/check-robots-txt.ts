@@ -5,7 +5,7 @@
  * Parses robots.txt rules and checks each bot's identifier against Disallow rules.
  */
 
-import { BaseVisibilityCheck, VisibilityCheckResult } from './base-visibility-check.js';
+import { BaseVisibilityCheck, VisibilityCheckResult } from './check-base.js';
 import { callHttpWithRetry } from '../../../utils/http-caller.js';
 import { AI_USER_AGENTS, AIBotDefinition } from '../../../config/ai-user-agents.js';
 

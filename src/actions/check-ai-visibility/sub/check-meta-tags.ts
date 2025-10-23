@@ -10,7 +10,7 @@
  * It does NOT fetch HTML itself to avoid duplicate requests.
  */
 
-import { BaseVisibilityCheck, VisibilityCheckResult } from './base-visibility-check.js';
+import { BaseVisibilityCheck, VisibilityCheckResult } from './check-base.js';
 
 export class CheckMetaTags extends BaseVisibilityCheck {
   readonly name = 'Meta Tags Check';

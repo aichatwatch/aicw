@@ -479,7 +479,7 @@ export const APP_ACTIONS: AppAction[] = [
 
   {
     id: 'check-ai-visibility',
-    cmd: 'actions/check-ai-visibility/index',
+    cmd: 'actions/check-ai-visibility/check-ai-visibility',
     name: 'Check AI Visibility',
     desc: 'Check if website is accessible by AI crawlers',
     pipelines: ['check-ai-visibility'],

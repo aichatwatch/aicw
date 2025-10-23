@@ -6,13 +6,32 @@
  */
 
 import { createInterface } from 'readline';
-import { getAllVisibilityChecks } from './sub/index.js';
 import { logger } from '../../utils/compact-logger.js';
 import { colorize, waitForEnterInInteractiveMode } from '../../utils/misc-utils.js';
 import { interruptibleDelay as delay } from '../../utils/delay.js';
 import { AI_VISIBILITY_CHECK_DELAY_MS } from '../../config/constants.js';
 import { callHttpWithRetry } from '../../utils/http-caller.js';
 import { BROWSER_USER_AGENT } from '../../config/ai-user-agents.js';
+// sub actions
+import { BaseVisibilityCheck } from './sub/check-base.js';
+import { CheckJsonLD } from './sub/check-json-ld.js';
+import { CheckMetaTags } from './sub/check-meta-tags.js';
+import { CheckAIBotAccessibility } from './sub/check-ai-bot-accessibility.js';
+import { CheckRobotsTxt } from './sub/check-robots-txt.js';
+
+export const VISIBILITY_CHECKS: (new () => BaseVisibilityCheck)[] = [
+  CheckRobotsTxt,
+  CheckAIBotAccessibility,
+  CheckMetaTags,
+  CheckJsonLD
+];
+
+/**
+ * Get instantiated visibility checks in execution order
+ */
+export function getAllVisibilityChecks(): BaseVisibilityCheck[] {
+  return VISIBILITY_CHECKS.map(CheckClass => new CheckClass());
+}
 
 /**
  * Fetch HTML content with browser user agent

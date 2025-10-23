@@ -6,7 +6,7 @@
  * Compares HTTP status and content size with 3% tolerance.
  */
 
-import { BaseVisibilityCheck, VisibilityCheckResult } from './base-visibility-check.js';
+import { BaseVisibilityCheck, VisibilityCheckResult } from './check-base.js';
 import { callHttpWithRetry } from '../../../utils/http-caller.js';
 import { AI_USER_AGENTS, BROWSER_USER_AGENT } from '../../../config/ai-user-agents.js';
 import { interruptibleDelay as delay } from '../../../utils/delay.js';

@@ -8,7 +8,7 @@
  * It does NOT fetch HTML itself to avoid duplicate requests.
  */
 
-import { BaseVisibilityCheck, VisibilityCheckResult } from './base-visibility-check.js';
+import { BaseVisibilityCheck, VisibilityCheckResult } from './check-base.js';
 
 export class CheckJsonLD extends BaseVisibilityCheck {
   readonly name = 'JSON-LD Structure';
