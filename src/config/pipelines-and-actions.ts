@@ -472,10 +472,20 @@ export const APP_ACTIONS: AppAction[] = [
     cmd: 'actions/utils/show-user-data-location',
     name: 'Utility: show user data folders location',
     desc: 'Show user data folder location',
-    pipelines: ['show-user-data-location'],    
+    pipelines: ['show-user-data-location'],
     category: 'utility',
     requiresProject: false,
-  },  
+  },
+
+  {
+    id: 'check-ai-visibility',
+    cmd: 'actions/check-ai-visibility/index',
+    name: 'Check AI Visibility',
+    desc: 'Check if website is accessible by AI crawlers',
+    pipelines: ['check-ai-visibility'],
+    category: 'utility',
+    requiresProject: false,
+  },
 /*
   {
     id: 'report-compare',
@@ -483,7 +493,7 @@ export const APP_ACTIONS: AppAction[] = [
     name: 'Reports: compare reports',
     desc: 'Compare reports across dates and analyze trends',
     pipelines: [],
-    
+
     category: 'utility',
     requiresProject: true,
   },
@@ -560,7 +570,7 @@ export const UTILITY_PIPELINES: PipelineDefinition[] = [
   {
     id: 'show-user-data-location',
     name: 'Utility: show user data location',
-    description: 'shows user data location',    
+    description: 'shows user data location',
     category: 'utility',
     actions: APP_ACTIONS.filter(a => a.pipelines.includes('show-user-data-location')),
     // do not require API keys for this action
@@ -568,9 +578,19 @@ export const UTILITY_PIPELINES: PipelineDefinition[] = [
   },
 
   {
+    id: 'check-ai-visibility',
+    name: 'Check AI Visibility',
+    description: 'checks if website is accessible by AI crawlers',
+    category: 'utility',
+    actions: APP_ACTIONS.filter(a => a.pipelines.includes('check-ai-visibility')),
+    // do not require API keys for this action
+    requiresApiKeys: false
+  },
+
+  {
     id: 'check-models',
     name: 'Utility: check AI Models',
-    description: 'checks all AI Models for deprecation',    
+    description: 'checks all AI Models for deprecation',
     category: 'utility',
     actions: APP_ACTIONS.filter(a => a.pipelines.includes('check-models')),
   },
