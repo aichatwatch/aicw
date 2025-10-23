@@ -5,7 +5,6 @@ import { ModelConfig } from './utils/model-config.js';
 import { logger } from './utils/compact-logger.js';
 import { PipelineCriticalError } from './utils/pipeline-errors.js';
 import { ModelType } from './utils/project-utils.js';
-import { checkIfUserConfigFolderHasAllRequiredDataFiles } from './config/user-paths.js';
 export const DEFAULT_PRESET_NAME = 'popular_static_llms';
 
 
@@ -31,9 +30,6 @@ export interface AIPresetWithModels extends AIPreset {
  * Load all available models from ai_models.json
  */
 export function loadAllModels(): ModelConfig[] {
-  if (!checkIfUserConfigFolderHasAllRequiredDataFiles()) {
-    throw new Error('User config files are missing. Run "aicw" to initialize.');
-  }
 
   try {
     const modelsData = fs.readFileSync(USER_MODELS_JSON_FILE, 'utf8');
@@ -82,9 +78,6 @@ export function getModelById(modelId: string): ModelConfig | undefined {
  * Load all available ai_presets from the ai_presets directory
  */
 export function loadAllAIPresets(): Map<string, AIPreset> {
-  if (!checkIfUserConfigFolderHasAllRequiredDataFiles()) {
-    throw new Error('User config files are missing. Run "aicw" to initialize.');
-  }
 
   try {
     if (!fs.existsSync(USER_AI_PRESETS_DIR)) {

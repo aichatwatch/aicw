@@ -3,13 +3,11 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { createInterface } from 'readline';
 import { colorize, waitForEnterInInteractiveMode, writeFileAtomic } from './utils/misc-utils.js';
-import { USER_CONFIG_DIR } from './config/user-paths.js';
 import { createCredentialsFile, decryptCredentialsFile, isEncryptedCredentials } from './utils/crypto-utils.js';
 import { loadAllAIPresets, getAIAIPresetWithModels } from './ai-preset-manager.js';
 import { ModelConfig } from './utils/model-config.js';
-import { CompactLogger } from './utils/compact-logger.js';
+import { logger } from './utils/compact-logger.js';
 import { USER_CONFIG_CREDENTIALS_FILE } from './config/paths.js';
-const logger = CompactLogger.getInstance();
 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -304,8 +302,6 @@ async function setupSingleApiKey(
  * Save all credentials to encrypted file
  */
 async function saveAllCredentials(credentials: Record<string, string>): Promise<void> {
-  // Create user config directory if it doesn't exist
-  await fs.mkdir(USER_CONFIG_DIR, { recursive: true });
 
   // Create encrypted credentials file
   const encryptedCreds = createCredentialsFile(credentials);

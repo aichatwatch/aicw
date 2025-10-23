@@ -2,9 +2,9 @@ import { spawn } from 'child_process';
 import { realpathSync } from 'fs';
 import { getPackageRoot } from '../config/user-paths.js';
 import { getPackageName, getCurrentVersion, checkForUpdates } from '../utils/update-checker.js';
-import { CompactLogger } from './compact-logger.js';
+import { logger } from './compact-logger.js';
 import { createCleanReadline } from './misc-utils.js';
-const logger = CompactLogger.getInstance();
+
 /**
  * Check if package is installed via npm link (development mode)
  */

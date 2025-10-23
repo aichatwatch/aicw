@@ -26,12 +26,8 @@ export const PROMPTS_DIR: string = path.join(CONFIG_DIR, 'prompts');
 // Templates should be read from package directory
 export const TEMPLATES_DIR: string = getPackageTemplatesDir();
 
-// ---- USER DATA (copied from /config/default/* on setup)
-export const USER_CONFIG_DIR: string = path.join(USER_DATA_DIR, 'config');
-// source folder with default files for user 
-export const DEFAULT_DATA_FOR_USER_DATA_DIR = path.join(CONFIG_DIR, 'default');
 // using .credentials directory to hide the credentials file from the user
-export const USER_CONFIG_CREDENTIALS_DIR: string = path.join(USER_CONFIG_DIR, '.credentials');
+export const USER_CONFIG_CREDENTIALS_DIR: string = path.join(USER_DATA_DIR, 'config', '.credentials');
 export const USER_CONFIG_CREDENTIALS_FILE: string = path.join(USER_CONFIG_CREDENTIALS_DIR, 'credentials.json');
 
 

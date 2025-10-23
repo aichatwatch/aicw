@@ -5,9 +5,10 @@
  * Parses robots.txt rules and checks each bot's identifier against Disallow rules.
  */
 
-import { BaseVisibilityCheck, VisibilityCheckResult } from './check-base.js';
+import { BaseVisibilityCheck, VisibilityCheckResult, PageCaptured } from './check-base.js';
 import { callHttpWithRetry } from '../../../utils/http-caller.js';
-import { AI_USER_AGENTS, AIBotDefinition } from '../../../config/ai-user-agents.js';
+import { AI_USER_AGENTS } from '../../../config/ai-user-agents.js';
+import { calculateProductVisibility, getUniqueAIProducts } from '../utils/ai-product-utils.js';
 
 /**
  * Simple robots.txt parser
@@ -61,10 +62,10 @@ function parserobotsForBot(robotsTxt: string, botIdentifier: string): boolean {
 }
 
 export class CheckRobotsTxt extends BaseVisibilityCheck {
-  readonly name = 'Robots.txt Check';
+  readonly name = 'Check /robots.txt';
 
-  protected async performCheck(url: string, browserHtml?: string): Promise<VisibilityCheckResult> {
-    // Note: browserHtml is not used by this check (we fetch robots.txt separately)
+  protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
+    // Note: pageCaptured is not used by this check (we fetch robots.txt separately)
     // Construct robots.txt URL
     const urlObj = new URL(url);
     const robotsUrl = `${urlObj.protocol}//${urlObj.host}/robots.txt`;
@@ -77,11 +78,12 @@ export class CheckRobotsTxt extends BaseVisibilityCheck {
 
       // If robots.txt doesn't exist, all bots are allowed
       if (response.status === 404) {
+        const totalProducts = getUniqueAIProducts().length;
         return {
           score: 10,
           maxScore: this.maxScore,
           passed: true,
-          details: 'No robots.txt (all bots allowed)'
+          details: `No /robots.txt found - visible to all ${totalProducts} AI products`
         };
       }
 
@@ -100,35 +102,69 @@ export class CheckRobotsTxt extends BaseVisibilityCheck {
       // Check each AI bot
       const blockedBots: string[] = [];
       for (const bot of AI_USER_AGENTS) {
-        if (parserobotsForBot(robotsTxt, bot.identifier)) {
+        const identifier = bot.identifier;
+        if (parserobotsForBot(robotsTxt, identifier)) {
           blockedBots.push(bot.name);
         }
       }
 
-      const allowedCount = AI_USER_AGENTS.length - blockedBots.length;
-      const score = Math.round(10 * (allowedCount / AI_USER_AGENTS.length));
+      // Calculate AI product visibility
+      const blockedBotNames = new Set(blockedBots);
+      const productVisibility = calculateProductVisibility(blockedBotNames);
+
+      // Get visible and hidden products
+      const visibleProducts: string[] = [];
+      const hiddenProducts: string[] = [];
+
+      for (const [product, isVisible] of productVisibility) {
+        if (isVisible) {
+          visibleProducts.push(product);
+        } else {
+          hiddenProducts.push(product);
+        }
+      }
+
+      const totalProducts = productVisibility.size;
+      const visibleCount = visibleProducts.length;
+
+      // Score based on products (0-10 scale)
+      const score = Math.round((visibleCount / totalProducts) * 10);
+
+      // Build details message
+      let details: string;
+      if (hiddenProducts.length === 0) {
+        details = `Visible to all ${totalProducts} AI products`;
+      } else if (visibleProducts.length === 0) {
+        details = `Hidden from all ${totalProducts} AI products`;
+      } else {
+        details = `${visibleCount}/${totalProducts} visible\n` +
+          `   ✓ Visible: ${visibleProducts.join(', ')}\n` +
+          `   ❌ Hidden: ${hiddenProducts.join(', ')}`;
+      }
 
       return {
         score,
         maxScore: this.maxScore,
         passed: score >= 7,
-        details: blockedBots.length === 0
-          ? 'All AI bots allowed'
-          : `${blockedBots.length} bot(s) blocked: ${blockedBots.join(', ')}`,
+        details,
         metadata: {
           blockedBots,
-          allowedCount,
+          visibleProducts,
+          hiddenProducts,
+          totalProducts,
+          visibleCount,
           totalBots: AI_USER_AGENTS.length
         }
       };
 
     } catch (error: any) {
       // If can't fetch robots.txt, assume all bots allowed
+      const totalProducts = getUniqueAIProducts().length;
       return {
         score: 10,
         maxScore: this.maxScore,
         passed: true,
-        details: 'No robots.txt accessible (all bots allowed)'
+        details: `No robots.txt accessible - visible to all ${totalProducts} AI products`
       };
     }
   }

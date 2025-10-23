@@ -10,8 +10,7 @@ import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, v
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
-import { CompactLogger } from '../utils/compact-logger.js';
-const logger = CompactLogger.getInstance();
+import { logger  } from '../utils/compact-logger.js';
 
 const __dirname: string = dirname(fileURLToPath(import.meta.url));
 const QUESTIONS_DIR = (project: string): string => path.join(USER_PROJECT_DIR(project), 'questions');

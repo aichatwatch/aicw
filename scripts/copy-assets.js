@@ -16,35 +16,14 @@ console.log('📦 Copying assets to dist/...\n');
 
 const assetsToCopy = [
   {
-    from: 'src/config/models',
-    to: 'dist/config/models',
-    description: 'Model configurations'
+    from: 'src/config/data',
+    to: 'dist/config/data',
+    description: 'Config data (templates, prompts, models, etc.)'
   },
   {
-    from: 'src/config/default',
-    to: 'dist/config/default',
-    description: 'Default user config files'
-  },
-  {
-    from: 'src/config/prompts',
-    to: 'dist/config/prompts',
-    description: 'System prompts'
-  },
-
-  {
-    from: 'src/config/templates',
-    to: 'dist/config/templates',
-    description: 'Report templates'
-  },
-  {
-    from: 'src/data',
-    to: 'dist/data',
-    description: 'Data templates'
-  },
-  {
-    from: 'QUICK-START.md',
-    to: 'dist/QUICK-START.md',
-    description: 'Quick Start'
+    from: 'src/config/data-generated',
+    to: 'dist/config/data-generated',
+    description: 'Generated data (link-types etc)'
   },
   {
     from: 'LICENSE.md',
@@ -52,8 +31,8 @@ const assetsToCopy = [
     description: 'License'
   },
   {
-    from: 'NOTICE',
-    to: 'dist/NOTICE',
+    from: 'NOTICE.md',
+    to: 'dist/NOTICE.md',
     description: 'Notice'
   },
   {

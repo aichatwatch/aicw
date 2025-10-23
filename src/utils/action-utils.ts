@@ -1,8 +1,7 @@
 import { getModuleNameFromUrl } from "./misc-utils.js";
 import { PipelineCriticalError } from "./pipeline-errors.js";
-import { CompactLogger } from "./compact-logger.js";
+import { logger } from "./compact-logger.js";
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
-const logger = CompactLogger.getInstance();
 
 export function filterSectionsToProcess(inSections: readonly string[], excludeSections: string[], includeSections: string[]): string[]{  
     const result: string[] = inSections.filter(sectionName => {

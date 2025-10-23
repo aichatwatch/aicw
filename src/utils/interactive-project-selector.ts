@@ -4,8 +4,8 @@ import { fileURLToPath } from 'url';
 import { getUserProjectConfigFile, USER_PROJECTS_DIR } from '../config/user-paths.js';
 import readline from 'readline';
 import { PipelineCriticalError } from './pipeline-errors.js';
-import { CompactLogger } from './compact-logger.js';
-const logger = CompactLogger.getInstance();
+import { logger } from './compact-logger.js';
+
 import { COLORS, createCleanReadline } from './misc-utils.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

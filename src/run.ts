@@ -8,7 +8,7 @@ import { logger } from './utils/compact-logger.js';
 import { output } from './utils/output-manager.js';
 import { getUpdateNotification, getCurrentVersion } from './utils/update-checker.js';
 import { performUpdate, showVersion } from './utils/update-installer.js';
-import { getCliMenuItems, getActionByCommand, CliMenuItem, getPipeline } from './config/pipelines-and-actions.js';
+import { getCliMenuItems, getActionByCommand, CliMenuItem, getPipeline, getCategoriesInOrder, getCategory } from './config/pipelines-and-actions.js';
 import { PipelineExecutor, ExecutionOptions, ExecutionResult } from './utils/pipeline-executor.js';
 import { stopServer, isServerRunning, getServerPort } from './actions/utils/report-serve.js';
 import { initializeUserDirectories } from './config/user-paths.js';
@@ -194,13 +194,32 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
   const menuMap = new Map<string, CliMenuItem>();
   let choiceNum = 1;
 
-  // Display Normal Pipelines
+  // Display Normal Pipelines grouped by category
   if (normalPipelines.length > 0) {
-    output.writeLine('\n' + colorize('➡ Pipelines:', 'yellow'));
+    // Get categories in defined order
+    const categories = getCategoriesInOrder();
+
+    // Group pipelines by category
+    const pipelinesByCategory = new Map<string, CliMenuItem[]>();
     for (const pipeline of normalPipelines) {
-      const numStr = String(choiceNum++);
-      menuMap.set(numStr, pipeline);
-      output.writeLine(`[${numStr}] ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
+      const categoryId = pipeline.category;
+      if (!pipelinesByCategory.has(categoryId)) {
+        pipelinesByCategory.set(categoryId, []);
+      }
+      pipelinesByCategory.get(categoryId)!.push(pipeline);
+    }
+
+    // Display pipelines by category in defined order
+    for (const category of categories) {
+      const pipelines = pipelinesByCategory.get(category.id);
+      if (pipelines && pipelines.length > 0) {
+        output.writeLine('\n' + colorize(`${category.icon} ${category.name}:`, 'yellow'));
+        for (const pipeline of pipelines) {
+          const numStr = String(choiceNum++);
+          menuMap.set(numStr, pipeline);
+          output.writeLine(`[${numStr}] ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
+        }
+      }
     }
   }
 

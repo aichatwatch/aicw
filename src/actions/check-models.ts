@@ -8,8 +8,7 @@ import { PipelineCriticalError } from '../utils/pipeline-errors.js';
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
-import { CompactLogger } from '../utils/compact-logger.js';
-const logger = CompactLogger.getInstance();
+import { logger } from '../utils/compact-logger.js';
 
 interface ModelCheckResult {
   id: string;

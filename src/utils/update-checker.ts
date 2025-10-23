@@ -3,8 +3,8 @@ import { join } from 'path';
 import { get } from 'https';
 import { USER_CACHE_DIR } from '../config/user-paths.js';
 import { getPackageRoot } from '../config/user-paths.js';
-import { CompactLogger } from './compact-logger.js';
-const logger = CompactLogger.getInstance();
+import { logger } from './compact-logger.js';
+
 
 const UPDATE_CHECK_CACHE_FILE = join(USER_CACHE_DIR, 'update-check.json');
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours

@@ -6,9 +6,8 @@ import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
 import { USER_DATA_DIR } from '../../config/user-paths.js';
 import { generateStaticNavigation } from '../../utils/report-projects-navigation-generator.js';
-import { CompactLogger } from '../../utils/compact-logger.js';
+import { logger } from '../../utils/compact-logger.js';
 import { openInDefaultBrowser } from '../../utils/misc-utils.js';
-const logger = CompactLogger.getInstance();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_PORT = parseInt(process.env.PORT || '8080');

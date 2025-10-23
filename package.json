@@ -27,7 +27,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "prebuild": "rm -rf dist/ && node scripts/build-link-types.js",
+    "prebuild": "rm -rf dist/ && node scripts/build-link-types.js && node scripts/validate-pipelines.js",
     "postbuild": "node scripts/copy-assets.js",
     "build": "tsc",
     "dev": "tsc --watch",

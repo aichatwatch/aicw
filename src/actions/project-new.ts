@@ -8,8 +8,7 @@ import { getProjectDisplayPath, getPackageRoot, getUserProjectQuestionsFile, get
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
 import { USER_QUESTION_TEMPLATES_DIR } from '../config/user-paths.js';
-import { CompactLogger } from '../utils/compact-logger.js';
-const logger = CompactLogger.getInstance();
+import { logger } from '../utils/compact-logger.js';
 
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 

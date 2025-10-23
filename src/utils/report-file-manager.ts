@@ -4,8 +4,8 @@ import { writeFileAtomic } from './misc-utils.js';
 import { injectlinkTypeNames } from './report-utils.js';
 import { REPORT_HTML_TEMPLATE_DIR } from '../config/paths.js';
 import { replaceMacrosInTemplate } from './misc-utils.js';
-import { CompactLogger } from './compact-logger.js';
-const logger = CompactLogger.getInstance();
+import { logger } from './compact-logger.js';
+
 /**
  * Configuration for report file operations
  */

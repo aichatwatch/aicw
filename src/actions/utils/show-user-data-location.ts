@@ -9,7 +9,7 @@ import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, v
 import { logger } from "../../utils/compact-logger.js";
 // get action name for the current module
 import { getModuleNameFromUrl, waitForEnterInInteractiveMode } from '../../utils/misc-utils.js';
-import { USER_DATA_DIR, USER_PROJECTS_DIR, USER_REPORTS_DIR, USER_CACHE_DIR, USER_CONFIG_DIR, USER_LOGS_DIR } from "../../config/user-paths.js";
+import { USER_DATA_DIR} from "../../config/user-paths.js";
 import { platform } from 'os';
 import { output, colorize } from '../../utils/output-manager.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
