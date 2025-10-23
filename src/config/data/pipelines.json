@@ -326,11 +326,11 @@
       "requiresProject": false
     },
     {
-      "id": "ai-ready-check",
-      "cmd": "actions/ai-ready-check/ai-ready-check",
+      "id": "check-ai-vis",
+      "cmd": "actions/check-ai-vis/check-ai-vis",
       "name": "Check AI Visibility",
       "desc": "Check if website is accessible by AI crawlers",
-      "pipelines": ["ai-ready-check"],
+      "pipelines": ["check-ai-vis"],
       "category": "utility",
       "requiresProject": false
     }
@@ -388,7 +388,7 @@
       "requiresApiKeys": false
     },
     {
-      "id": "ai-ready-check",
+      "id": "check-ai-vis",
       "name": "Check AI Visibility",
       "description": "checks if website is accessible by AI crawlers",
       "category": "utility",

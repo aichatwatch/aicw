@@ -96,17 +96,15 @@ const builtPipelines: PipelineDefinition[] = rawPipelines.map(pipeline => ({
 }));
 
 // PIPELINE DEFINITIONS
-export const PROJECT_PIPELINES: PipelineDefinition[] = builtPipelines.filter(p => p.category === 'project' && p.type !== 'advanced');
+// All pipelines from JSON - includes all categories dynamically
+export const ALL_PIPELINES: PipelineDefinition[] = builtPipelines;
 
-export const UTILITY_PIPELINES: PipelineDefinition[] = builtPipelines.filter(p => p.category === 'utility');
+// Category-specific exports for backwards compatibility (derived dynamically)
+export const PROJECT_PIPELINES: PipelineDefinition[] = ALL_PIPELINES.filter(p => p.category === 'project' && p.type !== 'advanced');
 
-export const ADVANCED_PIPELINES: PipelineDefinition[] = builtPipelines.filter(p => p.type === 'advanced');
+export const UTILITY_PIPELINES: PipelineDefinition[] = ALL_PIPELINES.filter(p => p.category === 'utility');
 
-export const ALL_PIPELINES: PipelineDefinition[] = [
-  ...PROJECT_PIPELINES,
-  ...UTILITY_PIPELINES,
-  ...ADVANCED_PIPELINES,
-];
+export const ADVANCED_PIPELINES: PipelineDefinition[] = ALL_PIPELINES.filter(p => p.type === 'advanced');
 
 
 

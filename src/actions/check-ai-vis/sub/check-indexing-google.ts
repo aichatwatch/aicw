@@ -1,7 +1,7 @@
 /**
- * Bing Indexing Check
+ * Google Indexing Check
  *
- * Checks if the URL/domain is indexed by Bing using site: search.
+ * Checks if the URL/domain is indexed by Google using site: search.
  * Performs a simple HTTP request and looks for result indicators.
  */
 
@@ -10,16 +10,17 @@ import { callHttpWithRetry } from '../../../utils/http-caller.js';
 import { DESKTOP_BROWSER_USER_AGENT } from '../../../config/ai-user-agents.js';
 import { validateHtmlResponse } from '../utils/response-validator.js';
 
+const MODULE_NAME = 'Google Indexing';
 
 /**
- * Check if Bing has indexed the domain
+ * Check if Google has indexed the domain
  */
-async function checkBingIndexing(url: string): Promise<{ indexed: boolean; details: string }> {
+async function checkGoogleIndexing(url: string): Promise<{ indexed: boolean; details: string }> {
   const urlObj = new URL(url);
   const domain = urlObj.hostname;
 
   // Use site: search operator
-  const searchUrl = `https://www.bing.com/search?q=site:${encodeURIComponent(domain)}`;
+  const searchUrl = `https://www.google.com/search?q=site:${encodeURIComponent(domain)}`;
 
   try {
     const response = await callHttpWithRetry(searchUrl, {
@@ -28,7 +29,7 @@ async function checkBingIndexing(url: string): Promise<{ indexed: boolean; detai
         'Accept': 'text/html',
         'Accept-Language': 'en-US,en;q=0.9'
       },
-      contextInfo: `Bing indexing check: ${domain}`,
+      contextInfo: `Google indexing check: ${domain}`,
       maxRetries: 1
     });
 
@@ -44,7 +45,8 @@ async function checkBingIndexing(url: string): Promise<{ indexed: boolean; detai
     // Validate response
     const validation = validateHtmlResponse(html, response.headers);
 
-    await saveResponseToFileIfInDevMode(html, response.headers, domain, 'bing-indexing'); 
+
+    await saveResponseToFileIfInDevMode(html, response.headers, domain, 'google-indexing');   
 
     // If response is invalid (error page, captcha, etc.), report it
     if (!validation.isValid) {
@@ -54,12 +56,13 @@ async function checkBingIndexing(url: string): Promise<{ indexed: boolean; detai
       };
     }
 
+
     const hasNoResults = NO_SEARCH_RESULTS_PATTERNS.some(pattern => pattern.test(html));
 
     // Check for result indicators
-    const hasResults = html.includes('b_algo') || // Bing result class
-                      html.includes('b_results') ||
-                      /[0-9,]+ results/i.test(html);
+    const hasResults = html.includes('Search Results') ||
+                      html.includes('result-stats') ||
+                      /About [0-9,]+ results/i.test(html);
 
     if (hasNoResults) {
       return {
@@ -75,7 +78,7 @@ async function checkBingIndexing(url: string): Promise<{ indexed: boolean; detai
       };
     }
 
-    // Uncertain
+    // Uncertain - maybe rate limited or captcha
     return {
       indexed: false,
       details: 'Unable to determine (no clear result indicators)'
@@ -89,11 +92,11 @@ async function checkBingIndexing(url: string): Promise<{ indexed: boolean; detai
   }
 }
 
-export class CheckBingIndexing extends BaseVisibilityCheck {
-  readonly name = 'Bing Indexing';
+export class CheckIndexingGoogle extends BaseVisibilityCheck {
+  readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
-    const result = await checkBingIndexing(url);
+    const result = await checkGoogleIndexing(url);
 
     return {
       score: result.indexed ? 10 : 0,
@@ -101,7 +104,7 @@ export class CheckBingIndexing extends BaseVisibilityCheck {
       passed: result.indexed,
       details: result.details,
       metadata: {
-        searchEngine: 'Bing',
+        searchEngine: 'Google',
         indexed: result.indexed
       }
     };

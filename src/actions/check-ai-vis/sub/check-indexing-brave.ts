@@ -11,6 +11,8 @@ import { DESKTOP_BROWSER_USER_AGENT } from '../../../config/ai-user-agents.js';
 import { validateHtmlResponse } from '../utils/response-validator.js';
 import { saveResponseToFileIfInDevMode } from './check-base.js';
 
+const MODULE_NAME = 'Brave Search Indexing';
+
 /**
  * Check if Brave Search has indexed the domain
  */
@@ -90,8 +92,8 @@ async function checkBraveIndexing(url: string): Promise<{ indexed: boolean; deta
   }
 }
 
-export class CheckBraveIndexing extends BaseVisibilityCheck {
-  readonly name = 'Brave Search Indexing';
+export class CheckIndexingBrave extends BaseVisibilityCheck {
+  readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
     const result = await checkBraveIndexing(url);

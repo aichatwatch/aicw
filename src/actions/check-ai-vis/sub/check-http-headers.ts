@@ -13,15 +13,17 @@
 
 import { BaseVisibilityCheck, VisibilityCheckResult, PageCaptured } from './check-base.js';
 
+const MODULE_NAME = 'X-Robots-Tag Server HTTP Header Check';
+
 export class CheckHttpHeaders extends BaseVisibilityCheck {
-  readonly name = 'X-Robots-Tag Check';
+  readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
     // If headers not available, return neutral result
     const browserHeaders = pageCaptured?.browserHeadersDesktop;
     if (!browserHeaders) {
       return {
-        score: 10,
+        score: this.maxScore,
         maxScore: this.maxScore,
         passed: true,
         details: 'Unable to check (headers not available)',
@@ -42,7 +44,7 @@ export class CheckHttpHeaders extends BaseVisibilityCheck {
     // If no X-Robots-Tag headers, all is good
     if (xRobotsValues.length === 0) {
       return {
-        score: 10,
+        score: this.maxScore,
         maxScore: this.maxScore,
         passed: true,
         details: 'No blocking X-Robots-Tag headers found (all good)',
@@ -65,7 +67,7 @@ export class CheckHttpHeaders extends BaseVisibilityCheck {
 
     // Calculate score
     const hasBlockingDirective = foundBlockingDirectives.length > 0;
-    const score = hasBlockingDirective ? 0 : 10;
+    const score = hasBlockingDirective ? 0 : this.maxScore;
 
     return {
       score,

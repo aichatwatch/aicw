@@ -94,8 +94,17 @@ export abstract class BaseVisibilityCheck {
   /** Display name for this check */
   abstract readonly name: string;
 
-  /** Maximum score for this check (default 10, override if needed) */
-  readonly maxScore: number = 10;
+  /** Maximum score for this check (set from configuration) */
+  public maxScore!: number;
+
+  /**
+   * Set the maximum score for this check
+   * Called during instantiation with configured weight
+   */
+  setMaxScore(score: number): this {
+    this.maxScore = score;
+    return this;
+  }
 
   /**
    * Execute the visibility check

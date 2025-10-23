@@ -411,6 +411,18 @@ async function runMenuLoop(showAdvanced: boolean = false): Promise<void> {
   process.exit(0);
 }
 
+/**
+ * Show npx welcome message if running via npx
+ */
+function showNpxWelcomeIfNeeded(): void {
+  if (process.env.AICW_RUNNING_VIA_NPX === 'true') {
+    output.writeLine('');
+    output.writeLine(colorize('💡 Thanks for trying AICW!', 'cyan'));
+    output.writeLine(colorize('   To install globally: npm install -g @aichatwatch/aicw', 'dim'));
+    output.writeLine('');
+  }
+}
+
 // Main execution
 async function main(): Promise<void> {
   // Setup interrupt handler for graceful cancellation
@@ -445,18 +457,21 @@ async function main(): Promise<void> {
   // Show help if requested
   if (command === 'help' || command === '--help' || command === '-h') {
     await printHelp();
+    showNpxWelcomeIfNeeded();
     return;
   }
 
   // Show license information
   if (command === 'license' || command === '--license') {
     await printLicense();
+    showNpxWelcomeIfNeeded();
     return;
   }
 
   // Show version information
   if (command === 'version' || command === '--version' || command === '-v') {
     showVersion();
+    showNpxWelcomeIfNeeded();
     return;
   }
 
@@ -464,6 +479,7 @@ async function main(): Promise<void> {
   if (command === 'update' || command === 'u') {
     printHeader();
     await performUpdate();
+    showNpxWelcomeIfNeeded();
     return;
   }
   // Load environment variables before checking environment
@@ -502,6 +518,7 @@ async function main(): Promise<void> {
 
     const executor = new PipelineExecutor(project);
     const result = await executor.execute(pipeline.id, executorOptions);
+    showNpxWelcomeIfNeeded();
     process.exit(result.success ? 0 : 1);
   }
 

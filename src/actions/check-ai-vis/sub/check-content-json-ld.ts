@@ -5,7 +5,7 @@ import { logger } from '../../../utils/compact-logger.js';
 const JSON_LD_REGEX = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
 
 
-export class CheckJsonLD extends BaseVisibilityCheck {
+export class CheckContentJsonLD extends BaseVisibilityCheck {
   readonly name = 'JSON-LD Structured Data Presence';
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {

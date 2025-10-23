@@ -40,7 +40,7 @@ function hasMobileMetaTags(html: string): boolean {
   return hasViewport;
 }
 
-export class CheckMobileCompatibility extends BaseVisibilityCheck {
+export class CheckContentMobileCompatibility extends BaseVisibilityCheck {
   readonly name = 'Mobile Version Availability';
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
@@ -82,34 +82,42 @@ export class CheckMobileCompatibility extends BaseVisibilityCheck {
       mobileTime
     };
 
-    // Check 1: Mobile returns 200 status (3 points)
+    // Define scoring weights (sum to 1.0)
+    const WEIGHTS = {
+      status200: 0.30,      // 30% of maxScore
+      validContent: 0.30,   // 30% of maxScore
+      viewportTag: 0.20,    // 20% of maxScore
+      similarity: 0.20      // 20% of maxScore
+    };
+
+    // Check 1: Mobile returns 200 status (30% of maxScore)
     if (mobileStatus === 200) {
-      score += 3;
+      score += this.maxScore * WEIGHTS.status200;
     } else {
       issues.push(`Mobile HTTP ${mobileStatus}`);
     }
 
-    // Check 2: Mobile content is valid size (3 points)
+    // Check 2: Mobile content is valid size (30% of maxScore)
     if (mobileHtml.length >= MIN_VALID_HTML_SIZE) {
-      score += 3;
+      score += this.maxScore * WEIGHTS.validContent;
     } else {
       issues.push('Mobile content too small');
     }
 
-    // Check 3: Mobile has viewport meta tag (2 points)
+    // Check 3: Mobile has viewport meta tag (20% of maxScore)
     const hasMobileTags = hasMobileMetaTags(mobileHtml);
     if (hasMobileTags) {
-      score += 2;
+      score += this.maxScore * WEIGHTS.viewportTag;
       metadata.hasViewportTag = true;
     } else {
       issues.push('Missing viewport meta tag');
       metadata.hasViewportTag = false;
     }
 
-    // Check 4: Content similarity between desktop and mobile (2 points)
+    // Check 4: Content similarity between desktop and mobile (20% of maxScore)
     const similar = isContentSimilar(desktopHtml.length, mobileHtml.length);
     if (similar) {
-      score += 2;
+      score += this.maxScore * WEIGHTS.similarity;
       metadata.contentSimilar = true;
     } else {
       metadata.contentSimilar = false;
@@ -117,8 +125,9 @@ export class CheckMobileCompatibility extends BaseVisibilityCheck {
     }
 
     // Build details message
+    const passingThreshold = this.maxScore * 0.8;  // 80% of maxScore
     let details: string;
-    if (score >= 8) {
+    if (score >= passingThreshold) {
       const timeDiff = mobileTime && desktopTime ? mobileTime - desktopTime : 0;
       const timeNote = timeDiff !== 0 ? ` (${timeDiff > 0 ? '+' : ''}${timeDiff}ms vs desktop)` : '';
       details = `Mobile version available and optimized${timeNote}`;
@@ -131,7 +140,7 @@ export class CheckMobileCompatibility extends BaseVisibilityCheck {
     return {
       score,
       maxScore: this.maxScore,
-      passed: score >= 8,
+      passed: score >= passingThreshold,
       details,
       metadata
     };

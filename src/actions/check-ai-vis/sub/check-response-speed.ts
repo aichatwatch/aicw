@@ -7,6 +7,9 @@
 
 import { BaseVisibilityCheck, VisibilityCheckResult, PageCaptured } from './check-base.js';
 
+
+const MODULE_NAME = 'Server Response Speed';
+
 // Speed thresholds in milliseconds
 const EXCELLENT_SPEED = 500;   // < 500ms = excellent
 const GOOD_SPEED = 1000;       // < 1000ms = good
@@ -30,7 +33,7 @@ function getSpeedLabel(timeMs: number): string {
 }
 
 export class CheckResponseSpeed extends BaseVisibilityCheck {
-  readonly name = 'Response Speed';
+  readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
     const desktopTime = pageCaptured?.desktopResponseTimeMs;
@@ -43,17 +46,20 @@ export class CheckResponseSpeed extends BaseVisibilityCheck {
     let score = 0;
     const details: string[] = [];
 
-    // Desktop speed (5 points max)
+    // Split maxScore between desktop and mobile
+    const scorePerDevice = this.maxScore / 2;
+
+    // Desktop speed (half of maxScore)
     if (desktopTime) {
-      const desktopScore = getSpeedScore(desktopTime);
-      score += desktopScore;
+      const desktopScore = getSpeedScore(desktopTime);  // Returns 0-5
+      score += (desktopScore / 5) * scorePerDevice;  // Scale to half of maxScore
       details.push(`Desktop: ${desktopTime}ms (${getSpeedLabel(desktopTime)})`);
     }
 
-    // Mobile speed (5 points max)
+    // Mobile speed (half of maxScore)
     if (mobileTime) {
-      const mobileScore = getSpeedScore(mobileTime);
-      score += mobileScore;
+      const mobileScore = getSpeedScore(mobileTime);  // Returns 0-5
+      score += (mobileScore / 5) * scorePerDevice;  // Scale to half of maxScore
       details.push(`Mobile: ${mobileTime}ms (${getSpeedLabel(mobileTime)})`);
     }
 

@@ -1,15 +1,10 @@
-/**
- * Common Crawl Dataset Check
- *
- * Checks if the URL exists in Common Crawl's index.
- * Uses Common Crawl's CDX Server API to search for recent captures.
- */
-
 import { BaseVisibilityCheck, VisibilityCheckResult, PageCaptured } from './check-base.js';
 import { callHttpWithRetry } from '../../../utils/http-caller.js';
+import { logger } from '../../../utils/compact-logger.js';
+import { extractDomainFromUrl } from '../../../utils/url-utils.js';
 
-// checking back 6 indexes
-const MAX_INDEXES_TO_CHECK = 6;
+// how many indexes to check in Common Crawl
+const MAX_INDEXES_TO_CHECK = 3;
 
 /**
  * Get list of available Common Crawl indexes
@@ -39,7 +34,7 @@ async function getRecentIndexes(limit: number = MAX_INDEXES_TO_CHECK): Promise<s
 async function checkUrlInIndex(url: string, indexId: string): Promise<boolean> {
   // Extract domain from URL for querying
   const urlObj = new URL(url);
-  const queryUrl = `https://index.commoncrawl.org/${indexId}-index?url=${encodeURIComponent(urlObj.href)}&output=json`;
+  const queryUrl = `https://index.commoncrawl.org/${indexId}-index?url=${encodeURIComponent(urlObj.host)}&output=json`;
 
   try {
     const response = await callHttpWithRetry(queryUrl, {
@@ -61,7 +56,7 @@ async function checkUrlInIndex(url: string, indexId: string): Promise<boolean> {
   }
 }
 
-export class CheckCommonCrawl extends BaseVisibilityCheck {
+export class CheckDatasetCommonCrawl extends BaseVisibilityCheck {
   readonly name = 'Common Crawl Dataset';
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
@@ -73,18 +68,32 @@ export class CheckCommonCrawl extends BaseVisibilityCheck {
         throw new Error('No Common Crawl indexes available');
       }
 
+      // getting domain from url 
+      url = extractDomainFromUrl(url);
+
       // Check if URL exists in any recent index
       let foundInIndexes: string[] = [];
 
-      for (const indexId of indexes) {
+      // Start progress tracking
+      logger.startProgress('Checking', indexes.length, 'Common Crawl indexes');
+
+      for (let i = 0; i < indexes.length; i++) {
+        const indexId = indexes[i];
         const found = await checkUrlInIndex(url, indexId);
         if (found) {
           foundInIndexes.push(indexId);
         }
+
+        // Update progress with result
+        const statusIcon = found ? '✓' : '○';
+        logger.updateProgress(i + 1, `${indexId} ${statusIcon}`);
       }
 
+      // Complete progress
+      logger.completeProgress('');
+
       const isIndexed = foundInIndexes.length > 0;
-      const score = isIndexed ? 10 : 0;
+      const score = isIndexed ? this.maxScore : 0;
 
       return {
         score,

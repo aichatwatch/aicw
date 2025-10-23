@@ -10,6 +10,8 @@ import { callHttpWithRetry } from '../../../utils/http-caller.js';
 import { AI_USER_AGENTS } from '../../../config/ai-user-agents.js';
 import { calculateProductVisibility, getUniqueAIProducts } from '../utils/ai-product-utils.js';
 
+const MODULE_NAME = 'Check /robots.txt';
+
 /**
  * Simple robots.txt parser
  * Checks if a specific bot identifier is disallowed
@@ -62,7 +64,7 @@ function parserobotsForBot(robotsTxt: string, botIdentifier: string): boolean {
 }
 
 export class CheckRobotsTxt extends BaseVisibilityCheck {
-  readonly name = 'Check /robots.txt';
+  readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
     // Note: pageCaptured is not used by this check (we fetch robots.txt separately)
@@ -80,7 +82,7 @@ export class CheckRobotsTxt extends BaseVisibilityCheck {
       if (response.status === 404) {
         const totalProducts = getUniqueAIProducts().length;
         return {
-          score: 10,
+          score: this.maxScore,
           maxScore: this.maxScore,
           passed: true,
           details: `No /robots.txt found - visible to all ${totalProducts} AI products`
@@ -127,20 +129,20 @@ export class CheckRobotsTxt extends BaseVisibilityCheck {
       const totalProducts = productVisibility.size;
       const visibleCount = visibleProducts.length;
 
-      // Score based on products (0-10 scale)
-      const score = Math.round((visibleCount / totalProducts) * 10);
+      // Score based on products (scaled to maxScore)
+      const score = Math.round((visibleCount / totalProducts) * this.maxScore);
 
       // Build details message
       let details: string;
       if (hiddenProducts.length === 0) {
-        details = `Visible to all ${totalProducts} AI products`;
+        details = `Present, allowing indexing to all ${totalProducts} AI products`;
       } else if (visibleProducts.length === 0) {
-        details = `Hidden from all ${totalProducts} AI products`;
+        details = `Hidden from indexing to all ${totalProducts} AI products`;
       } else {
-        details = `${visibleCount}/${totalProducts} visible\n` +
-          `   ✓ Visible: ${visibleProducts.join(', ')}\n` +
+        details = `${visibleCount}/${totalProducts} visible, allowing indexing to ${visibleProducts.join(', ')}\n` +
           `   ❌ Hidden: ${hiddenProducts.join(', ')}`;
       }
+      details = details + '\n';
 
       return {
         score,
@@ -161,7 +163,7 @@ export class CheckRobotsTxt extends BaseVisibilityCheck {
       // If can't fetch robots.txt, assume all bots allowed
       const totalProducts = getUniqueAIProducts().length;
       return {
-        score: 10,
+        score: this.maxScore,
         maxScore: this.maxScore,
         passed: true,
         details: `No robots.txt accessible - visible to all ${totalProducts} AI products`

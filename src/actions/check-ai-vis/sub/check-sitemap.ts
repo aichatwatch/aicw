@@ -22,6 +22,7 @@ interface SitemapParseResult {
   error?: string;
 }
 
+const MODULE_NAME = 'Check /sitemap.xml';
 /**
  * Parse XML sitemap and extract basic information
  * Minimal parser - validates structure and counts entries
@@ -64,7 +65,7 @@ function parseSitemap(xmlContent: string): SitemapParseResult {
 }
 
 export class CheckSitemap extends BaseVisibilityCheck {
-  readonly name = 'Check /sitemap.xml';
+  readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
     // Note: pageCaptured is not used by this check (we fetch sitemap.xml separately)
@@ -109,7 +110,7 @@ export class CheckSitemap extends BaseVisibilityCheck {
       // Invalid XML structure
       if (!parseResult.isValid) {
         return {
-          score: 3,
+          score: Math.round(this.maxScore * 0.3),
           maxScore: this.maxScore,
           passed: false,
           details: `Sitemap exists but invalid: ${parseResult.error}`,
@@ -127,7 +128,7 @@ export class CheckSitemap extends BaseVisibilityCheck {
         const items = parseResult.isSitemapIndex ? 'sitemaps' : 'URLs';
 
         return {
-          score: 5,
+          score: Math.round(this.maxScore * 0.5),
           maxScore: this.maxScore,
           passed: false,
           details: `Valid ${type} but contains no ${items}`,
@@ -145,7 +146,7 @@ export class CheckSitemap extends BaseVisibilityCheck {
       const items = parseResult.isSitemapIndex ? 'sitemaps' : 'URLs';
 
       return {
-        score: 10,
+        score: this.maxScore,
         maxScore: this.maxScore,
         passed: true,
         details: `Valid ${type} with ${parseResult.urlCount} ${items}`,

@@ -13,9 +13,10 @@
 import { BaseVisibilityCheck, VisibilityCheckResult, PageCaptured } from './check-base.js';
 import { callHttpWithRetry } from '../../../utils/http-caller.js';
 
+const MODULE_NAME = 'Check /llms.txt';
+
 export class CheckLlmsTxt extends BaseVisibilityCheck {
-  readonly name = 'Check /llms.txt';
-  readonly maxScore = 1; // Low priority - not yet critical
+  readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
     // Note: pageCaptured is not used by this check
@@ -36,7 +37,7 @@ export class CheckLlmsTxt extends BaseVisibilityCheck {
           score: 0,
           maxScore: this.maxScore,
           passed: false,
-          details: 'No /llms.txt found (optional)',
+          details: 'No /llms.txt found (not critical)',
           metadata: { exists: false }
         };
       }
@@ -57,9 +58,9 @@ export class CheckLlmsTxt extends BaseVisibilityCheck {
       const content = await response.text();
       const contentLength = content.trim().length;
 
-      // Score 1 if present and non-empty, 0 otherwise
-      const score = contentLength > 0 ? 1 : 0;
-      const passed = score === 1;
+      // Score maxScore if present and non-empty, 0 otherwise
+      const score = contentLength > 0 ? this.maxScore : 0;
+      const passed = score === this.maxScore;
 
       // Format content length for display
       const sizeDisplay = contentLength >= 1024

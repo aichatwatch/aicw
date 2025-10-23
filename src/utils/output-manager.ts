@@ -303,7 +303,7 @@ export class OutputManager {
     };
 
     if (this.verbosityLevel !== 'minimal') {
-      this.writeStdout(colorize(`${processingCaption} ${total} ${itemType}`, 'bright') + '\n');
+      this.writeStdout(colorize(`${processingCaption} ${total} ${itemType}`, 'dim') + '\n');
     }
   }
 
@@ -347,16 +347,28 @@ export class OutputManager {
   completeProgress(message?: string): void {
     if (!this.activeProgress) return;
 
-    const totalTime = Date.now() - this.activeProgress.startTime;
-    const finalMessage = message || `Completed ${this.activeProgress.total} ${this.activeProgress.itemType}`;
-
     this.clearCurrentLine();
-    this.ensureNewline();
 
-    this.writeStdout(colorize(`✓ ${finalMessage} in ${formatDuration(totalTime)}`, 'green') + '\n');
+    // Only show completion message if not explicitly suppressed with empty string
+    const messageShown = message !== '';
+    if (messageShown) {
+      const totalTime = Date.now() - this.activeProgress.startTime;
+      const finalMessage = message || `Completed ${this.activeProgress.total} ${this.activeProgress.itemType}`;
+      this.writeStdout(colorize(`✓ ${finalMessage} in ${formatDuration(totalTime)}`, 'green'));
+    }
 
     this.activeProgress = null;
-    this.transitionToNormal();
+
+    // Only add newline if we actually showed a completion message
+    // When message is suppressed (''), transition without extra newline
+    if (messageShown) {
+      this.transitionToNormal();
+    } else {
+      // Clear progress state without adding newline
+      this.outputState = 'normal';
+      this.lastOutputType = 'line';
+      this.flushMessageQueue();
+    }
   }
 
   cancelProgress(): void {

@@ -13,23 +13,18 @@
   "files": [
     "bin/",
     "dist/",
-    "src/config/templates/",
-    "src/config/models/",
-    "src/config/prompts/",
-    "src/config/link-types/",
-    "src/config/*.json",
-    "src/data/",
     "README.md",
-    "LICENSE",
-    "NOTICE"
+    "LICENSE.md",
+    "NOTICE.md"
   ],
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
-    "prebuild": "rm -rf dist/ && node scripts/build-link-types.js && node scripts/validate-pipelines.js",
+    "dev:prebuild": "rm -rf dist/ && node scripts/build-link-types.js && node scripts/validate-pipelines.js",
+    "prebuild": "node scripts/build-link-types.js && node scripts/validate-pipelines.js",
     "postbuild": "node scripts/copy-assets.js",
-    "build": "tsc",
+    "build": "npm run prebuild && tsc && npm run postbuild",
     "dev": "tsc --watch",
     "dev:run": "node bin/aicw-dev.js",
     "start": "node bin/aicw.js",

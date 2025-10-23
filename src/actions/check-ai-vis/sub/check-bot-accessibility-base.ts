@@ -1,6 +1,16 @@
+/**
+ * Base class for AI bot accessibility checks
+ *
+ * Subclasses only need to specify:
+ * - name: Display name for the check
+ * - botTypeFilter: Tag to filter which bots to test
+ *
+ * All testing logic is handled here.
+ */
+
 import { BaseVisibilityCheck, VisibilityCheckResult, PageCaptured } from './check-base.js';
 import { callHttpWithRetry } from '../../../utils/http-caller.js';
-import { AI_PRODUCTS, AI_USER_AGENTS } from '../../../config/ai-user-agents.js';
+import { AI_USER_AGENTS } from '../../../config/ai-user-agents.js';
 import { interruptibleDelay as delay } from '../../../utils/delay.js';
 import { AI_BOT_TEST_DELAY_MS } from '../../../config/constants.js';
 import { logger } from '../../../utils/compact-logger.js';
@@ -12,9 +22,6 @@ const MIN_VALID_HTML_SIZE = 500; // Minimum bytes to be considered valid content
 
 /**
  * Check if two content sizes are similar within tolerance
- * @param size1 - First size
- * @param size2 - Second size
- * @param tolerance - Allowed difference as decimal (0.03 = 3%)
  */
 function isContentSimilar(size1: number, size2: number, tolerance: number = CONTENT_SIZE_TOLERANCE): boolean {
   const diff = Math.abs(size1 - size2);
@@ -28,10 +35,27 @@ function isContentSimilar(size1: number, size2: number, tolerance: number = CONT
   return (diff / avgSize) <= tolerance;
 }
 
-export class CheckAIBotAccessibility extends BaseVisibilityCheck {
-  readonly name = 'Visibility To AI Bots';
+/**
+ * Abstract base class for bot accessibility checks
+ * Subclasses define which bot type to test via botTypeFilter
+ */
+export abstract class BaseBotAccessibilityCheck extends BaseVisibilityCheck {
+  /**
+   * Subclasses must specify which bot classification tag to filter by
+   * E.g., CRAWLER_BOT_CLASSIFICATION_TAGS.AI_FOUNDATION_MODEL_TRAINING
+   */
+  protected abstract readonly botTypeFilter: string;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
+    // Filter bots by the specified type
+    const botsToTest = AI_USER_AGENTS.filter(bot =>
+      bot.tags?.includes(this.botTypeFilter)
+    );
+
+    if (botsToTest.length === 0) {
+      throw new Error(`No bots found for bot type filter: ${this.botTypeFilter}`);
+    }
+
     // Step 1: Determine testing mode
     const browserHtml = pageCaptured?.browserHtmlDesktop;
     const baselineSize = browserHtml?.length;
@@ -42,11 +66,15 @@ export class CheckAIBotAccessibility extends BaseVisibilityCheck {
     }
 
     // Step 2: Test each AI bot with delays to prevent rate limiting
-    logger.startProgress(`Testing visibility to ${getUniqueAIProducts().length} AI products and their `, AI_USER_AGENTS.length, 'bots');
+    logger.startProgress(
+      `Checking accessibility for "${this.name}": `,
+      botsToTest.length,
+      'bots'
+    );
     const results: Array<{ bot: string; accessible: boolean; status: number; size: number }> = [];
 
-    for (let i = 0; i < AI_USER_AGENTS.length; i++) {
-      const bot = AI_USER_AGENTS[i];
+    for (let i = 0; i < botsToTest.length; i++) {
+      const bot = botsToTest[i];
 
       // Add delay between bot tests (except before first bot)
       if (i > 0) {
@@ -106,7 +134,7 @@ export class CheckAIBotAccessibility extends BaseVisibilityCheck {
     }
 
     // Complete progress tracking
-    logger.completeProgress(`Checked access to website by ${AI_USER_AGENTS.length} AI bots`);
+    logger.completeProgress('');
 
     // Get blocked/inaccessible bots
     const blockedBots = results.filter(r => !r.accessible).map(r => r.bot);
@@ -130,8 +158,11 @@ export class CheckAIBotAccessibility extends BaseVisibilityCheck {
     const totalProducts = productVisibility.size;
     const visibleCount = visibleProducts.length;
 
-    // Score based on products (0-10 scale)
-    const score = Math.round((visibleCount / totalProducts) * 10);
+    // Score based on products (scaled to maxScore)
+    const score = Math.round((visibleCount / totalProducts) * this.maxScore);
+
+    // Passing threshold: 70% of maxScore
+    const passingThreshold = Math.round(this.maxScore * 0.7);
 
     // Build details message
     const modeNote = !hasBaseline ? ' (bot-only testing)' : '';
@@ -149,7 +180,7 @@ export class CheckAIBotAccessibility extends BaseVisibilityCheck {
     return {
       score,
       maxScore: this.maxScore,
-      passed: score >= 7,
+      passed: score >= passingThreshold,
       details,
       metadata: {
         baselineSize,
@@ -159,7 +190,8 @@ export class CheckAIBotAccessibility extends BaseVisibilityCheck {
         hiddenProducts,
         totalProducts,
         visibleCount,
-        totalBots: AI_USER_AGENTS.length
+        totalBots: botsToTest.length,
+        botTypeFilter: this.botTypeFilter
       }
     };
   }
