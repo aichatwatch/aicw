@@ -1,5 +1,5 @@
 /**
- * AI Content Structure Check - Config-Driven Approach
+ * AI Content Structure Check
  *
  * Verifies content is structured for AI search systems (Copilot, ChatGPT, etc.)
  * Based on Microsoft's AI Search optimization guidelines.
@@ -10,314 +10,52 @@
 import { BaseVisibilityCheck, VisibilityCheckResult, PageCaptured } from './check-base.js';
 
 /**
- * Check types supported by the content structure validator
+ * Simple content check configuration
  */
-type CheckType = 'exact-count' | 'tiered-count' | 'presence' | 'ratio';
-
-/**
- * Result from running a single check
- */
-interface CheckResult {
-  score: number;
-  found: boolean;
-  count?: number;
-  ratio?: number;
-  message: string;
-}
-
-/**
- * Configuration for a single content check
- */
-interface ContentCheckConfig {
-  id: string;
-  name: string;
-  maxPoints: number;
-  type: CheckType;
-
-  // Pattern(s) to match
-  pattern?: RegExp;
-  patterns?: RegExp[];  // For multi-pattern checks (e.g., H2 + H3)
-
-  // Scoring rules based on type
-  exactCount?: number;        // For exact-count: must be exactly this
-
-  // Tiered scoring (for progressive points)
-  tiers?: Array<{
-    threshold: number;  // Count or ratio threshold
-    points: number;     // Points awarded
-  }>;
-
-  // Ratio-specific (for image alt text)
-  altPattern?: RegExp;  // Pattern to check for alt attribute
-
-  // Messages
-  messages: {
-    missing: string;
-    found?: string | ((value: number) => string);
-  };
+interface ContentCheck {
+  description: string;              // Used for found/missing messages
+  pattern: RegExp | RegExp[];       // Pattern(s) to match
+  requiredCount: number;            // How many needed for full points (count-based)
+  patternAllItems?: RegExp;         // Optional: for ratio-based checks (e.g., images)
 }
 
 /**
  * Content checks configuration
- * Note: maxPoints here are relative weights, will be scaled to actual maxScore in performCheck()
+ * Score is auto-distributed evenly among all checks
  */
-const CONTENT_CHECKS: ContentCheckConfig[] = [
-  // Check 1: H1 - Exactly 1
+const CHECKS: ContentCheck[] = [
   {
-    id: 'h1-tag',
-    name: 'H1 tag',
-    type: 'exact-count',
+    description: 'H1 tag',
     pattern: /<h1[^>]*>/gi,
-    exactCount: 1,
-    maxPoints: 2,
-    messages: {
-      missing: 'H1 tag',
-      found: 'H1 tag'
-    }
+    requiredCount: 1
   },
-
-  // Check 2: H2/H3 - Tiered scoring
   {
-    id: 'headings',
-    name: 'headings',
-    type: 'tiered-count',
-    patterns: [/<h2[^>]*>/gi, /<h3[^>]*>/gi],
-    maxPoints: 3,
-    tiers: [
-      { threshold: 5, points: 3 },
-      { threshold: 2, points: 2 },
-      { threshold: 1, points: 1 }
-    ],
-    messages: {
-      missing: 'H2/H3 headings',
-      found: (count) => `${count} heading${count > 1 ? 's' : ''}`
-    }
+    description: 'H2/H3 headings',
+    pattern: [/<h2[^>]*>/gi, /<h3[^>]*>/gi],
+    requiredCount: 5
   },
-
-  // Check 3: Meta description - Presence
   {
-    id: 'meta-desc',
-    name: 'meta description',
-    type: 'presence',
+    description: 'meta description',
     pattern: /<meta\s+name=["']description["']\s+content=["'][^"']+["']/i,
-    maxPoints: 2,
-    messages: {
-      missing: 'meta description',
-      found: 'meta description'
-    }
+    requiredCount: 1
   },
-
-  // Check 4: Lists - Presence
   {
-    id: 'lists',
-    name: 'lists',
-    type: 'presence',
-    pattern: /<(ul|ol)[^>]*>/i,
-    maxPoints: 1,
-    messages: {
-      missing: 'lists',
-      found: 'lists'
-    }
+    description: 'lists',
+    pattern: /<(ul|ol)[^>]*>/gi,
+    requiredCount: 1
   },
-
-  // Check 5: Tables - Presence
   {
-    id: 'tables',
-    name: 'tables',
-    type: 'presence',
-    pattern: /<table[^>]*>/i,
-    maxPoints: 1,
-    messages: {
-      missing: 'tables',
-      found: 'tables'
-    }
+    description: 'tables',
+    pattern: /<table[^>]*>/gi,
+    requiredCount: 1
   },
-
-  // Check 6: Image alt text - Ratio-based
   {
-    id: 'img-alt',
-    name: 'image alt text',
-    type: 'ratio',
-    pattern: /<img[^>]*>/gi,
-    altPattern: /alt=["'][^"']+["']/i,
-    maxPoints: 1,
-    tiers: [
-      { threshold: 0.8, points: 1 },
-      { threshold: 0.5, points: 0.5 }
-    ],
-    messages: {
-      missing: 'image alt text',
-      found: (pct) => `${pct}% images with alt`
-    }
+    description: 'image alt text',
+    patternAllItems: /<img[^>]*>/gi,        // All images
+    pattern: /alt=["'][^"']+["']/i,         // Check each for alt attribute
+    requiredCount: 1  // Not used for ratio checks
   }
 ];
-
-/**
- * Total raw points from configuration (used for scaling to actual maxScore)
- */
-const TOTAL_RAW_POINTS = CONTENT_CHECKS.reduce((sum, check) => sum + check.maxPoints, 0);
-
-/**
- * Check for exact count match
- */
-function checkExactCount(config: ContentCheckConfig, html: string): CheckResult {
-  const matches = html.match(config.pattern!) || [];
-  const count = matches.length;
-
-  if (count === config.exactCount) {
-    return {
-      score: config.maxPoints,
-      found: true,
-      count,
-      message: typeof config.messages.found === 'string'
-        ? config.messages.found
-        : config.messages.found!(count)
-    };
-  }
-
-  // Wrong count
-  const message = count === 0
-    ? config.messages.missing
-    : `single ${config.name} (found ${count})`;
-
-  return {
-    score: 0,
-    found: false,
-    count,
-    message
-  };
-}
-
-/**
- * Check for tiered count (progressive scoring)
- */
-function checkTieredCount(config: ContentCheckConfig, html: string): CheckResult {
-  let totalCount = 0;
-
-  // Count matches across all patterns
-  for (const pattern of config.patterns!) {
-    const matches = html.match(pattern) || [];
-    totalCount += matches.length;
-  }
-
-  // Find matching tier (assume sorted high to low)
-  const sortedTiers = [...config.tiers!].sort((a, b) => b.threshold - a.threshold);
-
-  for (const tier of sortedTiers) {
-    if (totalCount >= tier.threshold) {
-      const message = typeof config.messages.found === 'function'
-        ? config.messages.found(totalCount)
-        : config.messages.found!;
-
-      return {
-        score: tier.points,
-        found: true,
-        count: totalCount,
-        message
-      };
-    }
-  }
-
-  // No tier matched
-  return {
-    score: 0,
-    found: false,
-    count: totalCount,
-    message: config.messages.missing
-  };
-}
-
-/**
- * Check for presence (boolean check)
- */
-function checkPresence(config: ContentCheckConfig, html: string): CheckResult {
-  const isPresent = config.pattern!.test(html);
-
-  if (isPresent) {
-    return {
-      score: config.maxPoints,
-      found: true,
-      message: typeof config.messages.found === 'string'
-        ? config.messages.found
-        : config.messages.found!(1)
-    };
-  }
-
-  return {
-    score: 0,
-    found: false,
-    message: config.messages.missing
-  };
-}
-
-/**
- * Check for ratio (e.g., percentage of images with alt text)
- */
-function checkRatio(config: ContentCheckConfig, html: string): CheckResult {
-  const allMatches = html.match(config.pattern!) || [];
-  const totalCount = allMatches.length;
-
-  // If no items to check, give full points (don't penalize)
-  if (totalCount === 0) {
-    return {
-      score: config.maxPoints,
-      found: true,
-      ratio: 1,
-      message: 'no images (N/A)'
-    };
-  }
-
-  // Count items with the required attribute
-  const matchesWithAttr = allMatches.filter(item => config.altPattern!.test(item));
-  const ratio = matchesWithAttr.length / totalCount;
-  const percentage = Math.round(ratio * 100);
-
-  // Find matching tier
-  const sortedTiers = [...config.tiers!].sort((a, b) => b.threshold - a.threshold);
-
-  for (const tier of sortedTiers) {
-    if (ratio >= tier.threshold) {
-      const message = typeof config.messages.found === 'function'
-        ? config.messages.found(percentage)
-        : config.messages.found!;
-
-      return {
-        score: tier.points,
-        found: true,
-        ratio,
-        count: totalCount,
-        message
-      };
-    }
-  }
-
-  // Below all tiers
-  return {
-    score: 0,
-    found: false,
-    ratio,
-    count: totalCount,
-    message: config.messages.missing
-  };
-}
-
-/**
- * Run a check based on its type
- */
-function runCheck(config: ContentCheckConfig, html: string): CheckResult {
-  switch (config.type) {
-    case 'exact-count':
-      return checkExactCount(config, html);
-    case 'tiered-count':
-      return checkTieredCount(config, html);
-    case 'presence':
-      return checkPresence(config, html);
-    case 'ratio':
-      return checkRatio(config, html);
-    default:
-      throw new Error(`Unknown check type: ${config.type}`);
-  }
-}
 
 export class CheckContentStructure extends BaseVisibilityCheck {
   readonly name = 'Content Structure for AI';
@@ -328,64 +66,78 @@ export class CheckContentStructure extends BaseVisibilityCheck {
       throw new Error('HTML content is required for content structure check');
     }
 
+    const pointsPerCheck = this.maxScore / CHECKS.length;
     let totalScore = 0;
     const found: string[] = [];
     const missing: string[] = [];
-    const metadata: Record<string, any> = {};
 
-    // Run all checks from configuration and scale to maxScore
-    for (const config of CONTENT_CHECKS) {
-      const result = runCheck(config, browserHtml);
+    for (const check of CHECKS) {
+      if (check.patternAllItems) {
+        // RATIO-based scoring (e.g., images with alt text)
+        const allItems = browserHtml.match(check.patternAllItems) || [];
 
-      // Scale raw score to proportion of maxScore
-      const scaledScore = (result.score / TOTAL_RAW_POINTS) * this.maxScore;
-      totalScore += scaledScore;
+        if (allItems.length === 0) {
+          // No items to check = full points (don't penalize)
+          totalScore += pointsPerCheck;
+        } else {
+          // Count items matching the pattern
+          const patterns = Array.isArray(check.pattern) ? check.pattern : [check.pattern];
+          const matchingItems = allItems.filter(item =>
+            patterns.some(p => p.test(item))
+          );
 
-      metadata[config.id] = {
-        rawScore: result.score,
-        scaledScore,
-        count: result.count,
-        ratio: result.ratio,
-        found: result.found
-      };
+          const ratio = matchingItems.length / allItems.length;
+          const score = pointsPerCheck * ratio;
+          totalScore += score;
 
-      if (result.found) {
-        found.push(result.message);
-      } else if (result.score === 0) {
-        missing.push(result.message);
+          // Consider "found" if >= 80% pass
+          if (ratio >= 0.8) {
+            found.push(check.description);
+          } else {
+            missing.push(check.description);
+          }
+        }
+      } else {
+        // COUNT-based scoring (e.g., headings, meta tags)
+        const patterns = Array.isArray(check.pattern) ? check.pattern : [check.pattern];
+        let count = 0;
+        for (const p of patterns) {
+          count += (browserHtml.match(p) || []).length;
+        }
+
+        const score = Math.min(count / check.requiredCount, 1) * pointsPerCheck;
+        totalScore += score;
+
+        if (count >= check.requiredCount) {
+          found.push(check.description);
+        } else {
+          missing.push(check.description);
+        }
       }
     }
 
     // Round total score
     totalScore = Math.round(totalScore * 10) / 10;
 
-    // Passing thresholds based on maxScore
-    const excellentThreshold = this.maxScore * 0.8;  // 80% = well-structured
-    const passingThreshold = this.maxScore * 0.7;    // 70% = passing
-
     // Build details message
+    const passed = totalScore >= this.maxScore * 0.7;
     let details: string;
-    if (totalScore >= excellentThreshold) {
+
+    if (totalScore >= this.maxScore * 0.8) {
       details = `Well-structured for AI: ${found.join(', ')}`;
-    } else if (totalScore === 0) {
-      details = `Poor structure for AI\n   Missing: ${missing.join(', ')}`;
+    } else if (found.length > 0 && missing.length > 0) {
+      details = `Has: ${found.join(', ')}\n   Missing: ${missing.join(', ')}`;
+    } else if (missing.length > 0) {
+      details = `Missing: ${missing.join(', ')}`;
     } else {
-      const parts: string[] = [];
-      if (found.length > 0) {
-        parts.push(`Has: ${found.join(', ')}`);
-      }
-      if (missing.length > 0) {
-        parts.push(`Missing: ${missing.join(', ')}`);
-      }
-      details = parts.join('\n   ');
+      details = `Has: ${found.join(', ')}`;
     }
 
     return {
       score: totalScore,
       maxScore: this.maxScore,
-      passed: totalScore >= passingThreshold,
-      details,
-      metadata
+      passed,
+      details
     };
   }
 }

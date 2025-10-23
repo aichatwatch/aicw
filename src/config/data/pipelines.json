@@ -390,7 +390,7 @@
     {
       "id": "check-ai-vis",
       "name": "Check AI Visibility",
-      "description": "checks if website is accessible by AI crawlers",
+      "description": "checks if website is accessible/visible by AI crawlers",
       "category": "utility",
       "requiresApiKeys": false
     },
@@ -398,7 +398,7 @@
       "id": "check-models",
       "name": "check AI Models",
       "description": "checks all AI Models for deprecation",
-      "category": "utility"
+      "category": "advanced"
     },
     {
       "id": "setup-api-key",
