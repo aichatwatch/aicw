@@ -13,7 +13,7 @@ import { AI_VISIBILITY_CHECK_DELAY_MS } from '../../config/constants.js';
 import { callHttpWithRetry } from '../../utils/http-caller.js';
 import { DEFAULT_BROWSER_HEADERS, DESKTOP_BROWSER_USER_AGENT, MOBILE_BROWSER_USER_AGENT } from '../../config/ai-user-agents.js';
 // sub actions
-import { BaseVisibilityCheck, PageCaptured } from './sub/check-base.js';
+import { BaseVisibilityCheck, PageCaptured, VisibilityCheckResult } from './sub/check-base.js';
 import { BaseBotAccessibilityCheck } from './sub/check-bot-accessibility-base.js';
 import { CheckContentJsonLD } from './sub/check-content-json-ld.js';
 import { CheckContentMetaTags } from './sub/check-content-meta-tags.js';
@@ -203,16 +203,23 @@ function validateUrl(urlString: string): string {
   }
 }
 
-/**
- * Calculate letter grade based on percentage score
- * Uses standard US school grading scale:
- * A = 90-100%, B = 80-89%, C = 70-79%, D = 60-69%, F = 0-59%
- */
 function calculateLetterGrade(percentage: number): string {
-  if (percentage >= 90) return 'A';
-  if (percentage >= 80) return 'B';
-  if (percentage >= 70) return 'C';
-  if (percentage >= 60) return 'D';
+  if (percentage >= 97) return 'A+';
+  if (percentage >= 93) return 'A';
+  if (percentage >= 90) return 'A-';
+
+  if (percentage >= 87) return 'B+';
+  if (percentage >= 83) return 'B';
+  if (percentage >= 80) return 'B-';
+
+  if (percentage >= 77) return 'C+';
+  if (percentage >= 73) return 'C';
+  if (percentage >= 70) return 'C-';
+
+  if (percentage >= 67) return 'D+';
+  if (percentage >= 63) return 'D';
+  if (percentage >= 60) return 'D-';
+
   return 'F';
 }
 
@@ -224,6 +231,12 @@ async function main(): Promise<void> {
   let urlString = process.argv[3] || '';
 
   if (!urlString) {
+    // Show permission notice before prompting
+    logger.log('');
+    logger.log(colorize('⚠️  By continuing, you confirm that you have all required permissions', 'yellow'));
+    logger.log(colorize('   to test the URL for AI visibility. Press CTRL+C to cancel.', 'yellow'));
+    logger.log('');
+
     urlString = await promptForUrl();
   }
 
@@ -266,10 +279,6 @@ async function main(): Promise<void> {
   logger.info(colorize(`   • Perform ${VISIBILITY_CHECKS.length} AI visibility checks`, 'dim'));
   logger.info(colorize(`   • Test visibility and indexing by ${products.length} AI products`, 'dim'));
   logger.info('');
-
-  // Permission confirmation
-  logger.log(colorize(`   ⚠️  By continuing, you confirm that you have all required permissions to test ${url} for AI visibility. If not then press CTRL+C to interrupt immediately.`, 'yellow'));
-  logger.log('');
 
   // Wait for user confirmation in interactive mode (or Ctrl+C to cancel)
   await waitForEnterInInteractiveMode(WaitForEnterMessageType.PRESS_ENTER_TO_CONTINUE);
@@ -332,6 +341,7 @@ async function main(): Promise<void> {
   // Execute each check with delays to prevent rate limiting
   let totalScore = 0;
   let totalMaxScore = 0;
+  const allResults: Array<{check: BaseVisibilityCheck, result: VisibilityCheckResult}> = [];
 
   for (let i = 0; i < checks.length; i++) {
     const check = checks[i];
@@ -357,6 +367,9 @@ async function main(): Promise<void> {
       `${colorize(icon, color)} ${check.name}${padding}${colorize(scoreText.padStart(7), color)}  ${result.details}`
     );
 
+    // Store result for final report
+    allResults.push({ check, result });
+
     // Add blank line after last bot check to separate from other checks
     const isCurrentBotCheck = check instanceof BaseBotAccessibilityCheck;
     const nextCheck = checks[i + 1];
@@ -374,33 +387,53 @@ async function main(): Promise<void> {
   }
 
   // Calculate percentage
-  const roundedTotalScore = Math.round(totalScore * 10) / 10; // Round to 1 decimal
+  const roundedTotalScore = Math.round(totalScore * 10) / 10; // Round to 2 decimal places
   const percentage = totalMaxScore > 0
     ? Math.round((totalScore / totalMaxScore) * 100)
     : 0;
 
-  // Display summary
-  logger.log('\n' + colorize('━'.repeat(70), 'dim'));
+  // Ensure output state is normal before displaying summary
+  logger.log('');
 
-  const scoreColor = percentage >= 80 ? 'green' : percentage >= 50 ? 'yellow' : 'red';
+  // Display clean report summary
   const letterGrade = calculateLetterGrade(percentage);
-  const gradeColor = percentage >= 80 ? 'green' : percentage >= 70 ? 'yellow' : 'red';
-  
-  logger.log(
-    colorize(`URL: ${colorize(url, 'cyan')}`, 'dim')
-  );
-  logger.log(
-    colorize(`📊 AI VISIBILITY SCORE:  ${percentage}% (${roundedTotalScore} points out of ${totalMaxScore} possible)`, scoreColor)
-  );
-  logger.log(
-    colorize(`   LETTER GRADE: ${colorize(letterGrade, gradeColor)}`, gradeColor)
-  );
+  const scoreColor = percentage >= 80 ? 'green' : percentage >= 50 ? 'yellow' : 'red';
 
+  logger.log('='.repeat(80));
+  const formattedDate = new Date().toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  logger.log(`AI VISIBILITY REPORT for ${colorize(url, 'cyan')} on ${colorize(formattedDate, 'bright')}`);
+  logger.log('='.repeat(80));
+  logger.log(
+    colorize(`SCORE: ${percentage}% (${roundedTotalScore}/${totalMaxScore} points)\nGRADE: ${colorize(letterGrade, scoreColor)}`, 'bright')
+  );
+  logger.log('='.repeat(80));
   logger.log('');
 
-  // Display tip about scheduling
-  logger.log(colorize('💡 Tip:', 'yellow') + ' Run this automatically on schedule at ' + colorize('https://aichatwatch.com/schedule', 'cyan'));
-  logger.log('');
+  // Display detailed results table
+  logger.log('DETAILS:');
+  for (const {check, result} of allResults) {
+    const icon = result.error ? '[FAIL]' : result.passed ? '[PASS]' : '[WARN]';
+    const color = result.error ? 'red' : result.passed ? 'green' : 'yellow';
+    const roundedScore = Math.round(result.score * 10) / 10;
+    const scoreText = result.error ? 'ERR' : `${roundedScore}/${result.maxScore}`;
+    const padding = '.'.repeat(Math.max(0, 45 - check.name.length));
+
+    logger.log(
+      `  ${colorize(icon, color)} ${check.name}${padding} ${scoreText.padStart(8)}`
+    );
+  }
+
+  logger.log('='.repeat(80));
+  logger.log(colorize('To schedule this report, please visit https://aichatwatch.com/schedule', 'dim'));
+  logger.log('='.repeat(80));
 
   // Wait for Enter in interactive mode
   await waitForEnterInInteractiveMode();

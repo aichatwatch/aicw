@@ -9,7 +9,7 @@ const HIGH_VALUE_SCHEMAS = ['FAQPage', 'QAPage', 'Article', 'NewsArticle', 'Blog
 
 
 export class CheckContentJsonLD extends BaseVisibilityCheck {
-  readonly name = 'Content:JSON-LD Structured Data Presence';
+  readonly name = 'Content: JSON-LD Structured Data Presence';
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
     // Require HTML content - this check doesn't fetch
