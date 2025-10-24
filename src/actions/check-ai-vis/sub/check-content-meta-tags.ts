@@ -13,7 +13,7 @@
 import { AI_USER_AGENTS } from '../../../config/ai-user-agents.js';
 import { BaseVisibilityCheck, VisibilityCheckResult, PageCaptured } from './check-base.js';
 
-const MODULE_NAME = 'Content Blocking Meta Tags Check';
+const MODULE_NAME = 'Content: Blocking Meta Tags Check';
 
 export class CheckContentMetaTags extends BaseVisibilityCheck {
   readonly name = MODULE_NAME;

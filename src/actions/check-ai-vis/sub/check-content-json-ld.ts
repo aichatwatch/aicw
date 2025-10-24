@@ -4,9 +4,12 @@ import { logger } from '../../../utils/compact-logger.js';
 // general regex to run JSON LD regex
 const JSON_LD_REGEX = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
 
+// High-value schemas that AI systems heavily favor
+const HIGH_VALUE_SCHEMAS = ['FAQPage', 'QAPage', 'Article', 'NewsArticle', 'BlogPosting', 'HowTo', 'Recipe'];
+
 
 export class CheckContentJsonLD extends BaseVisibilityCheck {
-  readonly name = 'JSON-LD Structured Data Presence';
+  readonly name = 'Content:JSON-LD Structured Data Presence';
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
     // Require HTML content - this check doesn't fetch
@@ -51,11 +54,20 @@ export class CheckContentJsonLD extends BaseVisibilityCheck {
       }
     }
 
+    // Detect high-value schemas
+    const highValueSchemasFound = validSchemas.filter(s => HIGH_VALUE_SCHEMAS.includes(s));
+    const hasHighValueSchema = highValueSchemasFound.length > 0;
+
     // Score based on number of valid schemas found (capped at 3)
     // More schemas = better structured data for AI visibility
     const maxSchemasToScore = 3;
     const schemasFound = Math.min(validSchemas.length, maxSchemasToScore);
-    const score = (schemasFound / maxSchemasToScore) * this.maxScore;
+    let score = (schemasFound / maxSchemasToScore) * this.maxScore;
+
+    // Bonus for high-value schemas (10% boost, capped at maxScore)
+    if (hasHighValueSchema) {
+      score = Math.min(score * 1.1, this.maxScore);
+    }
 
     // Display count to show progress toward max score
     const schemasCount = validSchemas.length;
@@ -68,10 +80,12 @@ export class CheckContentJsonLD extends BaseVisibilityCheck {
       maxScore: this.maxScore,
       passed: score === this.maxScore,
       details: validSchemas.length > 0
-        ? `Found ${countDisplay} schemas: ${validSchemas.join(', ')}`
+        ? `Found ${countDisplay} schemas: ${validSchemas.join(', ')}` +
+          (hasHighValueSchema ? ` (includes high-value schemas: ${highValueSchemasFound.join(', ')})` : '')
         : `Found ${jsonLdMatches.length} JSON-LD blocks but invalid`,
       metadata: {
         schemas: validSchemas,
+        highValueSchemas: highValueSchemasFound,
         totalBlocks: jsonLdMatches.length,
         validBlocks: validSchemas.length
       }

@@ -22,7 +22,7 @@ interface SitemapParseResult {
   error?: string;
 }
 
-const MODULE_NAME = 'Check /sitemap.xml';
+const MODULE_NAME = 'Server: check /sitemap.xml';
 /**
  * Parse XML sitemap and extract basic information
  * Minimal parser - validates structure and counts entries
@@ -68,20 +68,19 @@ export class CheckSitemap extends BaseVisibilityCheck {
   readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
-    // Note: pageCaptured is not used by this check (we fetch sitemap.xml separately)
-
-    // Construct sitemap.xml URL (standard location)
     const urlObj = new URL(url);
     const sitemapUrl = `${urlObj.protocol}//${urlObj.host}/sitemap.xml`;
 
-    try {
-      const response = await callHttpWithRetry(sitemapUrl, {
-        contextInfo: `Sitemap check: ${sitemapUrl}`,
-        maxRetries: 2  // Don't retry as much for sitemap
-      });
+    let sitemapContent: string | undefined;
+    let status: number | undefined;
+
+    // Try to use cached content first
+    if (pageCaptured?.sitemapXmlStatus !== undefined) {
+      status = pageCaptured.sitemapXmlStatus;
+      sitemapContent = pageCaptured.sitemapXmlContent;
 
       // Sitemap not found - this is common and not an error
-      if (response.status === 404) {
+      if (status === 404) {
         return {
           score: 0,
           maxScore: this.maxScore,
@@ -92,82 +91,115 @@ export class CheckSitemap extends BaseVisibilityCheck {
       }
 
       // Other HTTP errors (403, 500, etc.)
-      if (!response.ok) {
+      if (status !== 200 || !sitemapContent) {
         return {
           score: 0,
           maxScore: this.maxScore,
           passed: false,
-          details: `Sitemap not accessible (HTTP ${response.status})`,
+          details: `Sitemap not accessible (HTTP ${status})`,
           error: true,
-          metadata: { exists: false, httpStatus: response.status }
+          metadata: { exists: false, httpStatus: status }
         };
       }
+    } else {
+      // Fallback: fetch if not cached (backward compatibility)
+      try {
+        const response = await callHttpWithRetry(sitemapUrl, {
+          contextInfo: `Sitemap check (fallback): ${sitemapUrl}`,
+          maxRetries: 2
+        });
 
-      // Fetch and parse sitemap content
-      const sitemapContent = await response.text();
-      const parseResult = parseSitemap(sitemapContent);
+        status = response.status;
 
-      // Invalid XML structure
-      if (!parseResult.isValid) {
+        // Sitemap not found - this is common and not an error
+        if (status === 404) {
+          return {
+            score: 0,
+            maxScore: this.maxScore,
+            passed: false,
+            details: 'No /sitemap.xml found',
+            metadata: { exists: false }
+          };
+        }
+
+        // Other HTTP errors (403, 500, etc.)
+        if (!response.ok) {
+          return {
+            score: 0,
+            maxScore: this.maxScore,
+            passed: false,
+            details: `Sitemap not accessible (HTTP ${status})`,
+            error: true,
+            metadata: { exists: false, httpStatus: status }
+          };
+        }
+
+        sitemapContent = await response.text();
+      } catch (error: any) {
+        // Network errors or other unexpected issues
         return {
-          score: Math.round(this.maxScore * 0.3),
+          score: -1,
           maxScore: this.maxScore,
           passed: false,
-          details: `Sitemap exists but invalid: ${parseResult.error}`,
-          metadata: {
-            exists: true,
-            valid: false,
-            error: parseResult.error
-          }
+          details: `Error checking sitemap: ${error.message}`,
+          error: true
         };
       }
+    }
 
-      // Valid XML but no entries
-      if (parseResult.urlCount === 0) {
-        const type = parseResult.isSitemapIndex ? 'sitemap index' : 'sitemap';
-        const items = parseResult.isSitemapIndex ? 'sitemaps' : 'URLs';
+    // Parse sitemap content
+    const parseResult = parseSitemap(sitemapContent);
 
-        return {
-          score: Math.round(this.maxScore * 0.5),
-          maxScore: this.maxScore,
-          passed: false,
-          details: `Valid ${type} but contains no ${items}`,
-          metadata: {
-            exists: true,
-            valid: true,
-            urlCount: 0,
-            isSitemapIndex: parseResult.isSitemapIndex
-          }
-        };
-      }
+    // Invalid XML structure
+    if (!parseResult.isValid) {
+      return {
+        score: Math.round(this.maxScore * 0.3),
+        maxScore: this.maxScore,
+        passed: false,
+        details: `Sitemap exists but invalid: ${parseResult.error}`,
+        metadata: {
+          exists: true,
+          valid: false,
+          error: parseResult.error
+        }
+      };
+    }
 
-      // Valid sitemap with entries - success!
+    // Valid XML but no entries
+    if (parseResult.urlCount === 0) {
       const type = parseResult.isSitemapIndex ? 'sitemap index' : 'sitemap';
       const items = parseResult.isSitemapIndex ? 'sitemaps' : 'URLs';
 
       return {
-        score: this.maxScore,
+        score: Math.round(this.maxScore * 0.5),
         maxScore: this.maxScore,
-        passed: true,
-        details: `Valid ${type} with ${parseResult.urlCount} ${items}`,
+        passed: false,
+        details: `Valid ${type} but contains no ${items}`,
         metadata: {
           exists: true,
           valid: true,
-          urlCount: parseResult.urlCount,
-          isSitemapIndex: parseResult.isSitemapIndex,
-          sitemapUrl
+          urlCount: 0,
+          isSitemapIndex: parseResult.isSitemapIndex
         }
       };
-
-    } catch (error: any) {
-      // Network errors or other unexpected issues
-      return {
-        score: -1,
-        maxScore: this.maxScore,
-        passed: false,
-        details: `Error checking sitemap: ${error.message}`,
-        error: true
-      };
     }
+
+    // Valid sitemap with entries - success!
+    const type = parseResult.isSitemapIndex ? 'sitemap index' : 'sitemap';
+    const items = parseResult.isSitemapIndex ? 'sitemaps' : 'URLs';
+
+    return {
+      score: this.maxScore,
+      maxScore: this.maxScore,
+      passed: true,
+      details: `Valid ${type} with ${parseResult.urlCount} ${items}`,
+      metadata: {
+        exists: true,
+        valid: true,
+        urlCount: parseResult.urlCount,
+        isSitemapIndex: parseResult.isSitemapIndex,
+        sitemapUrl
+      }
+    };
   }
 }

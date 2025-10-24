@@ -268,7 +268,7 @@ async function main(): Promise<void> {
   logger.info('');
 
   // Permission confirmation
-  logger.log(colorize(`   ⚠️  By continuing, you confirm that you have all required permissions to test ${url} for AI visibility.`, 'yellow'));
+  logger.log(colorize(`   ⚠️  By continuing, you confirm that you have all required permissions to test ${url} for AI visibility. If not then press CTRL+C to interrupt immediately.`, 'yellow'));
   logger.log('');
 
   // Wait for user confirmation in interactive mode (or Ctrl+C to cancel)
@@ -277,6 +277,38 @@ async function main(): Promise<void> {
 
   // Fetch page content for both desktop and mobile
   const pageCaptured = await fetchPageContent(url);
+  logger.info(''); // Empty line for spacing
+
+  // Pre-fetch robots.txt and sitemap.xml for caching (improves performance)
+  logger.info('  Pre-fetching robots.txt and sitemap.xml...');
+  const urlObj = new URL(url);
+
+  try {
+    const robotsResponse = await callHttpWithRetry(`${urlObj.protocol}//${urlObj.host}/robots.txt`, {
+      contextInfo: 'Pre-fetching robots.txt',
+      maxRetries: 1
+    });
+    pageCaptured.robotsTxtStatus = robotsResponse.status;
+    if (robotsResponse.ok) {
+      pageCaptured.robotsTxtContent = await robotsResponse.text();
+    }
+  } catch (err) {
+    // Pre-fetch failed, checks will retry if needed
+  }
+
+  try {
+    const sitemapResponse = await callHttpWithRetry(`${urlObj.protocol}//${urlObj.host}/sitemap.xml`, {
+      contextInfo: 'Pre-fetching sitemap.xml',
+      maxRetries: 1
+    });
+    pageCaptured.sitemapXmlStatus = sitemapResponse.status;
+    if (sitemapResponse.ok) {
+      pageCaptured.sitemapXmlContent = await sitemapResponse.text();
+    }
+  } catch (err) {
+    // Pre-fetch failed, checks will retry if needed
+  }
+
   logger.info(''); // Empty line for spacing
 
   // Preflight check: ensure website is reachable

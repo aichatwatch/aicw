@@ -9,6 +9,7 @@
 
 import { BaseVisibilityCheck, VisibilityCheckResult, PageCaptured } from './check-base.js';
 
+const MODULE_NAME = 'Content: HTML code structure';
 /**
  * Simple content check configuration
  */
@@ -40,6 +41,31 @@ const CHECKS: ContentCheck[] = [
     requiredCount: 1
   },
   {
+    description: 'Open Graph title',
+    pattern: /<meta\s+property=["']og:title["']\s+content=["'][^"']+["']/i,
+    requiredCount: 1
+  },
+  {
+    description: 'Open Graph description',
+    pattern: /<meta\s+property=["']og:description["']\s+content=["'][^"']+["']/i,
+    requiredCount: 1
+  },
+  {
+    description: 'Open Graph image',
+    pattern: /<meta\s+property=["']og:image["']\s+content=["']https?:\/\/[^"']+["']/i,
+    requiredCount: 1
+  },
+  {
+    description: 'canonical URL',
+    pattern: /<link\s+rel=["']canonical["']/i,
+    requiredCount: 1
+  },
+  {
+    description: 'language declaration',
+    pattern: /<html[^>]+lang=["'][a-zA-Z-]+["']/i,
+    requiredCount: 1
+  },
+  {
     description: 'lists',
     pattern: /<(ul|ol)[^>]*>/gi,
     requiredCount: 1
@@ -50,6 +76,11 @@ const CHECKS: ContentCheck[] = [
     requiredCount: 1
   },
   {
+    description: 'lazy-loaded images',
+    pattern: /loading=["']lazy["']/gi,
+    requiredCount: 0  // Inverse: we want ZERO lazy-loaded images
+  },
+  {
     description: 'image alt text',
     patternAllItems: /<img[^>]*>/gi,        // All images
     pattern: /alt=["'][^"']+["']/i,         // Check each for alt attribute
@@ -58,7 +89,7 @@ const CHECKS: ContentCheck[] = [
 ];
 
 export class CheckContentStructure extends BaseVisibilityCheck {
-  readonly name = 'Content Structure for AI';
+  readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
     const browserHtml = pageCaptured?.browserHtmlDesktop;
@@ -105,13 +136,26 @@ export class CheckContentStructure extends BaseVisibilityCheck {
           count += (browserHtml.match(p) || []).length;
         }
 
-        const score = Math.min(count / check.requiredCount, 1) * pointsPerCheck;
-        totalScore += score;
-
-        if (count >= check.requiredCount) {
-          found.push(check.description);
+        let score;
+        if (check.requiredCount === 0) {
+          // INVERSE scoring: penalize for having matches (e.g., lazy-loaded images)
+          // 0 matches = full points, >0 matches = reduced points
+          score = count === 0 ? pointsPerCheck : Math.max(0, pointsPerCheck * (1 - Math.min(count / 5, 1)));
+          totalScore += score;
+          if (count === 0) {
+            found.push(check.description);
+          } else {
+            missing.push(`${count} ${check.description}`);
+          }
         } else {
-          missing.push(check.description);
+          // NORMAL scoring: reward for having matches
+          score = Math.min(count / check.requiredCount, 1) * pointsPerCheck;
+          totalScore += score;
+          if (count >= check.requiredCount) {
+            found.push(check.description);
+          } else {
+            missing.push(check.description);
+          }
         }
       }
     }

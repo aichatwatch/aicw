@@ -2,7 +2,7 @@
   "categories": [
     {
       "id": "project",
-      "name": "Project Pipelines",
+      "name": "AI Tracking Projects",
       "icon": "📊"
     },
     {
@@ -11,10 +11,20 @@
       "icon": "🔧"
     },
     {
+      "id": "tools",
+      "name": "Tools",
+      "icon": "🔧"
+    },
+    {
         "id": "setup",
         "name": "Setup",
         "icon": "🔑"
-    }  
+    },
+    {
+      "id": "more",
+      "name": "More",
+      "icon": "⚙️"
+    }
   ],
   "actions": [
     {
@@ -328,17 +338,48 @@
     {
       "id": "check-ai-vis",
       "cmd": "actions/check-ai-vis/check-ai-vis",
-      "name": "Check AI Visibility",
-      "desc": "Check if website is accessible by AI crawlers",
+      "name": "Check URL for AI Visibility",
+      "desc": "Check if URL is accessible/visible by AI bots",
       "pipelines": ["check-ai-vis"],
-      "category": "utility",
-      "requiresProject": false
+      "category": "tools",
+      "requiresProject": false,
+      "menuItemId": 100
+    },
+    {
+      "id": "demo-reports",
+      "cmd": "demo-reports",
+      "name": "Explore Demo Reports",
+      "desc": "Explore latest demo reports at aichatwatch.com",
+      "pipelines": ["demo-reports"],
+      "category": "more",
+      "requiresProject": false,
+      "menuItemId": 901
+    },
+    {
+      "id": "help",
+      "cmd": "help",
+      "name": "Help",
+      "desc": "Show documentation and available commands",
+      "pipelines": ["help"],
+      "category": "more",
+      "requiresProject": false,
+      "menuItemId": 902
+    },
+    {
+      "id": "license",
+      "cmd": "license",
+      "name": "License",
+      "desc": "Show license information",
+      "pipelines": ["license"],
+      "category": "more",
+      "requiresProject": false,
+      "menuItemId": 903
     }
   ],
   "pipelines": [
     {
       "id": "new",
-      "name": "new project",
+      "name": "New project",
       "description": "create a new project",
       "category": "project",
       "nextPipeline": "build",
@@ -346,23 +387,23 @@
     },
     {
       "id": "build",
-      "name": "full pipeline",
-      "description": "gets AI answers for today, analyzes data and generates report",
+      "name": "Get new answers and generate report",
+      "description": "(full pipeline)gets AI answers for today, analyzes data and generates report",
       "category": "project",
       "requiresApiKeys": true
     },
     {
       "id": "rebuild",
-      "name": "rebuild project",
+      "name": "Re-analyze data and generate report",
       "description": "rebuilds report (may use AI to analyze data if not cached)",
       "category": "project",
       "requiresApiKeys": true
     },
     {
       "id": "rebuild-report-only",
-      "name": "generate report (only)",
+      "name": "Re-generate report only",
       "description": "creates report from existing data (answers and citations), no AI is used",
-      "category": "project",
+      "category": "advanced",
       "requiresApiKeys": true
     },
     {
@@ -375,14 +416,14 @@
     },
     {
       "id": "report-serve",
-      "name": "start reports server",
+      "name": "Start local server with reports",
       "description": "starts web server to view reports in browser locally",
       "category": "utility",
       "requiresApiKeys": false
     },
     {
       "id": "show-user-data-location",
-      "name": "show user data location",
+      "name": "Show path to user data location",
       "description": "shows user data location",
       "category": "utility",
       "requiresApiKeys": false
@@ -391,21 +432,47 @@
       "id": "check-ai-vis",
       "name": "Check AI Visibility",
       "description": "checks if website is accessible/visible by AI crawlers",
-      "category": "utility",
-      "requiresApiKeys": false
+      "category": "tools",
+      "requiresApiKeys": false,
+      "menuItemId": 100
     },
     {
       "id": "check-models",
-      "name": "check AI Models",
+      "name": "Check AI Models",
       "description": "checks all AI Models for deprecation",
       "category": "advanced"
     },
     {
       "id": "setup-api-key",
-      "name": "setup API Key",
-      "description": "configures API keys for accessing AI models",
+      "name": "Setup API Key(s)",
+      "description": "configure API keys for accessing AI models",
       "category": "setup",
-      "requiresApiKeys": false
+      "requiresApiKeys": false,
+      "menuItemId": 900
+    },
+    {
+      "id": "demo-reports",
+      "name": "Explore Demo Reports",
+      "description": "explore latest demo reports at aichatwatch.com",
+      "category": "more",
+      "requiresApiKeys": false,
+      "menuItemId": 901
+    },
+    {
+      "id": "help",
+      "name": "Help",
+      "description": "show documentation and available commands",
+      "category": "more",
+      "requiresApiKeys": false,
+      "menuItemId": 902
+    },
+    {
+      "id": "license",
+      "name": "License",
+      "description": "show license information",
+      "category": "more",
+      "requiresApiKeys": false,
+      "menuItemId": 903
     }
   ]
 }

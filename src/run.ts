@@ -190,62 +190,79 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
   const normalPipelines = allMenuItems.filter(p => p.type !== 'advanced');
   const advancedPipelines = allMenuItems.filter(p => p.type === 'advanced');
 
-  // Build menu items map (choice number -> menu item)
+  // Build menu items map with smart numbering
   const menuMap = new Map<string, CliMenuItem>();
-  let choiceNum = 1;
+  const usedIds = new Set<number>();
+  let autoNumberCounter = 1;
 
-  // Display Normal Pipelines grouped by category
-  if (normalPipelines.length > 0) {
-    // Get categories in defined order
-    const categories = getCategoriesInOrder();
-
-    // Group pipelines by category
-    const pipelinesByCategory = new Map<string, CliMenuItem[]>();
-    for (const pipeline of normalPipelines) {
-      const categoryId = pipeline.category;
-      if (!pipelinesByCategory.has(categoryId)) {
-        pipelinesByCategory.set(categoryId, []);
+  // First pass: assign items with menuItemId
+  for (const item of normalPipelines) {
+    if (item.menuItemId) {
+      if (usedIds.has(item.menuItemId)) {
+        output.writeLine(colorize(`Warning: Duplicate menuItemId ${item.menuItemId} for ${item.id}`, 'yellow'));
+        continue;
       }
-      pipelinesByCategory.get(categoryId)!.push(pipeline);
+      menuMap.set(String(item.menuItemId), item);
+      usedIds.add(item.menuItemId);
     }
+  }
 
-    // Display pipelines by category in defined order
-    for (const category of categories) {
-      const pipelines = pipelinesByCategory.get(category.id);
-      if (pipelines && pipelines.length > 0) {
-        output.writeLine('\n' + colorize(`${category.icon} ${category.name}:`, 'yellow'));
-        for (const pipeline of pipelines) {
-          const numStr = String(choiceNum++);
-          menuMap.set(numStr, pipeline);
-          output.writeLine(`[${numStr}] ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
-        }
+  // Second pass: auto-assign remaining items
+  const itemsNeedingNumbers: CliMenuItem[] = [];
+  for (const item of normalPipelines) {
+    if (!item.menuItemId) {
+      itemsNeedingNumbers.push(item);
+    }
+  }
+
+  // Assign auto numbers to items without menuItemId
+  for (const item of itemsNeedingNumbers) {
+    // Find next available number (skip reserved IDs)
+    while (usedIds.has(autoNumberCounter) && autoNumberCounter < 900) {
+      autoNumberCounter++;
+    }
+    menuMap.set(String(autoNumberCounter), item);
+    usedIds.add(autoNumberCounter);
+    autoNumberCounter++;
+  }
+
+  // Display menu grouped by category
+  const categories = getCategoriesInOrder();
+  const pipelinesByCategory = new Map<string, Array<{id: string, item: CliMenuItem}>>();
+
+  // Group items by category with their menu IDs
+  for (const [menuId, item] of menuMap.entries()) {
+    const categoryId = item.category;
+    if (!pipelinesByCategory.has(categoryId)) {
+      pipelinesByCategory.set(categoryId, []);
+    }
+    pipelinesByCategory.get(categoryId)!.push({id: menuId, item});
+  }
+
+  // Display pipelines by category in defined order
+  for (const category of categories) {
+    const pipelines = pipelinesByCategory.get(category.id);
+    if (pipelines && pipelines.length > 0) {
+      // Sort by menu ID within category
+      pipelines.sort((a, b) => Number(a.id) - Number(b.id));
+
+      output.writeLine('\n' + colorize(`${category.icon} ${category.name}:`, 'yellow'));
+      for (const {id, item} of pipelines) {
+        output.writeLine(`[${id}] ` + colorize(item.name, 'cyan') + ` - ${item.description}`);
       }
     }
   }
 
-  // Display Advanced Pipelines with 999 prefix
+  // Display Advanced Pipelines
   if (advancedPipelines.length > 0 && showAdvanced) {
     output.writeLine('\n' + colorize('🔧 ADVANCED PIPELINES:', 'yellow'));
+    let advancedCounter = 1000;
     for (const pipeline of advancedPipelines) {
-      const numStr = String(1000+choiceNum++);
+      const numStr = String(pipeline.menuItemId || advancedCounter++);
       menuMap.set(numStr, pipeline);
       output.writeLine(`[${numStr}] ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
     }
-  }  
-
-  // Special menu items
-  output.writeLine('\n' + colorize('⚙️  More:', 'yellow'));
-
-  const demoReportsChoice = String(choiceNum++);
-  output.writeLine(`[${demoReportsChoice}] ` + colorize('View Demo Reports', 'cyan') + ' - View Demo Reports');
-
-
-
-  const helpChoice = String(choiceNum++);
-  output.writeLine(`[${helpChoice}] ` + colorize('Help', 'cyan') + ' - Show Help');
-
-  const licenseChoice = String(choiceNum++);
-  output.writeLine(`[${licenseChoice}] ` + colorize('License', 'cyan') + ' - Show License');
+  }
 
   output.writeLine('[0] ' + colorize('Exit', 'cyan') + ' - Exit\n');
 
@@ -257,11 +274,12 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
     output.writeLine(colorize('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'dim') + '\n');
   }
 
-  const maxChoice = choiceNum - 1;
+  // Calculate max choice from menu map
+  const maxChoice = Math.max(...Array.from(menuMap.keys()).map(k => Number(k)));
   const rl = createCleanReadline();
 
   return new Promise((resolve) => {
-    rl.question(`Enter your choice (0-${maxChoice}): `, async (choice) => {
+    rl.question(`Enter your choice and press Enter (0-${maxChoice}): `, async (choice) => {
       rl.close();
       process.stdin.pause();
 
@@ -279,30 +297,31 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
         return;
       }
 
-      if(choiceStr === helpChoice) {        
-        await printHelp();
-        resolve(MenuState.CONTINUE);
-        return;
-      }
-
-      if(choiceStr === licenseChoice) {
-        await printLicense();
-        resolve(MenuState.CONTINUE);
-        return;
-      }
-
-      if(choiceStr === demoReportsChoice) {
-        await showDemoReportsUrl();
-        resolve(MenuState.CONTINUE);
-        return;
-      }
-
       // Handle dynamic menu items
       const menuItem = menuMap.get(choiceStr);
 
       if (menuItem) {
         try {
-          // Handle pipelines
+          // Handle special meta-commands that don't run pipelines
+          if (menuItem.id === 'help') {
+            await printHelp();
+            resolve(MenuState.CONTINUE);
+            return;
+          }
+
+          if (menuItem.id === 'license') {
+            await printLicense();
+            resolve(MenuState.CONTINUE);
+            return;
+          }
+
+          if (menuItem.id === 'demo-reports') {
+            await showDemoReportsUrl();
+            resolve(MenuState.CONTINUE);
+            return;
+          }
+
+          // Handle regular pipelines
           output.writeLine(colorize(`\n🚀 ${menuItem.name}`, 'green'));
           output.writeLine(colorize(`📋 ${menuItem.description}\n`, 'dim'));
 

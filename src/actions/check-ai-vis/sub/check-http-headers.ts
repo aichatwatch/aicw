@@ -13,7 +13,7 @@
 
 import { BaseVisibilityCheck, VisibilityCheckResult, PageCaptured } from './check-base.js';
 
-const MODULE_NAME = 'X-Robots-Tag Server HTTP Header Check';
+const MODULE_NAME = 'Server: X-Robots-Tag HTTP Header Check';
 
 export class CheckHttpHeaders extends BaseVisibilityCheck {
   readonly name = MODULE_NAME;

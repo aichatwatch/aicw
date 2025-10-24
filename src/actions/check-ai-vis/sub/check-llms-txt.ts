@@ -13,7 +13,7 @@
 import { BaseVisibilityCheck, VisibilityCheckResult, PageCaptured } from './check-base.js';
 import { callHttpWithRetry } from '../../../utils/http-caller.js';
 
-const MODULE_NAME = 'Check /llms.txt';
+const MODULE_NAME = 'Server: Check /llms.txt';
 
 export class CheckLlmsTxt extends BaseVisibilityCheck {
   readonly name = MODULE_NAME;

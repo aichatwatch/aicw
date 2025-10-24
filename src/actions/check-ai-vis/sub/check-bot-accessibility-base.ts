@@ -67,7 +67,7 @@ export abstract class BaseBotAccessibilityCheck extends BaseVisibilityCheck {
 
     // Step 2: Test each AI bot with delays to prevent rate limiting
     logger.startProgress(
-      `Checking accessibility for "${this.name}": `,
+      `Server: checking accessibility for "${this.name}": `,
       botsToTest.length,
       'bots'
     );

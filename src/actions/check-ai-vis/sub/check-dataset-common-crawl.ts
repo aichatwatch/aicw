@@ -3,6 +3,8 @@ import { callHttpWithRetry } from '../../../utils/http-caller.js';
 import { logger } from '../../../utils/compact-logger.js';
 import { extractDomainFromUrl } from '../../../utils/url-utils.js';
 
+
+const MODULE_NAME = 'Dataset: Common Crawl Org Index';
 // how many indexes to check in Common Crawl
 const MAX_INDEXES_TO_CHECK = 3;
 
@@ -57,7 +59,7 @@ async function checkUrlInIndex(url: string, indexId: string): Promise<boolean> {
 }
 
 export class CheckDatasetCommonCrawl extends BaseVisibilityCheck {
-  readonly name = 'Common Crawl Dataset';
+  readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
     try {
@@ -90,7 +92,7 @@ export class CheckDatasetCommonCrawl extends BaseVisibilityCheck {
       }
 
       // Complete progress
-      logger.completeProgress('');
+      logger.completeProgress();
 
       const isIndexed = foundInIndexes.length > 0;
       const score = isIndexed ? this.maxScore : 0;

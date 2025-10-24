@@ -58,6 +58,8 @@ export interface PipelineDefinition {
   requiresApiKeys?: boolean;
   /** Optional: pipeline type (e.g., "advanced") - advanced pipelines shown only with --advanced flag */
   type?: string;
+  /** Optional: stable menu ID (prevents renumbering when items added) */
+  menuItemId?: number;
 }
 
 /** Category definition for organizing pipelines in menu */
@@ -196,6 +198,7 @@ export interface CliMenuItem {
   requiresProject?: boolean;
   nextPipeline?: string;
   type?: string;
+  menuItemId?: number;  // Optional stable menu ID (prevents renumbering when items added)
 }
 
 
@@ -225,6 +228,7 @@ export function getCliMenuItems(showAdvanced: boolean = false): CliMenuItem[] {
       requiresProject: true, // Pipelines always require project
       nextPipeline: pipeline.nextPipeline,
       type: pipeline.type,
+      menuItemId: pipeline.menuItemId,
     });
   }
 

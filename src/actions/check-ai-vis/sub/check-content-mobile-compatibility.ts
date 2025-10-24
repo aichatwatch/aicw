@@ -41,7 +41,7 @@ function hasMobileMetaTags(html: string): boolean {
 }
 
 export class CheckContentMobileCompatibility extends BaseVisibilityCheck {
-  readonly name = 'Mobile Version Availability';
+  readonly name = 'Content: Mobile Version Availability';
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
     // Require both desktop and mobile data

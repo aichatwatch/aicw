@@ -68,6 +68,14 @@ export interface PageCaptured {
   desktopFetchedAt?: Date;
   /** When mobile page was fetched */
   mobileFetchedAt?: Date;
+  /** Cached robots.txt content (undefined if not fetched or 404) */
+  robotsTxtContent?: string;
+  /** HTTP status from robots.txt fetch */
+  robotsTxtStatus?: number;
+  /** Cached sitemap.xml content (undefined if not fetched or 404) */
+  sitemapXmlContent?: string;
+  /** HTTP status from sitemap.xml fetch */
+  sitemapXmlStatus?: number;
 }
 
 export interface VisibilityCheckResult {
