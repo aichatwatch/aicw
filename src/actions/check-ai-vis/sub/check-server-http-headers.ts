@@ -15,7 +15,7 @@ import { BaseVisibilityCheck, VisibilityCheckResult, PageCaptured } from './chec
 
 const MODULE_NAME = 'Server: X-Robots-Tag HTTP Header Check';
 
-export class CheckHttpHeaders extends BaseVisibilityCheck {
+export class CheckServerHttpHeaders extends BaseVisibilityCheck {
   readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {

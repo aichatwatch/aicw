@@ -4,7 +4,7 @@ import { logger } from '../../../utils/compact-logger.js';
 import { extractDomainFromUrl } from '../../../utils/url-utils.js';
 
 
-const MODULE_NAME = 'Dataset: Common Crawl Org Index';
+const MODULE_NAME = 'Indexing: Common Crawl Dataset';
 const COMMON_CRAWL_INDEXES_URL = 'https://index.commoncrawl.org/collinfo.json';
 // how many indexes to check in Common Crawl
 const MAX_INDEXES_TO_CHECK = 3;
@@ -67,7 +67,7 @@ async function checkUrlInIndex(domain: string, indexId: string): Promise<boolean
   }
 }
 
-export class CheckDatasetCommonCrawl extends BaseVisibilityCheck {
+export class CheckIndexingDatasetCommonCrawl extends BaseVisibilityCheck {
   readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {

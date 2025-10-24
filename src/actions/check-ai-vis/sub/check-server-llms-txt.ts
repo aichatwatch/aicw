@@ -15,7 +15,7 @@ import { callHttpWithRetry } from '../../../utils/http-caller.js';
 
 const MODULE_NAME = 'Server: Check /llms.txt';
 
-export class CheckLlmsTxt extends BaseVisibilityCheck {
+export class CheckServerLlmsTxt extends BaseVisibilityCheck {
   readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {

@@ -28,7 +28,7 @@ export class CheckContentJsonLD extends BaseVisibilityCheck {
         score: 0,
         maxScore: this.maxScore,
         passed: false,
-        details: 'No JSON-LD structured data found'
+        details: 'No JSON-LD structured data found.'
       };
     }
 

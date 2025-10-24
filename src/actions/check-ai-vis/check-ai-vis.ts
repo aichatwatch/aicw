@@ -14,17 +14,17 @@ import { callHttpWithRetry } from '../../utils/http-caller.js';
 import { DEFAULT_BROWSER_HEADERS, DESKTOP_BROWSER_USER_AGENT, MOBILE_BROWSER_USER_AGENT } from '../../config/ai-user-agents.js';
 // sub actions
 import { BaseVisibilityCheck, PageCaptured, VisibilityCheckResult } from './sub/check-base.js';
-import { BaseBotAccessibilityCheck } from './sub/check-bot-accessibility-base.js';
+import { ServerBaseBotAccessibilityCheck } from './sub/check-server-bot-accessibility-base.js';
 import { CheckContentJsonLD } from './sub/check-content-json-ld.js';
 import { CheckContentMetaTags } from './sub/check-content-meta-tags.js';
-import { CheckHttpHeaders } from './sub/check-http-headers.js';
-import { BotAcessibilityFoundationModelsTraining } from './sub/check-bot-accessibility-foundations.js';
-import { BotAcessibilitySearchIndex } from './sub/check-bot-accessibility-search.js';
-import { BotAcessibilityUserInteraction } from './sub/check-bot-accessibility-user-interaction.js';
-import { CheckRobotsTxt } from './sub/check-robots-txt.js';
-import { CheckSitemap } from './sub/check-sitemap.js';
-import { CheckLlmsTxt } from './sub/check-llms-txt.js';
-import { CheckDatasetCommonCrawl } from './sub/check-dataset-common-crawl.js';
+import { CheckServerHttpHeaders } from './sub/check-server-http-headers.js';
+import { ServerBotAcessibilityFoundationModelsTraining } from './sub/check-server-bot-accessibility-foundations.js';
+import { ServerBotAcessibilitySearchIndex } from './sub/check-server-bot-accessibility-search.js';
+import { ServerBotAcessibilityUserInteraction } from './sub/check-server-bot-accessibility-user-interaction.js';
+import { CheckServerRobotsTxt } from './sub/check-server-robots-txt.js';
+import { CheckServerSitemap } from './sub/check-server-sitemap.js';
+import { CheckServerLlmsTxt } from './sub/check-server-llms-txt.js';
+import { CheckIndexingDatasetCommonCrawl } from './sub/check-indexing-dataset-common-crawl.js';
 import { CheckContentJavaScriptDependency } from './sub/check-content-javascript-dependency.js';
 import { CheckContentMobileCompatibility } from './sub/check-content-mobile-compatibility.js';
 import { CheckContentStructure } from './sub/check-content-structure.js'; 
@@ -52,28 +52,28 @@ export interface VisibilityCheckConfig {
  */
 export const VISIBILITY_CHECKS: VisibilityCheckConfig[] = [
   // Critical Blockers (60 points total)
-  { CheckClass: CheckRobotsTxt, maxScore: 15 },           // Protocol-level bot blocking
-  { CheckClass: CheckHttpHeaders, maxScore: 15 },         // HTTP header blocking (X-Robots-Tag)
-
-  // Bot accessibility split by type (30 points total)
-  { CheckClass: BotAcessibilityFoundationModelsTraining, maxScore: 12 }, // Foundation model training (6 bots)
-  { CheckClass: BotAcessibilitySearchIndex, maxScore: 10 },     // Search indexing (6 bots)
-  { CheckClass: BotAcessibilityUserInteraction, maxScore: 8 },        // User interactions (8 bots)
+  { CheckClass: CheckServerRobotsTxt, maxScore: 15 },           // Protocol-level bot blocking
+  { CheckClass: CheckServerSitemap, maxScore: 5 },              // Aids discovery
+  { CheckClass: CheckServerHttpHeaders, maxScore: 15 },         // HTTP header blocking (X-Robots-Tag)
+  { CheckClass: CheckResponseSpeed, maxScore: 7 },        // Crawl efficiency
 
   // Important Checks (35 points total)
+  { CheckClass: CheckContentJsonLD, maxScore: 5 },               // Structured data
   { CheckClass: CheckContentMetaTags, maxScore: 8 },             // HTML meta tag blocking
   { CheckClass: CheckContentJavaScriptDependency, maxScore: 8 }, // Content accessibility
   { CheckClass: CheckContentStructure, maxScore: 5 },     // AI-optimized content structure
   { CheckClass: CheckContentMobileCompatibility, maxScore: 7 },  // Mobile-first indexing
-  { CheckClass: CheckResponseSpeed, maxScore: 7 },        // Crawl efficiency
+
+  // Bot accessibility split by type (30 points total)
+  { CheckClass: ServerBotAcessibilityFoundationModelsTraining, maxScore: 12 }, // Foundation model training (6 bots)
+  { CheckClass: ServerBotAcessibilitySearchIndex, maxScore: 10 },     // Search indexing (6 bots)
+  { CheckClass: ServerBotAcessibilityUserInteraction, maxScore: 8 },        // User interactions (8 bots)
 
   // Helpful Checks (13 points total)
-  { CheckClass: CheckSitemap, maxScore: 5 },              // Aids discovery
-  { CheckClass: CheckContentJsonLD, maxScore: 5 },               // Structured data
-  { CheckClass: CheckDatasetCommonCrawl, maxScore: 3 },          // Historical presence
+  { CheckClass: CheckIndexingDatasetCommonCrawl, maxScore: 3 },          // Historical presence
 
   // Optional Checks (1 point total)
-  { CheckClass: CheckLlmsTxt, maxScore: 1 },              // Emerging standard
+  { CheckClass: CheckServerLlmsTxt, maxScore: 1 },              // Emerging standard
 
   // Search engine indexing checks (commented out - informational only)
   // { CheckClass: CheckGoogleIndexing, maxScore: 1 },
@@ -102,7 +102,7 @@ async function fetchPageContent(url: string): Promise<PageCaptured> {
   const pageCaptured: PageCaptured = {};
 
   // Fetch desktop version
-  logger.info('  Fetching website with desktop browser...');
+  logger.info('  Fetching website as a desktop browser...');
   try {
     const startTime = Date.now();
     const response = await callHttpWithRetry(url, {
@@ -135,7 +135,7 @@ async function fetchPageContent(url: string): Promise<PageCaptured> {
   }
 
   // Fetch mobile version
-  logger.info('  Fetching website with mobile browser...');
+  logger.info('  Fetching website as a mobile browser...');
   try {
     const startTime = Date.now();
     const response = await callHttpWithRetry(url, {
@@ -371,9 +371,9 @@ async function main(): Promise<void> {
     allResults.push({ check, result });
 
     // Add blank line after last bot check to separate from other checks
-    const isCurrentBotCheck = check instanceof BaseBotAccessibilityCheck;
+    const isCurrentBotCheck = check instanceof ServerBaseBotAccessibilityCheck;
     const nextCheck = checks[i + 1];
-    const isNextBotCheck = nextCheck instanceof BaseBotAccessibilityCheck;
+    const isNextBotCheck = nextCheck instanceof ServerBaseBotAccessibilityCheck;
 
     if (isCurrentBotCheck && !isNextBotCheck) {
       logger.log('');
@@ -429,6 +429,47 @@ async function main(): Promise<void> {
     logger.log(
       `  ${colorize(icon, color)} ${check.name}${padding} ${scoreText.padStart(8)}`
     );
+  }
+
+  // Display issues and recommendations section
+  const issuesAndWarnings = allResults.filter(({result}) => !result.passed || result.error);
+
+  if (issuesAndWarnings.length > 0) {
+    logger.log('');
+    logger.log('-'.repeat(80));
+    logger.log('ISSUES:');
+    logger.log('-'.repeat(80));
+
+    // Group by severity: errors first, then warnings
+    const errors = issuesAndWarnings.filter(({result}) => result.error);
+    const warnings = issuesAndWarnings.filter(({result}) => !result.error && !result.passed);
+
+    // Display errors
+    if (errors.length > 0) {
+      logger.log('');
+      for (const {check, result} of errors) {
+        logger.log(colorize(`  ❌ ${check.name}`, 'red'));
+        logger.log(colorize(`     Status: Check failed`, 'red'));
+        logger.log(`     Details:  ${result.details}`);
+        logger.log('');
+      }
+    }
+
+    // Display warnings
+    if (warnings.length > 0) {
+      for (const {check, result} of warnings) {
+        const roundedScore = Math.round(result.score * 10) / 10;
+        const lostPoints = Math.round((result.maxScore - roundedScore) * 10) / 10;
+        logger.log(colorize(`  ⚠️  ${check.name}`, 'yellow'));
+        logger.log(colorize(`     Impact: ${lostPoints} point${lostPoints !== 1 ? 's' : ''} lost`, 'yellow'));
+        logger.log(`     Details:  ${result.details}`);
+        logger.log('');
+      }
+    }
+  } else {
+    logger.log('');
+    logger.log(colorize('✓ No issues found - excellent AI visibility!', 'green'));
+    logger.log('');
   }
 
   logger.log('='.repeat(80));

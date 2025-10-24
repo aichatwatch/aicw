@@ -39,7 +39,7 @@ function isContentSimilar(size1: number, size2: number, tolerance: number = CONT
  * Abstract base class for bot accessibility checks
  * Subclasses define which bot type to test via botTypeFilter
  */
-export abstract class BaseBotAccessibilityCheck extends BaseVisibilityCheck {
+export abstract class ServerBaseBotAccessibilityCheck extends BaseVisibilityCheck {
   /**
    * Subclasses must specify which bot classification tag to filter by
    * E.g., CRAWLER_BOT_CLASSIFICATION_TAGS.AI_FOUNDATION_MODEL_TRAINING
@@ -71,9 +71,9 @@ export abstract class BaseBotAccessibilityCheck extends BaseVisibilityCheck {
     // Wrap progress in try-finally to ensure completion
     try {
       logger.startProgress(
-        `Server: checking accessibility for "${this.name}": `,
+        `Checking accessibility for AI bots for "${this.name}" type:`,
         botsToTest.length,
-        'bots'
+        'AI bots to test'
       );
 
       for (let i = 0; i < botsToTest.length; i++) {

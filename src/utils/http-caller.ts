@@ -34,12 +34,33 @@ function delay(ms: number): Promise<void> {
 
 /**
  * Check if error is retryable
+ * Consolidates patterns from ai-caller.ts and error-handler.ts
  */
 function isRetryableError(error: any): boolean {
-  // Network errors are retryable
-  if (error?.name === 'AbortError' || error?.code === 'ECONNRESET') {
+  // Timeout errors
+  if (error?.name === 'AbortError') {
     return true;
   }
+
+  // Network error codes (check both direct and wrapped - Node.js fetch wraps errors)
+  const errorCode = error?.code || error?.cause?.code;
+  const retryableCodes = [
+    'ENOTFOUND',      // DNS lookup failed
+    'ECONNREFUSED',   // Connection refused
+    'ECONNRESET',     // Connection reset
+    'ETIMEDOUT',      // Connection timeout
+    'ESOCKETTIMEDOUT' // Socket timeout
+  ];
+
+  if (errorCode && retryableCodes.includes(errorCode)) {
+    return true;
+  }
+
+  // Generic fetch failure - common with Node.js fetch
+  if (error?.message?.includes('fetch failed')) {
+    return true;
+  }
+
   return false;
 }
 
@@ -68,7 +89,7 @@ export async function callHttpWithRetry(
       try {
         const response = await fetch(url, {
           headers: {
-            'User-Agent': userAgent,            
+            'User-Agent': userAgent,
             'Connection': 'keep-alive',
             ...options.headers || {}
           },
@@ -76,6 +97,13 @@ export async function callHttpWithRetry(
         });
 
         clearTimeout(timeoutId);
+
+        // Retry on 5xx server errors (transient issues) - pattern from ai-caller.ts
+        if (response.status >= 500 && response.status < 600 && attempt < maxRetries) {
+          await delay(DEFAULT_RETRY_DELAY_MS * (attempt + 1));
+          continue;
+        }
+
         return response;
 
       } catch (error: any) {

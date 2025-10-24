@@ -3,17 +3,17 @@
     {
       "id": "project",
       "name": "AI Tracking Projects",
-      "icon": "📊"
+      "icon": "💼"
     },
     {
       "id": "utility",
       "name": "Utilities",
-      "icon": "🔧"
+      "icon": "🛠️"
     },
     {
       "id": "tools",
       "name": "Tools",
-      "icon": "🔧"
+      "icon": "🧰"
     },
     {
         "id": "setup",
@@ -23,7 +23,7 @@
     {
       "id": "more",
       "name": "More",
-      "icon": "⚙️"
+      "icon": "→"
     }
   ],
   "actions": [
@@ -388,7 +388,7 @@
     {
       "id": "build",
       "name": "Get new answers and generate report",
-      "description": "(full pipeline)gets AI answers for today, analyzes data and generates report",
+      "description": "get today's AI answers for project, analyze and generate report",
       "category": "project",
       "requiresApiKeys": true
     },

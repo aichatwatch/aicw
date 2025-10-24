@@ -6,7 +6,7 @@
 
 import { BaseSearchIndexingCheck } from './check-indexing-base.js';
 
-const MODULE_NAME = 'Search Index: Brave Search';
+const MODULE_NAME = 'Indexing: Brave Search';
 
 export class CheckIndexingBrave extends BaseSearchIndexingCheck {
   readonly name = MODULE_NAME;

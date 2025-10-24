@@ -63,7 +63,7 @@ function parserobotsForBot(robotsTxt: string, botIdentifier: string): boolean {
   return isBlocked;
 }
 
-export class CheckRobotsTxt extends BaseVisibilityCheck {
+export class CheckServerRobotsTxt extends BaseVisibilityCheck {
   readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {

@@ -168,7 +168,7 @@ export class CheckContentStructure extends BaseVisibilityCheck {
     let details: string;
 
     if (totalScore >= this.maxScore * 0.8) {
-      details = `Well-structured for AI: ${found.join(', ')}`;
+      details = `Good for AI visibility: ${found.join(', ')}`;
     } else if (found.length > 0 && missing.length > 0) {
       details = `Has: ${found.join(', ')}\n   Missing: ${missing.join(', ')}`;
     } else if (missing.length > 0) {

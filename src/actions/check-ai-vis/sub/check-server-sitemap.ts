@@ -64,7 +64,7 @@ function parseSitemap(xmlContent: string): SitemapParseResult {
   };
 }
 
-export class CheckSitemap extends BaseVisibilityCheck {
+export class CheckServerSitemap extends BaseVisibilityCheck {
   readonly name = MODULE_NAME;
 
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
