@@ -12,15 +12,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.join(__dirname, '..');
 
 // Paths
-const basePatternsDir = path.join(projectRoot, 'src', 'config', 'data', 'link-types', 'patterns');
-const baseOutputPath = path.join(projectRoot, 'src', 'config', 'data-generated', 'link-types.json');
+const sourcePatternsDir = path.join(projectRoot, 'src', 'data-raw', 'link-types', 'patterns');
+const outputFilePath = path.join(projectRoot, 'src', 'config', 'data-generated', 'link-types.json');
 
 function buildLinkTypes() {
   console.log('🔨 Building link-types.json file...\n');
 
   try {
     // Compile patterns from base directory only (overwrite mode)
-    const result = compileDataToLinkTypes(basePatternsDir, baseOutputPath, false);
+    const result = compileDataToLinkTypes(sourcePatternsDir, outputFilePath, false);
 
     // Show summary
     console.log('\n✨ Link types build complete!');

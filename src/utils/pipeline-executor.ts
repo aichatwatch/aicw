@@ -73,18 +73,20 @@ export class PipelineExecutor {
 
     await output.initialize(pipeline.id, project || this.project);
 
-    output.writeLine(`\n🚀 ${pipeline.name}`);
-    output.writeLine(`📋 ${pipeline.description}\n`);
-
-    // Clean pipeline name for progress display (remove "Project: " prefix if present)
-    logger.startProgress(pipeline.actions.length, `${this.project}: ${pipeline.name} (${pipeline.actions.length} steps)`);
+    // Only show progress bar for multi-step pipelines (single-step would show 100% before starting)
+    const showProgress = pipeline.actions.length > 1;
+    if (showProgress) {
+      logger.startProgress(pipeline.actions.length, `${this.project}: ${pipeline.name} (${pipeline.actions.length} steps)`);
+    }
 
     for (let i = 0; i < pipeline.actions.length; i++) {
       const action = pipeline.actions[i];
-      logger.updateProgress(i + 1, action.desc);
 
-      // Ensure progress bar line is completed before spawning child process
-      process.stdout.write('\n');
+      if (showProgress) {
+        logger.updateProgress(i + 1, action.desc);
+        // Ensure progress bar line is completed before spawning child process
+        process.stdout.write('\n');
+      }
 
       // Check if action needs project and we don't have one
       if (action.requiresProject && (!this.project || this.project.trim() === '')) {
@@ -177,10 +179,14 @@ export class PipelineExecutor {
         };
       }
 
-      logger.updateProgress(i + 1, `${action.desc} - ✓`);
+      if (showProgress) {
+        logger.updateProgress(i + 1, `${action.desc} - ✓`);
+      }
     }
 
-    logger.completeProgress(`pipeline "${pipeline.name}" completed`);
+    if (showProgress) {
+      logger.completeProgress(`pipeline "${pipeline.name}" completed`);
+    }
 
     const duration = Date.now() - startTime;
 

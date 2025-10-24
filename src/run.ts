@@ -8,7 +8,7 @@ import { logger } from './utils/compact-logger.js';
 import { output } from './utils/output-manager.js';
 import { getUpdateNotification, getCurrentVersion } from './utils/update-checker.js';
 import { performUpdate, showVersion } from './utils/update-installer.js';
-import { getCliMenuItems, getActionByCommand, CliMenuItem, getPipeline } from './config/pipelines-and-actions.js';
+import { getCliMenuItems, getActionByCommand, CliMenuItem, getPipeline, getCategoriesInOrder, getCategory } from './config/pipelines-and-actions.js';
 import { PipelineExecutor, ExecutionOptions, ExecutionResult } from './utils/pipeline-executor.js';
 import { stopServer, isServerRunning, getServerPort } from './actions/utils/report-serve.js';
 import { initializeUserDirectories } from './config/user-paths.js';
@@ -190,43 +190,79 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
   const normalPipelines = allMenuItems.filter(p => p.type !== 'advanced');
   const advancedPipelines = allMenuItems.filter(p => p.type === 'advanced');
 
-  // Build menu items map (choice number -> menu item)
+  // Build menu items map with smart numbering
   const menuMap = new Map<string, CliMenuItem>();
-  let choiceNum = 1;
+  const usedIds = new Set<number>();
+  let autoNumberCounter = 1;
 
-  // Display Normal Pipelines
-  if (normalPipelines.length > 0) {
-    output.writeLine('\n' + colorize('➡ Pipelines:', 'yellow'));
-    for (const pipeline of normalPipelines) {
-      const numStr = String(choiceNum++);
+  // First pass: assign items with menuItemId
+  for (const item of normalPipelines) {
+    if (item.menuItemId) {
+      if (usedIds.has(item.menuItemId)) {
+        output.writeLine(colorize(`Warning: Duplicate menuItemId ${item.menuItemId} for ${item.id}`, 'yellow'));
+        continue;
+      }
+      menuMap.set(String(item.menuItemId), item);
+      usedIds.add(item.menuItemId);
+    }
+  }
+
+  // Second pass: auto-assign remaining items
+  const itemsNeedingNumbers: CliMenuItem[] = [];
+  for (const item of normalPipelines) {
+    if (!item.menuItemId) {
+      itemsNeedingNumbers.push(item);
+    }
+  }
+
+  // Assign auto numbers to items without menuItemId
+  for (const item of itemsNeedingNumbers) {
+    // Find next available number (skip reserved IDs)
+    while (usedIds.has(autoNumberCounter) && autoNumberCounter < 900) {
+      autoNumberCounter++;
+    }
+    menuMap.set(String(autoNumberCounter), item);
+    usedIds.add(autoNumberCounter);
+    autoNumberCounter++;
+  }
+
+  // Display menu grouped by category
+  const categories = getCategoriesInOrder();
+  const pipelinesByCategory = new Map<string, Array<{id: string, item: CliMenuItem}>>();
+
+  // Group items by category with their menu IDs
+  for (const [menuId, item] of menuMap.entries()) {
+    const categoryId = item.category;
+    if (!pipelinesByCategory.has(categoryId)) {
+      pipelinesByCategory.set(categoryId, []);
+    }
+    pipelinesByCategory.get(categoryId)!.push({id: menuId, item});
+  }
+
+  // Display pipelines by category in defined order
+  for (const category of categories) {
+    const pipelines = pipelinesByCategory.get(category.id);
+    if (pipelines && pipelines.length > 0) {
+      // Sort by menu ID within category
+      pipelines.sort((a, b) => Number(a.id) - Number(b.id));
+
+      output.writeLine('\n' + colorize(`${category.icon} ${category.name}:`, 'yellow'));
+      for (const {id, item} of pipelines) {
+        output.writeLine(`[${id}] ` + colorize(item.name, 'cyan') + ` - ${item.description}`);
+      }
+    }
+  }
+
+  // Display Advanced Pipelines
+  if (advancedPipelines.length > 0 && showAdvanced) {
+    output.writeLine('\n' + colorize('🔧 ADVANCED PIPELINES:', 'yellow'));
+    let advancedCounter = 1000;
+    for (const pipeline of advancedPipelines) {
+      const numStr = String(pipeline.menuItemId || advancedCounter++);
       menuMap.set(numStr, pipeline);
       output.writeLine(`[${numStr}] ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
     }
   }
-
-  // Display Advanced Pipelines with 999 prefix
-  if (advancedPipelines.length > 0 && showAdvanced) {
-    output.writeLine('\n' + colorize('🔧 ADVANCED PIPELINES:', 'yellow'));
-    for (const pipeline of advancedPipelines) {
-      const numStr = String(1000+choiceNum++);
-      menuMap.set(numStr, pipeline);
-      output.writeLine(`[${numStr}] ` + colorize(pipeline.name, 'cyan') + ` - ${pipeline.description}`);
-    }
-  }  
-
-  // Special menu items
-  output.writeLine('\n' + colorize('⚙️  More:', 'yellow'));
-
-  const demoReportsChoice = String(choiceNum++);
-  output.writeLine(`[${demoReportsChoice}] ` + colorize('View Demo Reports', 'cyan') + ' - View Demo Reports');
-
-
-
-  const helpChoice = String(choiceNum++);
-  output.writeLine(`[${helpChoice}] ` + colorize('Help', 'cyan') + ' - Show Help');
-
-  const licenseChoice = String(choiceNum++);
-  output.writeLine(`[${licenseChoice}] ` + colorize('License', 'cyan') + ' - Show License');
 
   output.writeLine('[0] ' + colorize('Exit', 'cyan') + ' - Exit\n');
 
@@ -238,11 +274,12 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
     output.writeLine(colorize('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'dim') + '\n');
   }
 
-  const maxChoice = choiceNum - 1;
+  // Calculate max choice from menu map
+  const maxChoice = Math.max(...Array.from(menuMap.keys()).map(k => Number(k)));
   const rl = createCleanReadline();
 
   return new Promise((resolve) => {
-    rl.question(`Enter your choice (0-${maxChoice}): `, async (choice) => {
+    rl.question(`Enter your choice and press Enter (0-${maxChoice}): `, async (choice) => {
       rl.close();
       process.stdin.pause();
 
@@ -260,30 +297,31 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
         return;
       }
 
-      if(choiceStr === helpChoice) {        
-        await printHelp();
-        resolve(MenuState.CONTINUE);
-        return;
-      }
-
-      if(choiceStr === licenseChoice) {
-        await printLicense();
-        resolve(MenuState.CONTINUE);
-        return;
-      }
-
-      if(choiceStr === demoReportsChoice) {
-        await showDemoReportsUrl();
-        resolve(MenuState.CONTINUE);
-        return;
-      }
-
       // Handle dynamic menu items
       const menuItem = menuMap.get(choiceStr);
 
       if (menuItem) {
         try {
-          // Handle pipelines
+          // Handle special meta-commands that don't run pipelines
+          if (menuItem.id === 'help') {
+            await printHelp();
+            resolve(MenuState.CONTINUE);
+            return;
+          }
+
+          if (menuItem.id === 'license') {
+            await printLicense();
+            resolve(MenuState.CONTINUE);
+            return;
+          }
+
+          if (menuItem.id === 'demo-reports') {
+            await showDemoReportsUrl();
+            resolve(MenuState.CONTINUE);
+            return;
+          }
+
+          // Handle regular pipelines
           output.writeLine(colorize(`\n🚀 ${menuItem.name}`, 'green'));
           output.writeLine(colorize(`📋 ${menuItem.description}\n`, 'dim'));
 
@@ -392,6 +430,18 @@ async function runMenuLoop(showAdvanced: boolean = false): Promise<void> {
   process.exit(0);
 }
 
+/**
+ * Show npx welcome message if running via npx
+ */
+function showNpxWelcomeIfNeeded(): void {
+  if (process.env.AICW_RUNNING_VIA_NPX === 'true') {
+    output.writeLine('');
+    output.writeLine(colorize('💡 Thanks for trying AICW!', 'cyan'));
+    output.writeLine(colorize('   To install globally: npm install -g @aichatwatch/aicw', 'dim'));
+    output.writeLine('');
+  }
+}
+
 // Main execution
 async function main(): Promise<void> {
   // Setup interrupt handler for graceful cancellation
@@ -426,18 +476,21 @@ async function main(): Promise<void> {
   // Show help if requested
   if (command === 'help' || command === '--help' || command === '-h') {
     await printHelp();
+    showNpxWelcomeIfNeeded();
     return;
   }
 
   // Show license information
   if (command === 'license' || command === '--license') {
     await printLicense();
+    showNpxWelcomeIfNeeded();
     return;
   }
 
   // Show version information
   if (command === 'version' || command === '--version' || command === '-v') {
     showVersion();
+    showNpxWelcomeIfNeeded();
     return;
   }
 
@@ -445,6 +498,7 @@ async function main(): Promise<void> {
   if (command === 'update' || command === 'u') {
     printHeader();
     await performUpdate();
+    showNpxWelcomeIfNeeded();
     return;
   }
   // Load environment variables before checking environment
@@ -483,6 +537,7 @@ async function main(): Promise<void> {
 
     const executor = new PipelineExecutor(project);
     const result = await executor.execute(pipeline.id, executorOptions);
+    showNpxWelcomeIfNeeded();
     process.exit(result.success ? 0 : 1);
   }
 

@@ -6,12 +6,12 @@ import { decryptCredentialsFile, isEncryptedCredentials } from './crypto-utils.j
 import { output } from './output-manager.js';
 import { USER_CONFIG_CREDENTIALS_FILE } from  '../config/user-paths.js';
 import { PipelineCriticalError } from './pipeline-errors.js';
-import { CompactLogger } from './compact-logger.js';
+import { logger } from './compact-logger.js';
 import * as readline from 'readline';
 import { spawn } from 'child_process';
 import { MIN_VALID_OUTPUT_DATA_SIZE } from '../config/user-paths.js';
 import { homedir } from 'os';
-const logger = CompactLogger.getInstance();
+
 
 const MAX_TEMPLATE_PREVIEW_LENGTH_FOR_ERROR_MESSAGES = 400;
 

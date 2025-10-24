@@ -188,3 +188,6 @@ TODO.txt
 NOTES.txt
 scratch/
 experiments/
+
+# explicetly include data-generated directory
+!dist/config/data-generated/

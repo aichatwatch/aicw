@@ -7,8 +7,8 @@ import { MAIN_SECTIONS } from '../config/constants-entities.js';
 import { getUserProjectQuestionsDir, getUserProjectReportsDir } from '../config/user-paths.js';
 import { ProgressTracker } from './compact-logger.js';
 import { PipelineCriticalError } from './pipeline-errors.js';
-import { CompactLogger } from './compact-logger.js';
-const logger = CompactLogger.getInstance();
+import { logger } from './compact-logger.js';
+
 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

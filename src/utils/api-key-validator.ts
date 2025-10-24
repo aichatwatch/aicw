@@ -7,8 +7,7 @@ import { colorize } from './misc-utils.js';
 import { Spinner } from './compact-logger.js';
 import { UserFriendlyError, ErrorCode } from '../utils/error-handler.js';
 import { createAiClientInstance } from './ai-caller.js';
-import { CompactLogger } from '../utils/compact-logger.js';
-const logger = CompactLogger.getInstance();
+import { logger } from '../utils/compact-logger.js';
 
 /**
  * Validate API key format

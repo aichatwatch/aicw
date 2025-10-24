@@ -91,6 +91,14 @@ process.on('unhandledRejection', (reason, promise) => {
 // API keys are now loaded from encrypted storage via loadEnvFile() in run.js
 // No longer using dotenv - all API keys come from encrypted credentials.json
 
+// Detect if running via npx (for welcome message)
+const isNpx = process.env.npm_config_user_agent?.includes('npx') ||
+              process.env.npm_execpath?.includes('npx') ||
+              process.env.npm_lifecycle_event === 'npx';
+if (isNpx) {
+  process.env.AICW_RUNNING_VIA_NPX = 'true';
+}
+
 // Show development mode notice if applicable
 if (process.env.AICW_DEV_MODE === 'true') {
   console.log('\x1b[33m[DEV MODE]\x1b[0m Auto-rebuild is active\n');

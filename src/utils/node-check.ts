@@ -3,8 +3,8 @@
  */
 
 import { colorize } from './misc-utils.js';
-import { CompactLogger } from './compact-logger.js';
-const logger = CompactLogger.getInstance();
+import { logger } from './compact-logger.js';
+
 
 /**
  * Check if current Node version is compatible

@@ -2,8 +2,8 @@ import { existsSync } from 'fs';
 import path from 'path';
 import { getAllScriptPaths, getCliCommands } from '../config/pipelines-and-actions.js';
 import { getPackageRoot } from '../config/user-paths.js';
-import { CompactLogger } from './compact-logger.js';
-const logger = CompactLogger.getInstance();
+import { logger } from './compact-logger.js';
+
 import { COLORS } from './misc-utils.js';
 
 // ============================================================================

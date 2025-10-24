@@ -47,8 +47,15 @@ export class CompactLoggerWrapper {
   }
 
   // Progress tracking
-  startProgress(total: number, itemType: string): void {
-    this.outputManager.startProgress(total, itemType);
+  startProgress(totalOrCaption: number | string, itemTypeOrTotal?: string | number, maybeItemType?: string): void {
+    // Support both old signature (total, itemType) and new signature (caption, total, itemType)
+    if (typeof totalOrCaption === 'string' && typeof itemTypeOrTotal === 'number') {
+      // New signature: (caption, total, itemType)
+      this.outputManager.startProgress(totalOrCaption, itemTypeOrTotal, maybeItemType!);
+    } else {
+      // Old signature: (total, itemType)
+      this.outputManager.startProgress('Processing', totalOrCaption as number, itemTypeOrTotal as string);
+    }
   }
 
   updateProgress(current: number, message: string): void {
@@ -220,7 +227,7 @@ export class ProgressTracker {
 
   start(message: string): void {
     output.writeLine(message);
-    output.startProgress(this.total, this.itemType);
+    output.startProgress('Processing', this.total, this.itemType);
   }
 
   update(current: number, message: string): void {

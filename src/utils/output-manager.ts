@@ -173,11 +173,12 @@ export class OutputManager {
     this.fileLogger.log('INFO', `Starting ${operation} operation${project ? ` for project: ${project}` : ''}`);
     this.fileLogger.log('INFO', `Verbosity level: ${this.verbosityLevel}`);
 
-    // Show starting message
-    if (this.verbosityLevel !== 'minimal') {
+    // Show starting message (skip if running as part of a pipeline to avoid duplication)
+    const isPartOfPipeline = process.env.AICW_PIPELINE_STEP !== undefined;
+    if (this.verbosityLevel !== 'minimal' && !isPartOfPipeline) {
       const msg = `"${this.currentOperation}" action starting...`;
-      this.writeStdout(colorize(`${"=".repeat(msg.length+3)}\n⚡️ ${msg}\n${"=".repeat(msg.length+3)}`, 'cyan') + '\n');  
-    }    
+      this.writeStdout(colorize(`${"=".repeat(msg.length+3)}\n⚡️ ${msg}\n${"=".repeat(msg.length+3)}`, 'cyan') + '\n');
+    }
   }
 
   setVerbosity(level: string): void {
@@ -290,7 +291,7 @@ export class OutputManager {
 
   // ========== Progress Management ==========
 
-  startProgress(total: number, itemType: string): void {
+  startProgress(processingCaption: string = 'Processing', total: number, itemType: string): void {
     this.transitionToProgress();
 
     this.activeProgress = {
@@ -302,7 +303,7 @@ export class OutputManager {
     };
 
     if (this.verbosityLevel !== 'minimal') {
-      this.writeStdout(colorize(`Processing ${total} ${itemType}`, 'bright') + '\n');
+      this.writeStdout(colorize(`${processingCaption} ${total} ${itemType}`, 'dim') + '\n');
     }
   }
 
@@ -346,16 +347,28 @@ export class OutputManager {
   completeProgress(message?: string): void {
     if (!this.activeProgress) return;
 
-    const totalTime = Date.now() - this.activeProgress.startTime;
-    const finalMessage = message || `Completed ${this.activeProgress.total} ${this.activeProgress.itemType}`;
-
     this.clearCurrentLine();
-    this.ensureNewline();
 
-    this.writeStdout(colorize(`✓ ${finalMessage} in ${formatDuration(totalTime)}`, 'green') + '\n');
+    // Only show completion message if not explicitly suppressed with empty string
+    const messageShown = message !== '';
+    if (messageShown) {
+      const totalTime = Date.now() - this.activeProgress.startTime;
+      const finalMessage = message || `Completed ${this.activeProgress.total} ${this.activeProgress.itemType}`;
+      this.writeStdout(colorize(`✓ ${finalMessage} in ${formatDuration(totalTime)}`, 'green'));
+    }
 
     this.activeProgress = null;
-    this.transitionToNormal();
+
+    // Only add newline if we actually showed a completion message
+    // When message is suppressed (''), transition without extra newline
+    if (messageShown) {
+      this.transitionToNormal();
+    } else {
+      // Clear progress state without adding newline
+      this.outputState = 'normal';
+      this.lastOutputType = 'line';
+      this.flushMessageQueue();
+    }
   }
 
   cancelProgress(): void {
