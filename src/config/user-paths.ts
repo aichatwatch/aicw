@@ -289,7 +289,7 @@ export function getPackageConfigDir(subFolder: string = ''): string {
   const root = getPackageRoot();
   // Try src first (dev mode), then fallback to bundled location
   const srcConfig = path.join(root, 'src', subFolder, 'config');
-  const distConfig = path.join(root, subFolder, 'config');
+  const distConfig = path.join(root, subFolder, 'dist', 'config');
 
   if (existsSync(srcConfig)) {
     return srcConfig;
