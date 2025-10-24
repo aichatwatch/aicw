@@ -1,5 +1,5 @@
 import { PipelineDefinition, AppAction, getPipeline } from '../config/pipelines-and-actions.js';
-import { getPackageRoot } from '../config/user-paths.js';
+import { getPackageDistDir } from '../config/user-paths.js';
 import path from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { logger } from './compact-logger.js';
@@ -212,7 +212,7 @@ export class PipelineExecutor {
       Object.assign(process.env, additionalEnv);
 
       // Dynamically import the module
-      const modulePath = path.join(getPackageRoot(), 'dist', `${action.cmd}.js`);
+      const modulePath = path.join(getPackageDistDir(), `${action.cmd}.js`);
       const module = await import(modulePath);
 
       // Call startServer() if it exists

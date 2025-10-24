@@ -403,7 +403,7 @@
       "id": "rebuild-report-only",
       "name": "Re-generate report only",
       "description": "creates report from existing data (answers and citations), no AI is used",
-      "category": "advanced",
+      "category": "project",
       "requiresApiKeys": true
     },
     {

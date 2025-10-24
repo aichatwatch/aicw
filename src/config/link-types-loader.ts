@@ -1,10 +1,5 @@
-  /**
-   * Link Types Loader
-   */
-
-// import link types from link-types.json which is automatically generated
-// from /config/data/link-types/patterns during prebuild using scripts/build-link-types.js
-import linkTypesData from './data-generated/link-types.json' with { type: 'json' };
+import { USER_LINK_TYPES_JSON_FILE } from './user-paths.js';
+import fs from 'fs';
 
 // Type definitions
 export interface LinkTypeConfig {
@@ -18,7 +13,7 @@ export interface LinkTypeConfig {
  * Load link types
  */
 export function loadLinkTypes(): LinkTypeConfig[] {
-  return linkTypesData;
+  return JSON.parse(fs.readFileSync(USER_LINK_TYPES_JSON_FILE, 'utf8'));
 }
 
 /**

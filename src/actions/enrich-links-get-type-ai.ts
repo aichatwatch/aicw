@@ -25,9 +25,6 @@ import { getModuleNameFromUrl } from '../utils/misc-utils.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
 
-// Maximum number of links to classify with AI per question
-const MAX_AI_CLASSIFICATION_LINKS = 50;
-
 // Cache for link types
 const linkCache = new SimpleCache('ai-linkTypes');
 
@@ -119,12 +116,7 @@ export async function getLinkTypeWithAI(project: string, targetDate: string): Pr
       logger.debug(`Found ${othLinks.length} unclassified links for ${question.folder}`);
 
       // Limit the number of links to classify with AI
-      const linksToClassify = othLinks.slice(0, MAX_AI_CLASSIFICATION_LINKS);
-
-      if (linksToClassify.length < othLinks.length) {
-        logger.warn(`Limiting AI classification to ${MAX_AI_CLASSIFICATION_LINKS} links (${othLinks.length} total)`);
-      }
-
+      const linksToClassify = othLinks;
       // Check cache first
       let cacheHits = 0;
       for (let link of linksToClassify) {
