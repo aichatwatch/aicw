@@ -1,4 +1,5 @@
-import pipelinesConfig from './data/pipelines.json' with { type: 'json' };
+import { USER_PIPELINES_JSON_FILE } from './user-paths.js';
+import fs from 'fs';
 
 /**
  * AppAction - Universal action that can be both a pipeline step and CLI command.
@@ -72,23 +73,23 @@ export interface CategoryDefinition {
   icon: string;
 }
 
-// ============================================================================
-// ALL APP ACTIONS - SINGLE SOURCE OF TRUTH
-// ============================================================================
+export function loadPipelinesConfigJson(): any {
+  return JSON.parse(fs.readFileSync(USER_PIPELINES_JSON_FILE, 'utf8'));
+}
 
 /**
  * All possible actions in the system.
  * Each action declares which pipelines it belongs to via pipelines.
  */
-export const APP_ACTIONS: AppAction[] = pipelinesConfig.actions as AppAction[];
+export const APP_ACTIONS: AppAction[] = loadPipelinesConfigJson().actions as AppAction[];
 
 /**
  * Category definitions for organizing pipelines
  */
-export const CATEGORIES: CategoryDefinition[] = (pipelinesConfig as any).categories as CategoryDefinition[] || [];
+export const CATEGORIES: CategoryDefinition[] = loadPipelinesConfigJson().categories as CategoryDefinition[] || [];
 
 // Build pipeline definitions with actions populated via filter
-const rawPipelines = pipelinesConfig.pipelines;
+const rawPipelines = loadPipelinesConfigJson().pipelines as PipelineDefinition[];
 
 // Convert raw pipeline configs to PipelineDefinition with actions
 const builtPipelines: PipelineDefinition[] = rawPipelines.map(pipeline => ({

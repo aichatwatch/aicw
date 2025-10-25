@@ -356,6 +356,31 @@ export async function enrichCalculateTrends(project: string, targetDate: string)
         const previousData = await loadPreviousData(previousFiles);
         dataArrays = previousData.dataArrays;
         dates = previousData.dates;
+
+        // VALIDATION: Check if any previous data file exists but has all empty arrays
+        // This indicates enrichment pipeline FAILED for that date - must crash immediately
+        for (let i = 0; i < dataArrays.length; i++) {
+          const prevData = dataArrays[i];
+          const prevDate = dates[i];
+
+          // Check if ALL entity arrays are empty
+          const allArraysEmpty = MAIN_SECTIONS.every(section => {
+            const arr = prevData[section];
+            return !arr || !Array.isArray(arr) || arr.length === 0;
+          });
+
+          if (allArraysEmpty) {
+            throw new PipelineCriticalError(
+              `CRITICAL: Previous data file for date "${prevDate}" exists but has NO entities in any section. ` +
+              `This indicates the enrichment pipeline FAILED for that date. ` +
+              `Data file: ${previousFiles[i]}. ` +
+              `You must either: (1) re-run the full enrichment pipeline for ${prevDate}, or (2) delete the corrupted data files for ${prevDate}. ` +
+              `Cannot continue with empty previous data as it corrupts trend calculations.`,
+              CURRENT_MODULE_NAME,
+              project
+            );
+          }
+        }
       }
 
       // Process each array type in the data
@@ -365,6 +390,46 @@ export async function enrichCalculateTrends(project: string, targetDate: string)
           const prevDataArrays = dataArrays.map(d => d[arrayType] || []);
           calculateTrends(data[arrayType], prevDataArrays, currentDate, dates, projectModels);
         }
+      }
+
+      // Filter out hallucinated items that were never mentioned in any answer
+      // (across current date and all previous dates)
+      let totalFilteredCount = 0;
+      for (const arrayType of MAIN_SECTIONS) {
+        if (data[arrayType] && Array.isArray(data[arrayType])) {
+          const beforeCount = data[arrayType].length;
+
+          data[arrayType] = data[arrayType].filter((item: EnrichedItem) => {
+            // Keep items with mentions in current date
+            if (item.mentions && item.mentions > 0) {
+              return true;
+            }
+
+            // Keep items that had mentions in ANY previous date
+            // This preserves "disappeared" items for tracking purposes
+            if (item.mentionsTrendVals && Array.isArray(item.mentionsTrendVals)) {
+              const hadMentionsInAnyDate = item.mentionsTrendVals.some(
+                (trendVal: any) => trendVal && trendVal.value && trendVal.value > 0
+              );
+              if (hadMentionsInAnyDate) {
+                return true;
+              }
+            }
+
+            // Remove items that were never mentioned (hallucinations or extraction errors)
+            return false;
+          });
+
+          const removedCount = beforeCount - data[arrayType].length;
+          if (removedCount > 0) {
+            totalFilteredCount += removedCount;
+            logger.debug(`Filtered ${removedCount} zero-mention items from ${arrayType} in ${dir.name}`);
+          }
+        }
+      }
+
+      if (totalFilteredCount > 0) {
+        logger.info(`Removed ${totalFilteredCount} hallucinated/never-mentioned items from ${dir.name}`);
       }
 
       // Add report metadata before saving

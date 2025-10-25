@@ -38,14 +38,16 @@ export const USER_INVALID_OUTPUTS_DIR = path.join(USER_LOGS_DIR, 'invalid');
 // Default data directory for user config files (defined here to avoid circular dependency)
 
 // dynamic path resolution functions that respect USE_PACKAGE_CONFIG
-export const USER_CONFIG_PROMPTS_DIR: string = path.join(getPackageConfigDir(), 'prompts');
-export const USER_CONFIG_TEMPLATES_DIR: string = path.join(getPackageConfigDir(), 'templates');
+export const USER_CONFIG_PROMPTS_DIR: string = path.join(getPackageConfigDataDir(), 'prompts');
+export const USER_CONFIG_TEMPLATES_DIR: string = path.join(getPackageConfigDataDir(), 'templates');
 // ai models
-export const USER_MODELS_JSON_FILE: string = path.join(getPackageConfigDir(), 'models', 'ai_models.json');
+export const USER_MODELS_JSON_FILE: string = path.join(getPackageConfigDataDir(), 'models', 'ai_models.json');
 // presets with ai models
-export const USER_AI_PRESETS_DIR: string = path.join(getPackageConfigDir(), 'models', 'ai_presets');
-export const USER_QUESTION_TEMPLATES_DIR: string = path.join(getPackageConfigDir(), 'templates', 'questions');
-export const USER_SYSTEM_PROMPT_FILE_PATH: string = path.join(getPackageConfigDir(), 'prompts', 'answers', 'system-prompt.md');
+export const USER_AI_PRESETS_DIR: string = path.join(getPackageConfigDataDir(), 'models', 'ai_presets');
+export const USER_QUESTION_TEMPLATES_DIR: string = path.join(getPackageConfigDataDir(), 'templates', 'questions');
+export const USER_SYSTEM_PROMPT_FILE_PATH: string = path.join(getPackageConfigDataDir(), 'prompts', 'answers', 'system-prompt.md');
+export const USER_LINK_TYPES_JSON_FILE: string = path.join(getPackageConfigDataGeneratedDir(), 'link-types.json');
+export const USER_PIPELINES_JSON_FILE: string = path.join(getPackageConfigDataDir(), 'pipelines.json');
 //============
 
 export const DEFAULT_INDEX_FILE = 'index.html';
@@ -263,41 +265,35 @@ export function getPackageRoot(): string {
   return path.join(__dirname, '..', '..');
 }
 
+export function getPackageDistDir(): string {
+  return path.join(getPackageRoot(), 'dist');
+}
+
 export function getProjectNameFromProjectFolder(project: string): string {
   return project.replace(/_/g, ' ').trim();
 }
 
-// Get source templates directory (from package)
-export function getPackageTemplatesDir(): string {
-  const root = getPackageRoot();
-  // Try src first (dev mode), then fallback to bundled location
-  const srcTemplates = path.join(root, 'src', 'config', 'templates');
-  const distTemplates = path.join(root, 'config', 'templates');
 
-  if (existsSync(srcTemplates)) {
-    return srcTemplates;
-  } else if (existsSync(distTemplates)) {
-    return distTemplates;
-  }
+export function getPackageConfigDataGeneratedDir(): string {
+  return path.join(getPackageConfigDir(), 'data-generated');
+}
 
-  // Fallback to expected location
-  return srcTemplates;
+
+export function getPackageConfigDataDir(): string {
+  return path.join(getPackageConfigDir(), 'data');
 }
 
 // Get source config directory (from package)
 export function getPackageConfigDir(subFolder: string = ''): string {
-  const root = getPackageRoot();
   // Try src first (dev mode), then fallback to bundled location
-  const srcConfig = path.join(root, 'src', subFolder, 'config');
-  const distConfig = path.join(root, subFolder, 'dist', 'config');
+  const distConfig = path.join(getPackageDistDir(), 'config');
 
-  if (existsSync(srcConfig)) {
-    return srcConfig;
-  } else if (existsSync(distConfig)) {
-    return distConfig;
+  if (existsSync(distConfig)) {
+    return path.join(distConfig, subFolder);
   }
-  // Fallback to expected location
-  return srcConfig;
+  else {
+    throw new Error(`Config directory not found: ${distConfig}`);
+  }
 }
 
 

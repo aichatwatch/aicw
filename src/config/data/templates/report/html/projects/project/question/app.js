@@ -6,6 +6,7 @@ const FAVICON_128_TEMPLATE = 'https://www.google.com/s2/favicons?domain={{DOMAIN
 
 const DEFAULT_GRAPH_NODE_LIMIT = 12; // Default number of top items to show in graphs
 const TOP_INFLUENCERS_COUNT_PER_SECTION = 1; // max of top influencers to show from each entity category
+const ITEMS_INCREMENT = 10; // Number of items to show when clicking "Show More"
 
 // replaced by the report generator
 // with the array like [ { name: "links", isComputed: false}, .. ]
@@ -2013,10 +2014,17 @@ Vue.component('table-with-items', {
                     </tbody>
                 </table>
             </div>
-            <button :id="'button_expand_' + obj.id"
-                class="mt-3 w-full px-4 py-2 bg-secondary text-white rounded text-sm hover:bg-blue-600 dark:hover:bg-blue-500">
-                Show More
-            </button>
+            <div class="mt-3 flex gap-2">
+                <button :id="'button_expand_' + obj.id"
+                    class="flex-1 px-4 py-2 bg-secondary text-white rounded text-sm hover:bg-blue-600 dark:hover:bg-blue-500">
+                    Show More
+                </button>
+                <button :id="'button_expand_all_' + obj.id"
+                    @click="$parent.expand_table(obj, null)"
+                    class="flex-1 px-4 py-2 bg-secondary text-white rounded text-sm hover:bg-blue-600 dark:hover:bg-blue-500">
+                    Show All
+                </button>
+            </div>
         </base-section-component>
     `,
     mounted() {
@@ -2238,12 +2246,19 @@ Vue.component('tabbed-table-graph', {
                         </tbody>
                     </table>
                 </div>
-                <button v-if="$parent['filtered_' + obj.tableConfig.id] && $parent['current_visible_items_count_' + obj.tableConfig.id] > -1"
-                    :id="'button_expand_' + obj.tableConfig.id"
-                    @click="$parent['button_expand_' + obj.tableConfig.id]()"
-                    class="w-full p-3 text-center text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-300 border-t">
-                    Show More
-                </button>
+                <div v-if="$parent['filtered_' + obj.tableConfig.id] && $parent['current_visible_items_count_' + obj.tableConfig.id] > -1"
+                    class="flex gap-0 border-t">
+                    <button :id="'button_expand_' + obj.tableConfig.id"
+                        @click="$parent['button_expand_' + obj.tableConfig.id]()"
+                        class="flex-1 p-3 text-center text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-300">
+                        Show More
+                    </button>
+                    <button :id="'button_expand_all_' + obj.tableConfig.id"
+                        @click="$parent['button_expand_' + obj.tableConfig.id](null)"
+                        class="flex-1 p-3 text-center text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-300 border-l">
+                        Show All
+                    </button>
+                </div>
             </div>
             
             <div v-show="activeTab === 'graph'">
@@ -7518,8 +7533,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             },
 
-            expand_table(obj) {
-                this[`current_visible_items_count_${obj.id}`] = Math.min(this[`current_visible_items_count_${obj.id}`] + 10, this[`filtered_${obj.id}`].length);
+            expand_table(obj, increment = ITEMS_INCREMENT) {
+                if (increment === null || increment === 0 || increment === Infinity) {
+                    // Show all items
+                    this[`current_visible_items_count_${obj.id}`] = this[`filtered_${obj.id}`].length;
+                } else {
+                    // Show more by increment
+                    this[`current_visible_items_count_${obj.id}`] = Math.min(
+                        this[`current_visible_items_count_${obj.id}`] + increment,
+                        this[`filtered_${obj.id}`].length
+                    );
+                }
                 this.init_table(obj);
             },
 
@@ -7551,12 +7575,36 @@ document.addEventListener('DOMContentLoaded', function () {
             // forming methods like `expand_organizations_button` for each table
             ...get_DEFAULT_VISUAL_OBJECTS_ARRAY().filter(obj => obj.type === 'table-with-items').reduce((acc, obj) => ({
                 ...acc,
-                [`button_expand_${obj.id}`]() {
-                    this[`current_visible_items_count_${obj.id}`] = Math.min(
-                        this[`current_visible_items_count_${obj.id}`] + 10,
-                        this[`filtered_${obj.id}`].length
-                    );
+                [`button_expand_${obj.id}`](increment = ITEMS_INCREMENT) {
+                    if (increment === null || increment === 0 || increment === Infinity) {
+                        // Show all items
+                        this[`current_visible_items_count_${obj.id}`] = this[`filtered_${obj.id}`].length;
+                    } else {
+                        // Show more by increment
+                        this[`current_visible_items_count_${obj.id}`] = Math.min(
+                            this[`current_visible_items_count_${obj.id}`] + increment,
+                            this[`filtered_${obj.id}`].length
+                        );
+                    }
                     this.init_table(obj);
+                }
+            }), {}),
+
+            // forming methods like `button_expand_<tableConfig.id>` for each tabbed component
+            ...get_DEFAULT_VISUAL_OBJECTS_ARRAY().filter(obj => obj.type === 'tabbed-table-graph' && obj.tableConfig).reduce((acc, obj) => ({
+                ...acc,
+                [`button_expand_${obj.tableConfig.id}`](increment = ITEMS_INCREMENT) {
+                    if (increment === null || increment === 0 || increment === Infinity) {
+                        // Show all items
+                        this[`current_visible_items_count_${obj.tableConfig.id}`] = this[`filtered_${obj.tableConfig.id}`].length;
+                    } else {
+                        // Show more by increment
+                        this[`current_visible_items_count_${obj.tableConfig.id}`] = Math.min(
+                            this[`current_visible_items_count_${obj.tableConfig.id}`] + increment,
+                            this[`filtered_${obj.tableConfig.id}`].length
+                        );
+                    }
+                    this.init_table(obj.tableConfig);
                 }
             }), {}),
 
@@ -9332,6 +9380,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 get_DEFAULT_VISUAL_OBJECTS_ARRAY().filter(obj => obj.type === 'table-with-items').forEach(obj => {
                     const btn = document.getElementById(`button_expand_${obj.id}`);
+                    const btnAll = document.getElementById(`button_expand_all_${obj.id}`);
                     if (btn) {
                         // checking buttons
                         const isAllItemsShown = this[`current_visible_items_count_${obj.id}`] >= this[`filtered_${obj.id}`].length;
@@ -9339,6 +9388,33 @@ document.addEventListener('DOMContentLoaded', function () {
                         btn.textContent = isAllItemsShown ? 'All Shown' : 'Show More';
                         btn.classList.toggle('opacity-50', isAllItemsShown);
                         btn.classList.toggle('cursor-not-allowed', isAllItemsShown);
+
+                        // Update Show All button
+                        if (btnAll) {
+                            btnAll.disabled = isAllItemsShown;
+                            btnAll.classList.toggle('opacity-50', isAllItemsShown);
+                            btnAll.classList.toggle('cursor-not-allowed', isAllItemsShown);
+                        }
+                    }
+                });
+
+                // Handle tabbed component buttons
+                get_DEFAULT_VISUAL_OBJECTS_ARRAY().filter(obj => obj.type === 'tabbed-table-graph' && obj.tableConfig).forEach(obj => {
+                    const btn = document.getElementById(`button_expand_${obj.tableConfig.id}`);
+                    const btnAll = document.getElementById(`button_expand_all_${obj.tableConfig.id}`);
+                    if (btn) {
+                        const isAllItemsShown = this[`current_visible_items_count_${obj.tableConfig.id}`] >= this[`filtered_${obj.tableConfig.id}`].length;
+                        btn.disabled = isAllItemsShown;
+                        btn.textContent = isAllItemsShown ? 'All Shown' : 'Show More';
+                        btn.classList.toggle('opacity-50', isAllItemsShown);
+                        btn.classList.toggle('cursor-not-allowed', isAllItemsShown);
+
+                        // Update Show All button
+                        if (btnAll) {
+                            btnAll.disabled = isAllItemsShown;
+                            btnAll.classList.toggle('opacity-50', isAllItemsShown);
+                            btnAll.classList.toggle('cursor-not-allowed', isAllItemsShown);
+                        }
                     }
                 });
 

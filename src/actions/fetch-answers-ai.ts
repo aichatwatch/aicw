@@ -20,8 +20,8 @@ import { ModelType } from '../utils/project-utils.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
 // Configuration for concurrent requests and timeouts
-const CONCURRENT_REQUESTS = 3; // Max number of parallel requests
-const DEFAULT_REQUEST_DELAY_MS = 0; // Default delay between requests
+const CONCURRENT_REQUESTS = 2; // Max number of parallel requests
+const DEFAULT_REQUEST_DELAY_MS = 300; // Default delay between requests
 
 // You can override these with environment variables
 const getConcurrentRequests = () => {
@@ -416,11 +416,24 @@ async function main(): Promise<void> {
       
       // Apply model-specific rate limiting
       await waitForModelRateLimit(cfg);
-      
+
       const statusPrefix = isRetry ? `${colorize('[RETRY]', 'yellow')} ` : '';
       tracker.update(operationCount, `${statusPrefix}${colorize(q.folder, 'dim')} / ${colorize(cfg.id, 'cyan')} - ${colorize('Fetching...', 'yellow')}`);
 
-      const result = await fetchAnswer(cfg, q.question, systemPrompt, tracker);
+      // Start heartbeat timer to show progress during long API calls
+      const fetchStartTime = Date.now();
+      const heartbeat = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - fetchStartTime) / 1000);
+        tracker.update(operationCount, `${statusPrefix}${colorize(q.folder, 'dim')} / ${colorize(cfg.id, 'cyan')} - ${colorize('Fetching...', 'yellow')} (${elapsed}s)`);
+      }, 3000);
+
+      let result;
+      try {
+        result = await fetchAnswer(cfg, q.question, systemPrompt, tracker);
+      } finally {
+        // Always clear the heartbeat timer
+        clearInterval(heartbeat);
+      }
 
       // Save the markdown answer with citations
       if(!result.success) {
@@ -434,7 +447,8 @@ async function main(): Promise<void> {
       const jsonFile = path.join(botFolder, 'answer.json');
       await writeFileAtomic(jsonFile, JSON.stringify(result.fullResponse, null, 2));
 
-      const stats = await fs.stat(answerFile);
+      // Get stats for the JSON file we just saved (answer.md is created by transform step)
+      const stats = await fs.stat(jsonFile);
 
       tracker.clearStatus(); // Clear any lingering status messages
       tracker.update(operationCount, `${statusPrefix}${colorize(q.folder, 'dim')} / ${colorize(cfg.id, 'cyan')} - Saved (${formatFileSize(stats.size)})`);
@@ -456,8 +470,13 @@ async function main(): Promise<void> {
         throw new Error('Configuration errors detected');
       } else {
         // otherwise any other error falls here to try again
-        tracker.update(operationCount, `${colorize(q.folder, 'dim')} / ${colorize(cfg.id, 'cyan')} - ${colorize('Failed', 'red')}`);
-        
+        // Extract brief error message for progress display
+        const errorBrief = (error?.message || error?.toString() || 'Unknown error').substring(0, 60);
+        tracker.update(operationCount, `${colorize(q.folder, 'dim')} / ${colorize(cfg.id, 'cyan')} - ${colorize('Failed', 'red')}: ${errorBrief}`);
+
+        // Log the full error immediately so it's visible
+        logger.error(`${q.folder}/${cfg.id}: ${error.message || error}`);
+
         // Track failed tasks for retry (but not if this is already a retry)
         if (!isRetry && task.retryCount === 0) {
           failedTasks.push({ task, error });
@@ -470,11 +489,29 @@ async function main(): Promise<void> {
 
   // Process all tasks with concurrency control
   await processWithConcurrency(tasks, processTask, concurrentRequests);
-  
+
   // Retry failed tasks if any
   if (failedTasks.length > 0) {
+    // Analyze common error patterns
+    const errorCounts = new Map<string, number>();
+    for (const { error } of failedTasks) {
+      const errorKey = error?.message?.substring(0, 80) || 'Unknown error';
+      errorCounts.set(errorKey, (errorCounts.get(errorKey) || 0) + 1);
+    }
+
+    // Show most common errors
+    const topErrors = Array.from(errorCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+
     logger.info(`\nRetrying ${failedTasks.length} failed tasks...`);
-    
+    if (topErrors.length > 0) {
+      logger.info('Common errors:');
+      for (const [errorMsg, count] of topErrors) {
+        logger.info(`  • [${count}x] ${errorMsg}`);
+      }
+    }
+
     // Update tracker for retry phase
     tracker.stop();
     const retryTracker = new ProgressTracker(failedTasks.length, 'retry attempts');
@@ -493,9 +530,10 @@ async function main(): Promise<void> {
       try {
         await processTask(task, true);
         retryTracker.update(retryCount, `${colorize(task.question.folder, 'dim')} / ${colorize(task.model.id, 'cyan')} - ${colorize('Success on retry', 'green')}`);
-      } catch (retryError) {
+      } catch (retryError: any) {
         failureCount++;
-        retryTracker.update(retryCount, `${colorize(task.question.folder, 'dim')} / ${colorize(task.model.id, 'cyan')} - ${colorize('Failed on retry', 'red')}`);
+        const errorBrief = (retryError?.message || retryError?.toString() || 'Unknown error').substring(0, 60);
+        retryTracker.update(retryCount, `${colorize(task.question.folder, 'dim')} / ${colorize(task.model.id, 'cyan')} - ${colorize('Failed on retry', 'red')}: ${errorBrief}`);
         logger.error(`Retry failed for ${task.question.folder} using ${task.model.id}: ${retryError}`);
       }
     }

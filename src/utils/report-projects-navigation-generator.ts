@@ -3,16 +3,14 @@ import path from 'path';
 import { existsSync } from 'fs';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { USER_REPORTS_DIR, DEFAULT_INDEX_FILE, getPackageTemplatesDir, getProjectNameFromProjectFolder, getCurrentDateTimeAsString } from '../config/user-paths.js';
+import { USER_REPORTS_DIR, DEFAULT_INDEX_FILE, getProjectNameFromProjectFolder, getCurrentDateTimeAsString } from '../config/user-paths.js';
 import { replaceMacrosInTemplate, writeFileAtomic } from './misc-utils.js';
 import { logger } from './compact-logger.js';
+import { NAVIGATION_TEMPLATES_DIR } from '../config/paths.js';
 
 // Get __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// Template paths - use centralized function
-const NAVIGATION_TEMPLATES_DIR = path.join(getPackageTemplatesDir(), 'navigation');
 
 // Metadata file to track generation times
 const NAV_META_FILE = '.navigation-meta.json';

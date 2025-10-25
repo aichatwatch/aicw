@@ -245,7 +245,31 @@ export async function getPreviousDataFiles(project: string, questionFolder: stri
   return prevFiles;
 }
 
+/**
+ * Resolve relative date offset (e.g., -1, -2) to actual date from complete dates array
+ *
+ * @param dateStr - Date string to check (e.g., "-1", "-2", or "2025-01-15")
+ * @param completeDates - Array of complete answer dates (sorted newest first)
+ * @returns Resolved date if dateStr is a relative offset, null otherwise
+ * @throws PipelineCriticalError if offset is out of bounds
+ */
+function resolveRelativeDateOffset(dateStr: string, completeDates: string[]): string | null {
+  // Check if it's a negative number pattern
+  const match = dateStr.match(/^-(\d+)$/);
+  if (!match) return null; // Not a relative date
 
+  const offset = parseInt(match[1]);
+
+  // Validate offset is within bounds
+  if (offset >= completeDates.length) {
+    throw new PipelineCriticalError(
+      `Relative date offset -${offset} is out of bounds. Only ${completeDates.length} complete answer date(s) available: ${completeDates.join(', ')}`,
+      'resolveRelativeDateOffset'
+    );
+  }
+
+  return completeDates[offset];
+}
 
 export async function getTargetDateFromProjectOrEnvironment(project: string): Promise<string> {
 
@@ -275,7 +299,15 @@ export async function getTargetDateFromProjectOrEnvironment(project: string): Pr
   const dateIndex = args.indexOf('--date');
   if (dateIndex !== -1 && args[dateIndex + 1]) {
     logger.warn(`Target date found in command-line params: ${args[dateIndex + 1]}`);
-    const date = args[dateIndex + 1];
+    let date = args[dateIndex + 1];
+
+    // Try to resolve relative date offset (e.g., -1, -2)
+    const resolvedDate = resolveRelativeDateOffset(date, completeAnswersDates);
+    if (resolvedDate) {
+      logger.warn(`Relative date offset ${date} resolved to: ${resolvedDate}`);
+      date = resolvedDate;
+    }
+
     // check if this data in the list of dates with complete answers
     if (!completeAnswersDates.includes(date)) {
       throw new PipelineCriticalError(
@@ -289,8 +321,16 @@ export async function getTargetDateFromProjectOrEnvironment(project: string): Pr
   }
   // if not then trying to use from ENV
   else if (process.env.AICW_TARGET_DATE) {
-    const date = process.env.AICW_TARGET_DATE;
+    let date = process.env.AICW_TARGET_DATE;
     logger.warn(`Target date detected in AICW_TARGET_DATE env var: ${date}`);
+
+    // Try to resolve relative date offset (e.g., -1, -2)
+    const resolvedDate = resolveRelativeDateOffset(date, completeAnswersDates);
+    if (resolvedDate) {
+      logger.warn(`Relative date offset ${date} (from env) resolved to: ${resolvedDate}`);
+      date = resolvedDate;
+    }
+
     // check if this date can be used and it is in complete answers dates
     if (!completeAnswersDates.includes(date)) {
       throw new PipelineCriticalError(

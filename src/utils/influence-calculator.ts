@@ -107,7 +107,7 @@ export function calculateWeightedInfluence(
 
   // Normalize by total weight of models that mentioned the item
   if (totalWeight > 0) {
-    return Number((totalInfluence / totalWeight).toFixed(5));
+    return Number(totalInfluence.toFixed(5));
   }
 
   return 0;

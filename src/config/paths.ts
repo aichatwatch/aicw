@@ -10,21 +10,22 @@ import {
   getUserAggregatedDataCompiledDateDir,
   getPackageRoot,
   getPackageConfigDir,
-  getPackageTemplatesDir,
   USER_DATA_DIR,
   getUserProjectAnswersDirForQuestion,
+  getPackageConfigDataDir,
 } from './user-paths.js';
 
 
 // Config should always be read from package directory
 export const CONFIG_DIR: string = getPackageConfigDir();
+export const CONFIG_DATA_DIR: string = getPackageConfigDataDir();
 
 
 export const DATE_FOLDER_NAME_PATTERN_REGEX = /^\d{4}-\d{2}-\d{2}$/
 
-export const PROMPTS_DIR: string = path.join(CONFIG_DIR, 'prompts');
+export const PROMPTS_DIR: string = path.join(CONFIG_DATA_DIR, 'prompts');
 // Templates should be read from package directory
-export const TEMPLATES_DIR: string = getPackageTemplatesDir();
+export const TEMPLATES_DIR: string = path.join(CONFIG_DATA_DIR, 'templates');
 
 // using .credentials directory to hide the credentials file from the user
 export const USER_CONFIG_CREDENTIALS_DIR: string = path.join(USER_DATA_DIR, 'config', '.credentials');
@@ -32,7 +33,7 @@ export const USER_CONFIG_CREDENTIALS_FILE: string = path.join(USER_CONFIG_CREDEN
 
 
 export const REPORT_TEMPLATES_DIR: string = path.join(TEMPLATES_DIR, 'report');
-
+export const NAVIGATION_TEMPLATES_DIR: string = path.join(TEMPLATES_DIR, 'navigation');
 
 
 export const ENRICH_GENERATE_SUMMARY_PROMPT_PATH: string = path.join(PROMPTS_DIR, 'enrich-generate-summary.md');
