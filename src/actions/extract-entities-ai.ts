@@ -389,6 +389,24 @@ export async function extractEntities(project: string, targetDate: string): Prom
             }))
           }
         }
+
+        // VALIDATION: Check if extraction actually found entities
+        // If extraction ran but all arrays are empty, the pipeline failed silently
+        const hasAnyEntities = MAIN_SECTIONS.some(section =>
+          data[section] && Array.isArray(data[section]) && data[section].length > 0
+        );
+
+        if (!hasAnyEntities) {
+          throw new PipelineCriticalError(
+            `Entity extraction completed but found ZERO entities in all sections for ${dirent.name}. ` +
+            `This indicates extraction failed or AI returned empty results. ` +
+            `Check the AI response and extraction prompts. ` +
+            `Cannot proceed with empty entity arrays.`,
+            CURRENT_MODULE_NAME,
+            dirent.name
+          );
+        }
+
         // Save updated data
         logger.info(`Saving updated data to: ${outputPath}`);
         await saveDataJs(outputPath, dataKey, data)

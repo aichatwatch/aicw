@@ -67,9 +67,8 @@ function calculateAppearanceOrder(items: EnrichedItem[], models: any[]): void {
         .filter((p): p is number => typeof p === 'number' && p > 0);
 
       if (positions.length > 0) {
-        // Calculate average position
-        const sum = positions.reduce((a: number, b: number) => a + b, 0);
-        item.appearanceOrder = Number((sum / positions.length).toFixed(2));
+        // Use minimum position (earliest appearance across all models)
+        item.appearanceOrder = Math.min(...positions);
       } else {
         item.appearanceOrder = 999; // Not mentioned = very high position number
       }

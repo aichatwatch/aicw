@@ -24,10 +24,8 @@ import { ModelType } from '../utils/project-utils.js';
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
-
 // Cache for link types
 const linkCache = new SimpleCache('ai-linkTypes');
-
 
 /**
  * Main function to classify links using AI
