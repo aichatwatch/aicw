@@ -4,7 +4,7 @@ import { logger } from '../../../utils/compact-logger.js';
 import { extractDomainFromUrl } from '../../../utils/url-utils.js';
 
 
-const MODULE_NAME = 'Indexing: Common Crawl Dataset';
+const MODULE_NAME = 'Dataset: Common Crawl Dataset';
 const COMMON_CRAWL_INDEXES_URL = 'https://index.commoncrawl.org/collinfo.json';
 // how many indexes to check in Common Crawl
 const MAX_INDEXES_TO_CHECK = 3;

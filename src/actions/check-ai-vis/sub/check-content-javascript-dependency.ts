@@ -13,7 +13,7 @@
 
 import { BaseVisibilityCheck, VisibilityCheckResult, PageCaptured } from './check-base.js';
 
-const MODULE_NAME = 'JavaScript Dependency Check';
+const MODULE_NAME = 'Content: Server-Side Rendering (SSR) Check';
 
 // CSR framework patterns
 const CSR_PATTERNS = [
@@ -36,7 +36,7 @@ export class CheckContentJavaScriptDependency extends BaseVisibilityCheck {
   protected async performCheck(url: string, pageCaptured?: PageCaptured): Promise<VisibilityCheckResult> {
     const browserHtml = pageCaptured?.browserHtmlDesktop;
     if (!browserHtml) {
-      throw new Error('HTML content is required for JavaScript dependency check');
+      throw new Error(`HTML content is required for ${MODULE_NAME}`);
     }
 
     // Extract body content
