@@ -13,6 +13,7 @@ import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, v
 import { getUserProjectQuestionFileContent, getCurrentDateTimeAsStringISO } from '../config/user-paths.js';
 import { createMissingFileError, MissingConfigError, PipelineCriticalError } from '../utils/pipeline-errors.js';
 import { ModelType } from '../utils/project-utils.js';
+import { getCurrentVersion } from '../utils/update-checker.js';
 
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
@@ -95,8 +96,9 @@ async function main(projectArg?: string): Promise<void> {
               "{{REPORT_DATE}}": targetDate,
               "{{REPORT_DATE_WITHOUT_DASHES}}": targetDate.replace(/-/g, ''),
               "{{PROJECT_NAME}": project,
-              "{{REPORT_CREATED_AT_DATETIME}}": getCurrentDateTimeAsStringISO(),  
-              "{{REPORT_TITLE}}": questionContent
+              "{{REPORT_CREATED_AT_DATETIME}}": getCurrentDateTimeAsStringISO(),
+              "{{REPORT_TITLE}}": questionContent,
+              "{{REPORT_ENGINE_VERSION}}": getCurrentVersion()
             }
           },
           {

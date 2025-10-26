@@ -3,8 +3,8 @@
 
 <head>
     <script>
-        // update manually when engine version changes
-        const REPORT_ENGINE_VERSION = 4.03; 
+        // auto-populated from package.json version during report generation
+        const REPORT_ENGINE_VERSION = '{{REPORT_ENGINE_VERSION}}';
     </script>
 
     <meta charset="UTF-8">
@@ -2225,10 +2225,12 @@
             padding-left: 2rem;
             font-size: 0.875rem;
         }
-        
+
         /* Mobile menu open state */
-        #navigation-menu.menu-open {
-            transform: translateX(0);
+        @media (max-width: 1023px) {
+            #navigation-menu.menu-open {
+                transform: translateX(0) !important;
+            }
         }
 
         /* Desktop sidebar collapse */
@@ -2429,9 +2431,9 @@
 
     <div class="report-container">
         <!-- Header -->
-        <header class="shadow-lg pb-4">
+        <header class="shadow-lg pb-2">
 
-            <div class="container mx-auto px-4 py-3 md:py-6">
+            <div class="container mx-auto px-4 py-2 md:py-3">
                 <!-- Mobile Header (shown on small screens) -->
                 <div class="md:hidden flex flex-col items-center justify-center w-full space-y-3">
                     <a href="https://www.AIChatWatch.com" title="Go to AI Chat Watch Homepage"
@@ -2460,11 +2462,11 @@
 
 
                 <!-- Desktop Header (hidden on mobile) -->
-                <div class="hidden md:flex flex-col items-center justify-center w-full space-y-4">
+                <div class="hidden md:flex flex-row items-center justify-between w-full">
                     <a href="https://www.AIChatWatch.com" title="Go to AI Chat Watch Homepage"
                         class="hover:opacity-80 transition-opacity">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 100" preserveAspectRatio="xMidYMid meet"
-                            aria-hidden="true" class="w-full max-w-md">
+                            aria-hidden="true" class="w-full max-w-[280px]">
                             <text x="10" y="70" font-family="Arial, sans-serif" font-size="80" font-weight="bold"
                                 class="header-text" fill="currentColor">AI</text>
                             <text x="110" y="70" font-family="Arial, sans-serif" font-size="40" class="header-text"
@@ -2477,7 +2479,7 @@
                             </g>
                         </svg>
                     </a>
-                    <div class="flex items-center justify-center gap-6">
+                    <div class="flex items-center gap-6">
                         <a href="https://github.com/aichatwatch/aicw"
                         target="_blank"
                         rel="noopener noreferrer"
@@ -2569,7 +2571,7 @@
                         <!-- report timestamp end -->
                         <!-- app version begin -->
                         <p class="text-xs text-gray-600 dark:text-gray-400">
-                            report engine version: <span class="selectable-text report-engine-version"></span>
+                            engine version: <span class="selectable-text report-engine-version"></span>
                         </p>
                         <!-- app version end -->
                         <p class="text-xs text-gray-500 dark:text-gray-500 mt-4 leading-relaxed max-w-4xl">
