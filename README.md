@@ -60,6 +60,12 @@ Run in interactive mode to create and run detailed AI visibility report
 npx @aichatwatch/aicw
 ```
 
+**NOTE** if you are getting errors about access denied or permissions, then you may need to add `sudo` prefix to the command to run it as administrator, for example:
+
+```
+sudo npx @aichatwatch/aicw ai-visibility YOURWEBSITE.com
+```
+
 ### Installation (Recommended for continuous monitoring)
 
 Run `Terminal` app and paste this command:
@@ -68,7 +74,7 @@ Run `Terminal` app and paste this command:
 npm install -g @aichatwatch/aicw
 ```
 
-Then run `aicw` by typing and hitting Enter to start AICW (AI Chat Watch) in interactive mode.
+After installation, run `aicw` just by typing `aicw` and hitting Enter. It will start AICW in interactive mode.
 
 ```bash
 aicw
