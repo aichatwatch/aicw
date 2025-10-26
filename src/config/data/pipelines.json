@@ -336,11 +336,11 @@
       "requiresProject": false
     },
     {
-      "id": "check-ai-vis",
-      "cmd": "actions/check-ai-vis/check-ai-vis",
-      "name": "Check URL for AI Visibility",
-      "desc": "Check if URL is accessible/visible by AI bots",
-      "pipelines": ["check-ai-vis"],
+      "id": "ai-visibility",
+      "cmd": "actions/ai-visibility/ai-visibility",
+      "name": "AI Visibility: Check URL",
+      "desc": "Check if URL is visible to AI",
+      "pipelines": ["ai-visibility"],
       "category": "tools",
       "requiresProject": false,
       "menuItemId": 100
@@ -429,9 +429,9 @@
       "requiresApiKeys": false
     },
     {
-      "id": "check-ai-vis",
-      "name": "Check AI Visibility",
-      "description": "checks if website is accessible/visible by AI crawlers",
+      "id": "ai-visibility",
+      "name": "AI Visibility: Check URL",
+      "description": "checks if URL is visible to AI",
       "category": "tools",
       "requiresApiKeys": false,
       "menuItemId": 100
