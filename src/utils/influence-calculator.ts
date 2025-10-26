@@ -1,11 +1,50 @@
 import { ModelConfig } from './model-config.js';
 
 /**
- * Single source of truth for all influence calculations in the application.
- * Influence represents how important an item is based on:
- * - How many times it was mentioned (mentions)
- * - Where it appeared in answers (appearanceOrder - order of appearance)
- * - Which models mentioned it (model weights based on user base)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SHARE OF VOICE (INFLUENCE) CALCULATION - SINGLE SOURCE OF TRUTH
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Share of Voice measures how prominent an entity is across AI models, considering:
+ * 1. MODEL COVERAGE: Which AI models mention you (weighted by their user base)
+ * 2. MENTION FREQUENCY: How many times you're mentioned
+ * 3. PROMINENCE: Where you appear in results (position/rank)
+ *
+ * FORMULA:
+ * --------
+ * Share of Voice = Model Coverage × Quality Score
+ *
+ * Where:
+ *   Model Coverage = Sum of normalized weights for models that mention you (0-1)
+ *   Quality Score = Your prominence / Max prominence in dataset (0-1)
+ *   Prominence = mentions × (1 / log2(position + 1))
+ *
+ * EXAMPLES:
+ * ---------
+ * Example 1: Christina Inge
+ *   - Mentioned 1 time in ChatGPT (60% of market) at position 1
+ *   - Model Coverage = 0.60 (only ChatGPT)
+ *   - Prominence = 1 × (1/log2(2)) = 1.0
+ *   - Quality Score = 1.0 / 10.0 (if max in dataset is 10.0) = 0.10
+ *   - Share of Voice = 0.60 × 0.10 = 0.06 = 6%
+ *
+ * Example 2: ChatGPT (the product)
+ *   - Mentioned 13 times across 11 models at various positions
+ *   - Model Coverage = 1.0 (all models weighted by MAU)
+ *   - Prominence = sum of (mentions × position_score) across models = 8.5
+ *   - Quality Score = 8.5 / 10.0 = 0.85
+ *   - Share of Voice = 1.0 × 0.85 = 0.85 = 85%
+ *
+ * Example 3: Perfect Score
+ *   - Mentioned frequently in all models at position 1
+ *   - Model Coverage = 1.0 (all models)
+ *   - Quality Score = 1.0 (highest prominence)
+ *   - Share of Voice = 1.0 × 1.0 = 1.0 = 100%
+ *
+ * To achieve 100% Share of Voice, you need:
+ *   - BOTH full model coverage (mentioned in all weighted models)
+ *   - AND highest prominence (many mentions at top positions)
+ * ═══════════════════════════════════════════════════════════════════════════
  */
 
 /**
@@ -40,105 +79,169 @@ export function normalizeModelWeights(models: ModelConfig[]): Map<string, number
 }
 
 /**
- * Calculate influence score for a single item
+ * Calculate prominence score for a single model's mention
+ * Prominence = mentions × position_score
  *
- * @param mentions - Total number of times the item was mentioned
- * @param appearanceOrder - Average order of appearance across models (1 = first, 2 = second, etc.)
- * @param modelWeight - Normalized weight of models that mentioned this item
- * @param maxMentions - Maximum mentions across all items (for normalization)
- * @returns Influence score between 0.0 and 1.0
+ * Position uses logarithmic decay:
+ *   - Position 1 = 1.00 (100%)
+ *   - Position 2 = 0.63 (63%)
+ *   - Position 5 = 0.43 (43%)
+ *   - Position 10 = 0.29 (29%)
+ *
+ * @param mentions - Number of times mentioned in this model
+ * @param appearanceOrder - Position in results (1 = first, 2 = second, etc.)
+ * @returns Prominence score (unbounded, will be used for quality calculation)
  */
-export function calculateInfluence(
+export function calculateProminence(
   mentions: number,
-  appearanceOrder: number,
-  modelWeight: number,
-  maxMentions: number
+  appearanceOrder: number
 ): number {
-  if (mentions === 0 || maxMentions === 0) {
+  if (mentions === 0) {
     return 0;
   }
 
-  // Mention score: normalized by max mentions
-  const mentionScore = mentions / maxMentions;
+  // Position score: items appearing earlier get higher scores
+  // Using logarithmic decay: position 1 = 1.0, position 2 = 0.63, position 5 = 0.43, etc.
+  const positionScore = appearanceOrder > 0 ? 1 / Math.log2(appearanceOrder + 1) : 0;
 
-  // AppearanceOrder score: items appearing earlier get higher scores
-  // Using logarithmic decay: appearanceOrder 1 = 1.0, appearanceOrder 2 = 0.63, appearanceOrder 5 = 0.43, etc.
-  const appearanceOrderScore = appearanceOrder > 0 ? 1 / Math.log2(appearanceOrder + 1) : 0;
+  // Prominence = mentions × position_score
+  const prominence = mentions * positionScore;
 
-  // Combine all factors
-  // Model weight is already normalized (0-1)
-  const influence = mentionScore * appearanceOrderScore * modelWeight;
+  return prominence;
+}
 
-  // Ensure result is between 0 and 1
-  return Math.min(1, Math.max(0, influence));
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * CALCULATE SHARE OF VOICE - MAIN FUNCTION (SINGLE SOURCE OF TRUTH)
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * This is the ONLY function that should be used to calculate Share of Voice.
+ * See the header documentation for formula explanation and examples.
+ *
+ * @param mentionsByModel - Object mapping model IDs to mention counts
+ * @param appearanceOrderByModel - Object mapping model IDs to position (1 = first)
+ * @param normalizedWeights - Pre-normalized model weights (sum = 1.0)
+ * @param maxProminenceInDataset - The highest prominence score in the entire dataset
+ * @returns Share of Voice as a decimal (0.0 to 1.0, representing 0% to 100%)
+ */
+export function calculateShareOfVoice(
+  mentionsByModel: { [modelId: string]: number },
+  appearanceOrderByModel: { [modelId: string]: number },
+  normalizedWeights: Map<string, number>,
+  maxProminenceInDataset: number
+): number {
+  if (!mentionsByModel || Object.keys(mentionsByModel).length === 0) {
+    return 0;
+  }
+
+  // STEP 1: Calculate Model Coverage (0-1)
+  // Sum of weights for models that mention this item
+  let modelCoverage = 0;
+  let totalProminence = 0;
+
+  for (const [modelId, mentions] of Object.entries(mentionsByModel)) {
+    if (mentions > 0) {
+      const weight = normalizedWeights.get(modelId) || 0;
+      const appearanceOrder = appearanceOrderByModel[modelId] || 999;
+
+      // Add to model coverage
+      modelCoverage += weight;
+
+      // Calculate prominence for this model
+      const prominence = calculateProminence(mentions, appearanceOrder);
+      totalProminence += prominence;
+    }
+  }
+
+  // STEP 2: Calculate Quality Score (0-1)
+  // Normalize prominence against the max in dataset
+  const qualityScore = maxProminenceInDataset > 0
+    ? totalProminence / maxProminenceInDataset
+    : 0;
+
+  // STEP 3: Calculate Share of Voice
+  // Model Coverage × Quality Score
+  const shareOfVoice = modelCoverage * qualityScore;
+
+  return Number(shareOfVoice.toFixed(5));
 }
 
 /**
  * Calculate weighted influence for an item based on mentions by different models
- * This is the primary influence calculation used throughout the application
+ * DEPRECATED: Use calculateShareOfVoice() instead for new code
+ * This is kept for backward compatibility during migration
  *
  * @param mentionsByModel - Object mapping model IDs to mention counts
  * @param appearanceOrderByModel - Object mapping model IDs to appearanceOrder (order of appearance)
  * @param normalizedWeights - Pre-normalized model weights
- * @param maxMentions - Maximum mentions for any item (for normalization)
- * @returns Total weighted influence (0.0 to 1.0)
+ * @param maxProminenceInDataset - Optional: max prominence for proper scaling
+ * @returns Total weighted influence
  */
 export function calculateWeightedInfluence(
   mentionsByModel: { [modelId: string]: number },
   appearanceOrderByModel: { [modelId: string]: number },
   normalizedWeights: Map<string, number>,
-  maxMentions: number
+  maxProminenceInDataset?: number
 ): number {
-  let totalInfluence = 0;
-  let totalWeight = 0;
+  // If maxProminence provided, use new Share of Voice calculation
+  if (maxProminenceInDataset !== undefined) {
+    return calculateShareOfVoice(
+      mentionsByModel,
+      appearanceOrderByModel,
+      normalizedWeights,
+      maxProminenceInDataset
+    );
+  }
+
+  // Legacy calculation (will be removed after migration)
+  let totalProminence = 0;
 
   for (const [modelId, mentions] of Object.entries(mentionsByModel)) {
     if (mentions > 0) {
       const weight = normalizedWeights.get(modelId) || 0;
-      const appearanceOrder = appearanceOrderByModel[modelId] || 999; // High number if appearanceOrder unknown
+      const appearanceOrder = appearanceOrderByModel[modelId] || 999;
 
-      // Calculate influence for this model's mention
-      const modelInfluence = calculateInfluence(mentions, appearanceOrder, 1, maxMentions);
-
-      totalInfluence += modelInfluence * weight;
-      totalWeight += weight;
+      const prominence = calculateProminence(mentions, appearanceOrder);
+      totalProminence += prominence * weight;
     }
   }
 
-  // Normalize by total weight of models that mentioned the item
-  if (totalWeight > 0) {
-    return Number(totalInfluence.toFixed(5));
-  }
-
-  return 0;
+  return Number(totalProminence.toFixed(5));
 }
 
 /**
- * Calculate per-model influence values
- * Shows how much influence each model contributes to an item
+ * Calculate per-model share of voice values
+ * Shows the contribution from each model to an item's overall share of voice
  *
  * @param mentionsByModel - Object mapping model IDs to mention counts
  * @param appearanceOrderByModel - Object mapping model IDs to appearanceOrder
  * @param normalizedWeights - Pre-normalized model weights
- * @param maxMentionsByModel - Maximum mentions per model for normalization
- * @returns Object mapping model IDs to their influence contribution
+ * @param maxProminenceInDataset - Optional: max prominence for proper scaling
+ * @returns Object mapping model IDs to their share of voice contribution
  */
 export function calculateInfluenceByModel(
   mentionsByModel: { [modelId: string]: number },
   appearanceOrderByModel: { [modelId: string]: number },
   normalizedWeights: Map<string, number>,
-  maxMentionsByModel: Map<string, number>
+  maxProminenceInDataset?: number
 ): { [modelId: string]: number } {
   const influenceByModel: { [modelId: string]: number } = {};
 
   for (const [modelId, mentions] of Object.entries(mentionsByModel)) {
     const weight = normalizedWeights.get(modelId) || 0;
     const appearanceOrder = appearanceOrderByModel[modelId] || 999;
-    const maxMentions = maxMentionsByModel.get(modelId) || 1;
 
-    // Calculate this model's influence contribution
-    const influence = calculateInfluence(mentions, appearanceOrder, weight, maxMentions);
-    influenceByModel[modelId] = Number(influence.toFixed(5));
+    if (maxProminenceInDataset !== undefined && maxProminenceInDataset > 0) {
+      // New calculation: Model's contribution to Share of Voice
+      // = model_weight × (prominence / max_prominence)
+      const prominence = calculateProminence(mentions, appearanceOrder);
+      const qualityScore = prominence / maxProminenceInDataset;
+      influenceByModel[modelId] = Number((weight * qualityScore).toFixed(5));
+    } else {
+      // Legacy calculation
+      const prominence = calculateProminence(mentions, appearanceOrder);
+      influenceByModel[modelId] = Number((prominence * weight).toFixed(5));
+    }
   }
 
   return influenceByModel;
@@ -195,25 +298,6 @@ export function calculateInfluenceForItems(
   // Get normalized weights once
   const normalizedWeights = normalizeModelWeights(models);
 
-  // Find max mentions across all items and per model
-  let maxMentionsOverall = 0;
-  const maxMentionsByModel = new Map<string, number>();
-
-  for (const item of items) {
-    if (item.mentions > maxMentionsOverall) {
-      maxMentionsOverall = item.mentions;
-    }
-
-    if (item.mentionsByModel) {
-      for (const [modelId, mentions] of Object.entries(item.mentionsByModel)) {
-        const current = maxMentionsByModel.get(modelId) || 0;
-        if ((mentions as number) > current) {
-          maxMentionsByModel.set(modelId, mentions as number);
-        }
-      }
-    }
-  }
-
   // Calculate influence for each item
   for (const item of items) {
     // Skip if no mentions
@@ -247,16 +331,14 @@ export function calculateInfluenceForItems(
     item.influence = calculateWeightedInfluence(
       item.mentionsByModel || {},
       item.appearanceOrderByModel || {},
-      normalizedWeights,
-      maxMentionsOverall
+      normalizedWeights
     );
 
     // Calculate per-model influence
     item.influenceByModel = calculateInfluenceByModel(
       item.mentionsByModel || {},
       item.appearanceOrderByModel || {},
-      normalizedWeights,
-      maxMentionsByModel
+      normalizedWeights
     );
 
     // Keep weightedInfluence for backward compatibility
