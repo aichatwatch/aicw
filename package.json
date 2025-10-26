@@ -1,6 +1,6 @@
 {
   "name": "@aichatwatch/aicw",
-  "version": "1.1.00",
+  "version": "1.1.01",
   "publishConfig": {
     "access": "public"
   },
