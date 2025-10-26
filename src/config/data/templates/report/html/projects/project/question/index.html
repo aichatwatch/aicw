@@ -2225,10 +2225,12 @@
             padding-left: 2rem;
             font-size: 0.875rem;
         }
-        
+
         /* Mobile menu open state */
-        #navigation-menu.menu-open {
-            transform: translateX(0) !important;
+        @media (max-width: 1023px) {
+            #navigation-menu.menu-open {
+                transform: translateX(0) !important;
+            }
         }
 
         /* Desktop sidebar collapse */
@@ -2569,7 +2571,7 @@
                         <!-- report timestamp end -->
                         <!-- app version begin -->
                         <p class="text-xs text-gray-600 dark:text-gray-400">
-                            report engine version: <span class="selectable-text report-engine-version"></span>
+                            engine version: <span class="selectable-text report-engine-version"></span>
                         </p>
                         <!-- app version end -->
                         <p class="text-xs text-gray-500 dark:text-gray-500 mt-4 leading-relaxed max-w-4xl">
