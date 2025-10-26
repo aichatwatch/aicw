@@ -7,7 +7,7 @@
 import { ServerBaseBotAccessibilityCheck } from './check-server-bot-accessibility-base.js';
 import { CRAWLER_BOT_CLASSIFICATION_TAGS } from '../../../config/ai-user-agents.js';
 
-const MODULE_NAME = 'User Interactions with AI';
+const MODULE_NAME = 'AI bots access: User Interactions';
 
 export class ServerBotAcessibilityUserInteraction extends ServerBaseBotAccessibilityCheck {
   readonly name = MODULE_NAME;

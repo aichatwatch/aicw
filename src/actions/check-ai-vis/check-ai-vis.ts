@@ -23,7 +23,7 @@ import { ServerBotAcessibilitySearchIndex } from './sub/check-server-bot-accessi
 import { ServerBotAcessibilityUserInteraction } from './sub/check-server-bot-accessibility-user-interaction.js';
 import { CheckServerRobotsTxt } from './sub/check-server-robots-txt.js';
 import { CheckServerSitemap } from './sub/check-server-sitemap.js';
-import { CheckServerLlmsTxt } from './sub/check-server-llms-txt.js';
+import { ContentLlmsTxtFile as CheckContentLlmsTxtFile } from './sub/check-content-llms-txt.js';
 import { CheckIndexingDatasetCommonCrawl } from './sub/check-indexing-dataset-common-crawl.js';
 import { CheckContentJavaScriptDependency } from './sub/check-content-javascript-dependency.js';
 import { CheckContentMobileCompatibility } from './sub/check-content-mobile-compatibility.js';
@@ -57,23 +57,25 @@ export const VISIBILITY_CHECKS: VisibilityCheckConfig[] = [
   { CheckClass: CheckServerHttpHeaders, maxScore: 15 },         // HTTP header blocking (X-Robots-Tag)
   { CheckClass: CheckResponseSpeed, maxScore: 7 },        // Crawl efficiency
 
-  // Important Checks (35 points total)
+  // Content Checks (35 points total)
   { CheckClass: CheckContentJsonLD, maxScore: 5 },               // Structured data
   { CheckClass: CheckContentMetaTags, maxScore: 8 },             // HTML meta tag blocking
   { CheckClass: CheckContentJavaScriptDependency, maxScore: 8 }, // Content accessibility
   { CheckClass: CheckContentStructure, maxScore: 5 },     // AI-optimized content structure
   { CheckClass: CheckContentMobileCompatibility, maxScore: 7 },  // Mobile-first indexing
+  // Optional Checks (1 point total)
+  { CheckClass: CheckContentLlmsTxtFile, maxScore: 1 },              // emerhing but not widely used standard
+
 
   // Bot accessibility split by type (30 points total)
   { CheckClass: ServerBotAcessibilityFoundationModelsTraining, maxScore: 12 }, // Foundation model training (6 bots)
   { CheckClass: ServerBotAcessibilitySearchIndex, maxScore: 10 },     // Search indexing (6 bots)
   { CheckClass: ServerBotAcessibilityUserInteraction, maxScore: 8 },        // User interactions (8 bots)
 
+
   // Helpful Checks (13 points total)
   { CheckClass: CheckIndexingDatasetCommonCrawl, maxScore: 3 },          // Historical presence
 
-  // Optional Checks (1 point total)
-  { CheckClass: CheckServerLlmsTxt, maxScore: 1 },              // Emerging standard
 
   // Search engine indexing checks (commented out - informational only)
   // { CheckClass: CheckGoogleIndexing, maxScore: 1 },
@@ -267,18 +269,15 @@ async function main(): Promise<void> {
   // Display formatted message
   logger.info(colorize('\n🔍 Checking AI Visibility\n', 'bright'));
   logger.info(`   ${colorize('Website:', 'dim')}  ${colorize(url, 'cyan')}\n`);
-  logger.info(colorize(`   Testing visibility for ${products.length} AI products:`, 'dim'));
-  productGroups.forEach(group => {
-    logger.info(colorize(`   → ${group}`, 'dim'));
-  });
-  logger.info(''); // Empty line for spacing
 
   // Show what will be performed
   logger.info(colorize('   This action will:', 'dim'));
   logger.info(colorize(`   • Fetch the page for desktop and mobile browsers`, 'dim'));
   logger.info(colorize(`   • Perform ${VISIBILITY_CHECKS.length} AI visibility checks`, 'dim'));
-  logger.info(colorize(`   • Test visibility and indexing by ${products.length} AI products`, 'dim'));
-  logger.info('');
+  logger.info(colorize(`   • Test visibility and indexing by ${products.length} AI products including:`, 'dim'));
+  productGroups.forEach(group => {
+    logger.info(colorize(`      → ${group}`, 'dim'));
+  });
 
   // Wait for user confirmation in interactive mode (or Ctrl+C to cancel)
   await waitForEnterInInteractiveMode(WaitForEnterMessageType.PRESS_ENTER_TO_CONTINUE);

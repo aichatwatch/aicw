@@ -6,7 +6,7 @@
 
 import { BaseSearchIndexingCheck } from './check-indexing-base.js';
 
-const MODULE_NAME = 'Indexing: Bing';
+const MODULE_NAME = 'Search Index: Bing';
 
 export class CheckIndexingBing extends BaseSearchIndexingCheck {
   readonly name = MODULE_NAME;
