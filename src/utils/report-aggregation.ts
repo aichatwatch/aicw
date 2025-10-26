@@ -16,6 +16,7 @@ import { loadProjectModelConfigs, readQuestions } from './project-utils.js';
 import { QuestionEntry } from '../config/types.js';
 import { getCurrentDateTimeAsStringISO, getProjectNameFromProjectFolder } from '../config/user-paths.js';
 import { ModelType } from './project-utils.js';
+import { getCurrentVersion } from './update-checker.js';
 // Load enriched data file and parse it
 async function loadEnrichedData(filePath: string): Promise<any> {
   const content = await fs.readFile(filePath, 'utf-8');
@@ -490,11 +491,12 @@ window.AppData = window.AppDataAggregate${date.replace(/-/g, '')};`;
         filename: 'index.html',
         replacements: {
           '{{REPORT_TITLE}}': aggregatedData.report_title || project,
-          '{{PROJECT_NAME}}': getProjectNameFromProjectFolder(project), 
+          '{{PROJECT_NAME}}': getProjectNameFromProjectFolder(project),
           '{{REPORT_DATE}}': date,
             //      '{{REPORT_QUESTION_ID}}': 'aggregate',
           '{{REPORT_DATE_WITHOUT_DASHES}}': date.replace(/-/g, ''),
-          '{{REPORT_CREATED_AT_DATETIME}}': getCurrentDateTimeAsStringISO()   
+          '{{REPORT_CREATED_AT_DATETIME}}': getCurrentDateTimeAsStringISO(),
+          '{{REPORT_ENGINE_VERSION}}': getCurrentVersion()   
     
         }
       },

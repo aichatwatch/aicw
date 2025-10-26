@@ -262,11 +262,11 @@ export async function extractEntitiesFromPreviousData(
 
         if (added > 0) {
           // Save updated data
-          logger.debug(`Saving updated data with ${added} recovered entities to: ${currentFile}`);
+          logger.debug(`Saving updated data with ${added} previous date entities merged to: ${currentFile}`);
           await saveDataJs(currentFile, dataKey, currentData);
 
           logger.updateProgress(currentIndex, `${dirent.name} - Added ${added} entities ✓`);
-          logger.info(`Successfully recovered ${added} entities for "${dirent.name}"`);
+          logger.info(`Successfully merged ${added} previous date entities for "${dirent.name}"`);
           totalAdded += added;
         } else {
           logger.updateProgress(currentIndex, `${dirent.name} - No missing entities ✓`);
@@ -291,7 +291,7 @@ export async function extractEntitiesFromPreviousData(
     }
 
     // Complete progress
-    logger.completeProgress(`Recovered ${totalAdded} total entities from ${previousDates.length} previous dates`);
+    logger.completeProgress(`Merged ${totalAdded} previous date entities from ${previousDates.length} previous dates`);
 
     // Add summary stats
     logger.addStat('Directories Processed', processedCount);
