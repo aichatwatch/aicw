@@ -4,26 +4,26 @@
 
 What You Get:
 
-1) **AI Engine Monitoring**:
+1) **AI Search Results Tracking**:
 
-- Track brand, product, and competitor mentions across major AI platforms in real-time
-- See who ranks first in AI responses and how often you're cited
-- Monitor citation sources and understand what content drives AI recommendations
-- Track positioning trends over time—catch shifts before they impact traffic
-- Benchmark against competitors to identify gaps and opportunities
+- Track brand, product, and competitor mentions across major AI search engines
+- Track how often mentioned, position in search results, share of voice
+- Review sources for citations for specific items
+- Review sources for type of content, domains, and website types
+- Analyze trends over time
 
 2) **AI Visibility Auditing**:
 
 - Assess how "AI-readable" your website and content are
 - Identify technical barriers preventing AI engines from discovering your content
-- Get actionable recommendations to optimize for AI crawlers and LLM training
+- Get actionable recommendations to optimize for AI and LLMs
 - Validate that your structured data, metadata, and content architecture are AI-friendly
 
 AICW is **free, open-source and runs on your computer, you own all your data**. 
 
 Explore sample reports: https://aichatwatch.com/demo/reports/
 
-*ELI5 (Explain like I'm 5 years old)?*: *AI Chat Watch is like a notebook that keeps track of which toys or pizza places the robot talks about!*
+*ELI5 (Explain like I'm 5 years old)?*: *AI Chat Watch is like a notebook that keeps track of which toys or pizza places the robot talks about and if robots can see them or not!*
 
 ---
 
@@ -44,17 +44,6 @@ Explore sample reports: https://aichatwatch.com/demo/reports/
 
 ---
 
-## Features:
-
-- ✅ **AI Visibility Auditing** - Grade your website on how accessible/visible it is to AI
-- ✅ **Multi-Model Querying** - ChatGPT, Claude, Perplexity, Gemini and many others
-- ✅ **Influence(Voice) Scoring** - Weighted by AI model usage data
-- ✅ **Brands Extraction** - Identify products, companies, people, places, events mentioned.
-- ✅ **Beautiful Reports** - Interactive HTML with tables, charts, graphs and drill-downs and advanced filtering.
-- ✅ **Historical Trends** - Track rising/falling positions and mentions over time
-- ✅ **Export to CSV and JSON** - Export any data to CSV or access original data in JSON format.
-- ✅ **Full Source Code** - Audit algorithms, verify calculations, contribute
-
 ## 🚀 Quick Start
 
 # Grade AI visibility of your website
@@ -62,7 +51,7 @@ Explore sample reports: https://aichatwatch.com/demo/reports/
 Run `Terminal` app and paste this command:
 
 ```bash
-npx @aichatwatch/aicw check-ai-vis YOURWEBSITE.com
+npx @aichatwatch/aicw ai-visibility YOURWEBSITE.com
 ```
 
 Run in interactive mode to create and run detailed AI visibility report 
