@@ -20,9 +20,9 @@ import {
 
 import {
   normalizeModelWeights,
-  calculateWeightedInfluence,
+  calculateShareOfVoice,
   calculateInfluenceByModel,
-  normalizeInfluences
+  calculateProminence
 } from '../utils/influence-calculator.js';
 import { getTargetDateFromProjectOrEnvironment, validateAndLoadProject } from '../utils/project-utils.js';
 import { getProjectNameFromCommandLine } from '../utils/project-utils.js';
@@ -34,7 +34,7 @@ const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
 
 /**
- * Calculate influence scores for items
+ * Calculate Share of Voice (influence) scores for items
  */
 function calculateInfluence(items: EnrichedItem[], models: any[]): void {
   if (!Array.isArray(items)) return;
@@ -42,26 +42,26 @@ function calculateInfluence(items: EnrichedItem[], models: any[]): void {
   // Normalize model weights
   const normalizedWeights = normalizeModelWeights(models);
 
-  // Find max mentions for normalization
-  let maxMentionsOverall = 0;
-  const maxMentionsByModel = new Map<string, number>();
+  // STEP 1: Find global max prominence across all items
+  let maxProminence = 0;
 
   for (const item of items) {
-    if ((item.mentions || 0) > maxMentionsOverall) {
-      maxMentionsOverall = item.mentions || 0;
+    if (!item.mentions || item.mentions === 0) continue;
+
+    // Calculate total prominence for this item
+    let totalProminence = 0;
+    for (const [modelId, mentions] of Object.entries(item.mentionsByModel || {})) {
+      const appearanceOrder = (item.appearanceOrderByModel || {})[modelId] || 999;
+      const prominence = calculateProminence(mentions as number, appearanceOrder);
+      totalProminence += prominence;
     }
 
-    if (item.mentionsByModel) {
-      for (const [modelId, mentions] of Object.entries(item.mentionsByModel)) {
-        const current = maxMentionsByModel.get(modelId) || 0;
-        if ((mentions as number) > current) {
-          maxMentionsByModel.set(modelId, mentions as number);
-        }
-      }
+    if (totalProminence > maxProminence) {
+      maxProminence = totalProminence;
     }
   }
 
-  // Calculate influence for each item
+  // STEP 2: Calculate Share of Voice for each item using the global max prominence
   for (const item of items) {
     if (!item.mentions || item.mentions === 0) {
       item.influence = 0;
@@ -70,28 +70,27 @@ function calculateInfluence(items: EnrichedItem[], models: any[]): void {
       continue;
     }
 
-    // Calculate weighted influence with appearance order
-    item.influence = calculateWeightedInfluence(
+    // Calculate Share of Voice using the new formula
+    item.influence = calculateShareOfVoice(
       item.mentionsByModel || {},
       item.appearanceOrderByModel || {},
       normalizedWeights,
-      maxMentionsOverall
+      maxProminence
     );
 
-    // Calculate per-model influence
+    // Calculate per-model share of voice
     item.influenceByModel = calculateInfluenceByModel(
       item.mentionsByModel || {},
       item.appearanceOrderByModel || {},
       normalizedWeights,
-      maxMentionsByModel
+      maxProminence
     );
 
     // Keep weightedInfluence for backward compatibility
     item.weightedInfluence = item.influence;
   }
 
-  // Normalize all influences so max = 1.0
-  normalizeInfluences(items);
+  // No need for normalizeInfluences() - Share of Voice is already 0-1 scale
 }
 
 /**

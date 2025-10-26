@@ -168,7 +168,7 @@
       "cmd": "actions/enrich-calculate-mentions",
       "name": "Calculate Mentions",
       "desc": "Calculating entity mentions",
-      "pipelines": ["build", "rebuild", "rebuild-report-only"],
+      "pipelines": ["build", "rebuild"],
       "category": "project",
       "requiresProject": true
     },
@@ -177,7 +177,7 @@
       "cmd": "actions/enrich-calculate-appearance-order",
       "name": "Calculate Appearance Order",
       "desc": "Calculating appearance order",
-      "pipelines": ["build", "rebuild", "rebuild-report-only"],
+      "pipelines": ["build", "rebuild"],
       "category": "project",
       "requiresProject": true
     },
@@ -186,7 +186,7 @@
       "cmd": "actions/enrich-calculate-influence",
       "name": "Calculate Influence",
       "desc": "Calculating weighted influence",
-      "pipelines": ["build", "rebuild", "rebuild-report-only"],
+      "pipelines": ["build", "rebuild"],
       "category": "project",
       "requiresProject": true
     },
@@ -195,7 +195,7 @@
       "cmd": "actions/enrich-link-types-calculate-mentions",
       "name": "Calculate LinkTypes Mentions",
       "desc": "Calculating linkTypes mentions",
-      "pipelines": ["build", "rebuild", "rebuild-report-only"],
+      "pipelines": ["build", "rebuild"],
       "category": "project",
       "requiresProject": true
     },
@@ -204,7 +204,7 @@
       "cmd": "actions/enrich-link-types-calculate-appearance-order",
       "name": "Calculate LinkTypes Appearance Order",
       "desc": "Calculating linkTypes appearance order",
-      "pipelines": ["build", "rebuild", "rebuild-report-only"],
+      "pipelines": ["build", "rebuild"],
       "category": "project",
       "requiresProject": true
     },
@@ -213,7 +213,7 @@
       "cmd": "actions/enrich-link-types-calculate-influence",
       "name": "Calculate LinkTypes Influence",
       "desc": "Calculating linkTypes influence",
-      "pipelines": ["build", "rebuild", "rebuild-report-only"],
+      "pipelines": ["build", "rebuild"],
       "category": "project",
       "requiresProject": true
     },
@@ -240,7 +240,7 @@
       "cmd": "actions/enrich-calculate-trends",
       "name": "Calculate Trends",
       "desc": "Calculating historical trends",
-      "pipelines": ["build", "rebuild", "rebuild-report-only"],
+      "pipelines": ["build", "rebuild"],
       "category": "project",
       "requiresProject": true
     },

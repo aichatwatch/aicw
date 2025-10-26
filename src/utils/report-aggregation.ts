@@ -7,9 +7,9 @@ import { replaceMacrosInTemplate, writeFileAtomic } from './misc-utils.js';
 import { logger } from './compact-logger.js';
 import {
   normalizeModelWeights,
-  calculateWeightedInfluence,
+  calculateShareOfVoice,
   calculateInfluenceByModel,
-  normalizeInfluences
+  calculateProminence
 } from './influence-calculator.js';
 import { ReportFileManager } from './report-file-manager.js';
 import { loadProjectModelConfigs, readQuestions } from './project-utils.js';
@@ -188,11 +188,8 @@ async function mergeItems(project: string, itemsByPrompt: Record<string, any[]>,
   
 
   const aiModelsForAnswer = await loadProjectModelConfigs(project, ModelType.GET_ANSWER);
-  
+
   const normalizedWeights = normalizeModelWeights(aiModelsForAnswer);
-  
-  let maxMentionsOverall = 0;
-  const maxMentionsByModel = new Map<string, number>();
 
   for (const item of mergedArray) {
     // Calculate average appearanceOrder (order of appearance) from all prompts
@@ -236,65 +233,61 @@ async function mergeItems(project: string, itemsByPrompt: Record<string, any[]>,
         item.appearanceOrderByModel[modelId] = 999; // Unknown appearanceOrder
       }
     }
+  }
 
-    // Track max mentions for normalization
-    if (item.mentions > maxMentionsOverall) {
-      maxMentionsOverall = item.mentions;
+  // STEP 1: Find global max prominence across all merged items
+  let maxProminence = 0;
+
+  for (const item of mergedArray) {
+    if (!item.mentions || item.mentions === 0) continue;
+
+    // Calculate total prominence for this item
+    let totalProminence = 0;
+    for (const [modelId, mentions] of Object.entries(item.mentionsByModel || {})) {
+      const appearanceOrder = (item.appearanceOrderByModel || {})[modelId] || 999;
+      const prominence = calculateProminence(mentions as number, appearanceOrder);
+      totalProminence += prominence;
     }
 
-    if (item.mentionsByModel) {
-      for (const [modelId, mentions] of Object.entries(item.mentionsByModel)) {
-        const current = maxMentionsByModel.get(modelId) || 0;
-        if ((mentions as number) > current) {
-          maxMentionsByModel.set(modelId, mentions as number);
-        }
-      }
+    if (totalProminence > maxProminence) {
+      maxProminence = totalProminence;
     }
   }
 
-  // Recalculate influence using proper appearanceOrder data (order of appearance)
+  // STEP 2: Recalculate Share of Voice using proper appearanceOrder data and max prominence
   for (const item of mergedArray) {
     if (!item.mentions || item.mentions === 0) {
       item.influence = 0;
       item.influenceByModel = {};
-      
       item.weightedInfluence = 0;
-      
       continue;
     }
 
-    
-    // Calculate weighted influence with appearanceOrder (order of appearance)
-    item.influence = calculateWeightedInfluence(
+    // Calculate Share of Voice using the new formula
+    item.influence = calculateShareOfVoice(
       item.mentionsByModel || {},
       item.appearanceOrderByModel || {},
       normalizedWeights,
-      maxMentionsOverall
+      maxProminence
     );
 
-    // Calculate per-model influence
+    // Calculate per-model share of voice
     item.influenceByModel = calculateInfluenceByModel(
       item.mentionsByModel || {},
       item.appearanceOrderByModel || {},
       normalizedWeights,
-      maxMentionsByModel
+      maxProminence
     );
-    
 
-    
     // Keep weightedInfluence for backward compatibility
     item.weightedInfluence = item.influence;
-    
   }
 
-  
-  // Normalize all influences so max = 1.0
-  normalizeInfluences(mergedArray);
-  
+  // No need for normalizeInfluences() - Share of Voice is already 0-1 scale
 
   // No sorting here - let the frontend handle sorting by any column the user prefers
   // Note: appearanceOrder field represents the average order of appearance in answers
-  
+
   return mergedArray;
 }
 

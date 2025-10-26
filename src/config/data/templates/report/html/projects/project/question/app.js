@@ -2014,14 +2014,14 @@ Vue.component('table-with-items', {
                     </tbody>
                 </table>
             </div>
-            <div class="mt-3 flex gap-2">
+            <div class="mt-3 flex justify-center items-center gap-2">
                 <button :id="'button_expand_' + obj.id"
-                    class="flex-1 px-4 py-2 bg-secondary text-white rounded text-sm hover:bg-blue-600 dark:hover:bg-blue-500">
+                    class="px-4 py-2 bg-secondary text-white rounded text-sm hover:bg-blue-600 dark:hover:bg-blue-500">
                     Show More
                 </button>
-                <button :id="'button_expand_all_' + obj.id"
+                <button v-show="$parent[obj.id]" :id="'button_expand_all_' + obj.id"
                     @click="$parent.expand_table(obj, null)"
-                    class="flex-1 px-4 py-2 bg-secondary text-white rounded text-sm hover:bg-blue-600 dark:hover:bg-blue-500">
+                    class="px-4 py-2 bg-secondary text-white rounded text-sm hover:bg-blue-600 dark:hover:bg-blue-500">
                     Show All
                 </button>
             </div>
@@ -2247,15 +2247,15 @@ Vue.component('tabbed-table-graph', {
                     </table>
                 </div>
                 <div v-if="$parent['filtered_' + obj.tableConfig.id] && $parent['current_visible_items_count_' + obj.tableConfig.id] > -1"
-                    class="flex gap-0 border-t">
+                    class="flex justify-center items-center gap-2 border-t p-3">
                     <button :id="'button_expand_' + obj.tableConfig.id"
                         @click="$parent['button_expand_' + obj.tableConfig.id]()"
-                        class="flex-1 p-3 text-center text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-300">
+                        class="px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-300 rounded">
                         Show More
                     </button>
-                    <button :id="'button_expand_all_' + obj.tableConfig.id"
+                    <button v-show="$parent[obj.tableConfig.id]" :id="'button_expand_all_' + obj.tableConfig.id"
                         @click="$parent['button_expand_' + obj.tableConfig.id](null)"
-                        class="flex-1 p-3 text-center text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-300 border-l">
+                        class="px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-300 rounded">
                         Show All
                     </button>
                 </div>
@@ -4025,6 +4025,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 [`simulation_${obj.id}`]: null
             }), {});
 
+            // track which tables have been expanded at least once (to show "Show All" button)
+            const create_expandedOnce_variables = {
+                ...get_DEFAULT_VISUAL_OBJECTS_ARRAY().filter(obj => obj.type === 'table-with-items').reduce((acc, obj) => ({
+                    ...acc,
+                    [obj.id]: false
+                }), {}),
+                ...get_DEFAULT_VISUAL_OBJECTS_ARRAY().filter(obj => obj.type === 'tabbed-table-graph' && obj.tableConfig).reduce((acc, obj) => ({
+                    ...acc,
+                    [obj.tableConfig.id]: false
+                }), {})
+            };
+
             return {
 
                 ALL_MODELS_OPTION_CAPTION: 'All',
@@ -4162,6 +4174,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 // for showing more buttons in tables
                 // max visible items in tables
                 ...create_current_visible_items_count_variables,
+                // track which tables have been expanded at least once
+                ...create_expandedOnce_variables,
                 // for tables: creating variables for each array name
                 ...create_searchTerms_variables,
 
@@ -6348,37 +6362,48 @@ document.addEventListener('DOMContentLoaded', function () {
                 // get list of bots for item
                 const engines = item.bots.split(',').map(e => e.trim());
 
-                // generate icon for every engine with its own trend and hint 
+                // generate icon for every engine with simple, useful hint showing mention count
                 const generateIconHtml = (botId, trendType, isMutedIcon = false) => {
 
-                    const result = this.generateHintData(parentContainerId, botId, item, trendType);
+                    // Get model name
+                    const modelName = this.getModelNameById(botId);
+
+                    // Build simple hint with mention count and influence for this specific model
+                    const mentions = item.mentionsByModel && item.mentionsByModel[botId] !== undefined
+                        ? item.mentionsByModel[botId]
+                        : 0;
+                    const influence = item.influenceByModel && item.influenceByModel[botId] !== undefined
+                        ? item.influenceByModel[botId]
+                        : null;
+
+                    let hint = `Mentions: ${mentions}`;
+                    if (influence !== null) {
+                        const influencePercent = (influence * 100).toFixed(1);
+                        hint += `\nInfluence: ${influencePercent}%`;
+                    }
 
                     const botClass = this.getModelIconClassName(botId, isMutedIcon);
                     const botIconUrl = this.getModelIconUrl(botId);
                     let botNameHtml = '';
                     if (botIconUrl && botIconUrl.length > 0) {
-                        botNameHtml = `<img src="${botIconUrl}" 
-                        width="16" 
-                        height="16" 
-                        alt="${result.title}" 
+                        botNameHtml = `<img src="${botIconUrl}"
+                        width="16"
+                        height="16"
+                        alt="${modelName}"
                         class="has-data-hint"` +
 
-                            `data-trend="${result.trend}"` +
-
-                            `data-title="${result.title}" data-hint="${result.hint}"
+                            `data-title="${modelName}" data-hint="${hint}"
                         >
                         `;
                     } else {
-                        botNameHtml = result.title.charAt(0).toUpperCase();
+                        botNameHtml = modelName.charAt(0).toUpperCase();
                     }
 
                     return `
-                        <span class="has-data-hint icon_bot trend-icon ${botClass}"` +
+                        <span class="has-data-hint icon_bot ${botClass}"` +
 
-                        `data-trend="${result.trend}"` +
-
-                        `data-title="${result.title}"
-                           data-hint="${result.hint}">
+                        `data-title="${modelName}"
+                           data-hint="${hint}">
                             ${botNameHtml}
                         </span>
                     `;
@@ -7544,6 +7569,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         this[`filtered_${obj.id}`].length
                     );
                 }
+                // Mark table as expanded at least once (to show "Show All" button)
+                this[obj.id] = true;
                 this.init_table(obj);
             },
 
@@ -7586,6 +7613,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             this[`filtered_${obj.id}`].length
                         );
                     }
+                    // Mark table as expanded at least once (to show "Show All" button)
+                    this[obj.id] = true;
                     this.init_table(obj);
                 }
             }), {}),
@@ -7604,6 +7633,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             this[`filtered_${obj.tableConfig.id}`].length
                         );
                     }
+                    // Mark table as expanded at least once (to show "Show All" button)
+                    this[obj.tableConfig.id] = true;
                     this.init_table(obj.tableConfig);
                 }
             }), {}),
@@ -8001,8 +8032,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Build HTML for count + favicon icons
                 let cellHtml = '<div class="flex items-center gap-2">';
 
-                // Count
-                cellHtml += `<span class="font-semibold text-gray-700 dark:text-gray-300">${filteredSources.length}</span>`;
+                // do not add Count because it is clear from the favicon icons
+                //cellHtml += `<span class="font-semibold text-gray-700 dark:text-gray-300">${filteredSources.length}</span>`;
 
                 // Icons container
                 cellHtml += '<div class="inline-flex flex-wrap gap-1 items-center">';
@@ -8030,6 +8061,7 @@ document.addEventListener('DOMContentLoaded', function () {
                            target="_blank"
                            rel="noopener noreferrer"
                            title="${source.url}"
+                           data-hint="${source.url}"
                            class="inline-block hover:opacity-70 transition-opacity">
                             <img src="${faviconUrl}"
                                  width="16"
@@ -8049,6 +8081,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 cellHtml += '</div></div>';
 
                 sourcesCell.innerHTML = cellHtml;
+                // save data value for the sorting and filtering
                 sourcesCell.setAttribute('data-value', filteredSources.length);
             },
 
@@ -9391,9 +9424,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         // Update Show All button
                         if (btnAll) {
-                            btnAll.disabled = isAllItemsShown;
-                            btnAll.classList.toggle('opacity-50', isAllItemsShown);
-                            btnAll.classList.toggle('cursor-not-allowed', isAllItemsShown);
+                            // disabling the button
+                            //btnAll.disabled = isAllItemsShown;
+                            // hide button if all items are shown
+                            //btnAll.classList.toggle('opacity-50', isAllItemsShown);
+                            //btnAll.classList.toggle('cursor-not-allowed', isAllItemsShown);
+
+                            btnAll.style.display = isAllItemsShown ? 'none' : 'block';
                         }
                     }
                 });
@@ -9411,9 +9448,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         // Update Show All button
                         if (btnAll) {
-                            btnAll.disabled = isAllItemsShown;
-                            btnAll.classList.toggle('opacity-50', isAllItemsShown);
-                            btnAll.classList.toggle('cursor-not-allowed', isAllItemsShown);
+                            // disabling the button
+                            //btnAll.disabled = isAllItemsShown;
+                            // hide button if all items are shown
+                            //btnAll.classList.toggle('opacity-50', isAllItemsShown);
+                            //btnAll.classList.toggle('cursor-not-allowed', isAllItemsShown);
+
+                            btnAll.style.display = isAllItemsShown ? 'none' : 'block';
                         }
                     }
                 });
