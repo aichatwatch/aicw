@@ -1,6 +1,27 @@
-# AI Chat Watch (AICW)
+# AI Chat Watch (AICW) – Monitor AI Engines & Maximize Your AI Visibility
 
-AI Chat Watch (aka AICW) is the tool for GEO (Generative Engine Optimization) marketers to track mentions of brands/products/websites by AI like ChatGPT. See who is mentioned first and how often, by which AI, how mentions change over time. Instantly see sources for citations. Track trends over time. See how your brand is positioned compared to competitors in AI search results. AICW is **free open-source and runs on your computer, you own all your data**. Explore sample reports: https://aichatwatch.com/demo/reports/
+`AICW` is a comprehensive monitoring and optimization suite designed to help you dominate the emerging AI search landscape. Track how AI engines like ChatGPT, Perplexity, Claude, and others discover, cite, and recommend your brand—while giving you actionable intelligence to improve your AI visibility.
+
+What You Get:
+
+1) **AI Engine Monitoring**:
+
+- Track brand, product, and competitor mentions across major AI platforms in real-time
+- See who ranks first in AI responses and how often you're cited
+- Monitor citation sources and understand what content drives AI recommendations
+- Track positioning trends over time—catch shifts before they impact traffic
+- Benchmark against competitors to identify gaps and opportunities
+
+2) **AI Visibility Auditing**:
+
+- Assess how "AI-readable" your website and content are
+- Identify technical barriers preventing AI engines from discovering your content
+- Get actionable recommendations to optimize for AI crawlers and LLM training
+- Validate that your structured data, metadata, and content architecture are AI-friendly
+
+AICW is **free, open-source and runs on your computer, you own all your data**. 
+
+Explore sample reports: https://aichatwatch.com/demo/reports/
 
 *ELI5 (Explain like I'm 5 years old)?*: *AI Chat Watch is like a notebook that keeps track of which toys or pizza places the robot talks about!*
 
@@ -25,6 +46,7 @@ AI Chat Watch (aka AICW) is the tool for GEO (Generative Engine Optimization) ma
 
 ## Features:
 
+- ✅ **AI Visibility Auditing** - Grade your website on how accessible/visible it is to AI
 - ✅ **Multi-Model Querying** - ChatGPT, Claude, Perplexity, Gemini and many others
 - ✅ **Influence(Voice) Scoring** - Weighted by AI model usage data
 - ✅ **Brands Extraction** - Identify products, companies, people, places, events mentioned.
@@ -35,15 +57,21 @@ AI Chat Watch (aka AICW) is the tool for GEO (Generative Engine Optimization) ma
 
 ## 🚀 Quick Start
 
-# Try it without installation
+# Grade AI visibility of your website
 
 Run `Terminal` app and paste this command:
+
+```bash
+npx @aichatwatch/aicw check-ai-vis YOURWEBSITE.com
+```
+
+Run in interactive mode to create and run detailed AI visibility report 
 
 ```bash
 npx @aichatwatch/aicw
 ```
 
-### Installation (2 minutes)
+### Installation (Recommended for continuous monitoring)
 
 Run `Terminal` app and paste this command:
 
@@ -51,13 +79,11 @@ Run `Terminal` app and paste this command:
 npm install -g @aichatwatch/aicw
 ```
 
-Then run by typing:
+Then run `aicw` by typing and hitting Enter to start AICW (AI Chat Watch) in interactive mode.
 
 ```bash
 aicw
 ``` 
-
-And press Enter to start AICW (AI Chat Watch) and follow the instructions.
 
 **Requirements:**
 
@@ -71,25 +97,19 @@ And press Enter to start AICW (AI Chat Watch) and follow the instructions.
 
 ## 🎬 AICW in Action
 
-### Terminal Interface
+### AI Visibility Report
 
 <p align="center">
-  <img src="https://aichatwatch.com/assets/images/screenshots/aicw-running-in-terminal.png" alt="AICW Terminal Menu" width="700"/>
+  <img src="https://aichatwatch.com/assets/images/screenshots/aicw-ai-visibility-report.png" alt="AICW AI Visibility Report " width="700"/>
 </p>
 
-**Interactive CLI menu** - Create projects, run pipelines, generate reports, all from your terminal.
+### AI Chat Watch - Main Menu
 
 <p align="center">
-  <img src="https://aichatwatch.com/assets/images/screenshots/aicw-running-in-terminal-processing.png" alt="AICW Processing" width="700"/>
+  <img src="https://aichatwatch.com/assets/images/screenshots/aicw-main-menu.png" alt="AICW Main Menu in Interactive Mode" width="700"/>
 </p>
 
-**View Top Influencers, Filter by AI Model, Filter by Trend** - Explore live reports
 
-<p align="center">
-  <a href="https://aichatwatch.com/demo/reports/" target="_blank">
-    <img src="https://aichatwatch.com/assets/images/screenshots/aicw-report-screenshot-top-influencers.png" alt="Top Influencers" width="700"/>
-  </a>
-</p>
 
 <p align="center">
   <a href="https://aichatwatch.com/demo/reports/" target="_blank">
