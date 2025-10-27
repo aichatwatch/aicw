@@ -32,6 +32,7 @@ Explore sample reports: https://aichatwatch.com/demo/reports/
 - [Sample Reports](#sample-reports)
 - [Features](#features)
 - [🚀 Quick Start](#-quick-start)
+- [🔧 Troubleshooting](#-troubleshooting)
 - [🎬 AICW in Action](#-aicw-in-action)
 - [📊 All Sample Reports](#-all-sample-reports)
 - [💾 Data Storage](#-data-storage)
@@ -89,6 +90,45 @@ aicw
 - Typical cost: **$0.01-$0.10 per answer** + **$0.01-$0.05 per question** for enrichment/analysis
 - **Example:** 5 questions × 3 AI models = 15 answers + enrichment ≈ **$0.30-$1.75 total** (depending on which models you select)
 - You control costs by choosing which models to query (free, mid-tier, or premium) and how many questions to ask.
+
+## 🔧 Troubleshooting
+
+### API Key Setup Issues
+
+If you run `ai-visibility` and get the error:
+
+```
+No API keys were set! Please run "Setup: setup API Key" first and then try again.
+```
+
+This typically means you're running an outdated version. Update AICW using:
+
+```bash
+npm update @aichatwatch/aicw
+```
+
+Then try running your command again.
+
+### Permission Errors / Crashes
+
+If AICW crashes or asks for permission when running, you need to run it with administrator privileges:
+
+**macOS / Linux:**
+```bash
+sudo npx @aichatwatch/aicw
+# or if installed globally
+sudo aicw
+```
+
+**Windows:**
+1. Right-click on `Command Prompt` or `PowerShell`
+2. Select "Run as Administrator"
+3. Then run your AICW command normally:
+```bash
+npx @aichatwatch/aicw
+```
+
+---
 
 ## 🎬 AICW in Action
 
