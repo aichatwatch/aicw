@@ -359,15 +359,6 @@ async function executePipelineForMenuItem(pipelineId: string, project?: string):
 
   const pipeline = getPipeline(pipelineId);
 
-  if(pipeline.requiresApiKeys) {
-    // for command line mode before executing a pipeline always check for api keys
-    // check if requried API keys are set
-    if (!await checkApiKeysArePresent()) {
-      // if no api keys are set, wait for user input and return back to the caller
-      return { success: false, completedSteps: 0, totalSteps: 0, duration: 1 } as ExecutionResult;
-    }
-  }
-
   const executor = new PipelineExecutor(''); // empty project means it will show project selector if needed
   const executionOptions: ExecutionOptions = { project: project || '' };
   // run the pipeline
@@ -531,7 +522,9 @@ async function main(): Promise<void> {
 
     // for command line mode before executing a pipeline always check for api keys
     // check if requried API keys are set
-    if (!await checkApiKeysArePresent()) {
+    if (pipeline.requiresApiKeys && !await checkApiKeysArePresent()) {
+      console.error(colorize(`\n✗ Oops! API keys are not set. Please run "aicw setup" to set the API keys.`, 'red'));
+      console.error(colorize(`Try "aicw help" to see what I can do.`, 'dim'));
       process.exit(1);
     }
 
