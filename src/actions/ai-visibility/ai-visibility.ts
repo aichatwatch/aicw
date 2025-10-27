@@ -230,7 +230,7 @@ async function main(): Promise<void> {
   await logger.initialize(import.meta.url);
 
   // Get URL from CLI arg or prompt
-  let urlString = process.argv[3] || '';
+  let urlString = process.argv[2] || '';
 
   if (!urlString) {
     // Show permission notice before prompting
