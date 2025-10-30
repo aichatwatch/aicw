@@ -4,6 +4,29 @@ import { USER_CACHE_DIR } from '../config/user-paths.js';
 import { logger } from  './compact-logger.js';
 import { writeFileAtomic } from './misc-utils.js';
 
+/**
+ * Logger interface for optional external logging
+ */
+export interface ISimpleCacheLogger {
+  debug: (msg: string) => void;
+  warn: (msg: string) => void;
+  error: (msg: string) => void;
+}
+
+/**
+ * Configuration options for SimpleCache
+ */
+export interface SimpleCacheOptions {
+  /** Name of the cache (used for file naming) */
+  cacheName: string;
+  /** Directory to store cache files (defaults to system cache dir) */
+  cacheDir?: string;
+  /** Maximum age of cache entries in seconds (optional TTL) */
+  maxAgeSeconds?: number;
+  /** Optional logger for debug/warn/error messages */
+  logger?: ISimpleCacheLogger;
+}
+
 interface CacheEntry {
   value: string;
   timestamp: number; // milliseconds since epoch
@@ -12,28 +35,68 @@ interface CacheEntry {
 /**
  * Simple key-value cache with file persistence and optional TTL support
  * Can be used for any caching needs in the application
+ *
+ * @example
+ * // Basic usage (backward compatible)
+ * const cache = new SimpleCache('my-cache');
+ *
+ * @example
+ * // With custom directory and TTL
+ * const cache = new SimpleCache({
+ *   cacheName: 'my-cache',
+ *   cacheDir: './data/cache',
+ *   maxAgeSeconds: 3600
+ * });
+ *
+ * @example
+ * // With custom logger
+ * const cache = new SimpleCache({
+ *   cacheName: 'my-cache',
+ *   logger: myCustomLogger
+ * });
  */
 export class SimpleCache {
   private cache: Map<string, CacheEntry>;
   private cachePath: string;
   private cacheName: string;
+  private cacheDir: string;
   private isDirty: boolean = false;
   private maxAgeSeconds?: number;
+  private logger?: ISimpleCacheLogger;
 
-  constructor(cacheName: string, maxAgeSeconds?: number) {
-    this.cacheName = cacheName;
-    this.cachePath = path.join(USER_CACHE_DIR, `${cacheName}.txt`);
+  /**
+   * Create a new SimpleCache instance
+   * @param options - Cache configuration (or cacheName string for backward compatibility)
+   * @param maxAgeSeconds - Optional TTL in seconds (only used with legacy string constructor)
+   */
+  constructor(options: SimpleCacheOptions | string, maxAgeSeconds?: number) {
+    // Support backward compatible constructor: new SimpleCache('name', ttl)
+    if (typeof options === 'string') {
+      this.cacheName = options;
+      this.cacheDir = USER_CACHE_DIR;
+      this.maxAgeSeconds = maxAgeSeconds;
+      this.logger = logger; // Use default logger for backward compat
+    } else {
+      this.cacheName = options.cacheName;
+      this.cacheDir = options.cacheDir || USER_CACHE_DIR;
+      this.maxAgeSeconds = options.maxAgeSeconds;
+      this.logger = options.logger;
+    }
+
+    this.cachePath = path.join(this.cacheDir, `${this.cacheName}.txt`);
     this.cache = new Map();
-    this.maxAgeSeconds = maxAgeSeconds;
   }
 
   /**
    * Load cache from disk
+   * Automatically creates the cache directory if it doesn't exist.
+   * Skips expired entries based on maxAgeSeconds.
+   * Backward compatible with old cache format (without timestamps).
    */
   async load(): Promise<void> {
     try {
       // Ensure cache directory exists
-      await fs.mkdir(USER_CACHE_DIR, { recursive: true });
+      await fs.mkdir(this.cacheDir, { recursive: true });
 
       // Try to read cache file
       const content = await fs.readFile(this.cachePath, 'utf-8');
@@ -84,17 +147,17 @@ export class SimpleCache {
       }
 
       if (validEntries > 0) {
-        logger.debug(`Loaded ${validEntries} entries from ${this.cacheName} cache`);
+        this.logger?.debug(`Loaded ${validEntries} entries from ${this.cacheName} cache`);
       }
       if (invalidEntries > 0) {
-        logger.warn(`Skipped ${invalidEntries} invalid entries in ${this.cacheName} cache`);
+        this.logger?.warn(`Skipped ${invalidEntries} invalid entries in ${this.cacheName} cache`);
       }
 
     } catch (error: any) {
       if (error.code === 'ENOENT') {
-        logger.debug(`No existing ${this.cacheName} cache found, starting fresh`);
+        this.logger?.debug(`No existing ${this.cacheName} cache found, starting fresh`);
       } else {
-        logger.warn(`Failed to load ${this.cacheName} cache: ${error.message}`);
+        this.logger?.warn(`Failed to load ${this.cacheName} cache: ${error.message}`);
       }
       // Start with empty cache on any error
       this.cache.clear();
@@ -103,6 +166,9 @@ export class SimpleCache {
 
   /**
    * Save cache to disk (only if dirty)
+   * Uses atomic write to prevent corruption.
+   * Only writes if the cache has been modified (dirty flag optimization).
+   * Automatically creates the cache directory if it doesn't exist.
    */
   async save(): Promise<void> {
     if (!this.isDirty) {
@@ -111,7 +177,7 @@ export class SimpleCache {
 
     try {
       // Ensure cache directory exists
-      await fs.mkdir(USER_CACHE_DIR, { recursive: true });
+      await fs.mkdir(this.cacheDir, { recursive: true });
 
       // Build cache content
       const lines: string[] = [];
@@ -126,16 +192,19 @@ export class SimpleCache {
       await writeFileAtomic(this.cachePath, lines.join('\n'), { encoding: 'utf-8' });
       this.isDirty = false;
 
-      logger.debug(`Saved ${this.cache.size} entries to ${this.cacheName} cache`);
+      this.logger?.debug(`Saved ${this.cache.size} entries to ${this.cacheName} cache`);
 
     } catch (error: any) {
-      logger.error(`Failed to save ${this.cacheName} cache: ${error.message}`);
+      this.logger?.error(`Failed to save ${this.cacheName} cache: ${error.message}`);
       // Don't throw - caching should not break the main flow
     }
   }
 
   /**
    * Get value from cache
+   * Automatically checks expiration and removes expired entries.
+   * @param key - Cache key
+   * @returns Cached value or undefined if not found or expired
    */
   get(key: string): string | undefined {
     const entry = this.cache.get(key);
@@ -156,6 +225,10 @@ export class SimpleCache {
 
   /**
    * Set value in cache
+   * Marks cache as dirty if the value is new or changed.
+   * Automatically sets timestamp for TTL tracking.
+   * @param key - Cache key
+   * @param value - Value to cache (must be a string)
    */
   set(key: string, value: string): void {
     const newEntry = { value, timestamp: Date.now() };
@@ -170,6 +243,9 @@ export class SimpleCache {
 
   /**
    * Check if key exists in cache
+   * Respects TTL - returns false for expired entries.
+   * @param key - Cache key to check
+   * @returns true if key exists and is not expired, false otherwise
    */
   has(key: string): boolean {
     // Use get() to check expiration
@@ -178,6 +254,9 @@ export class SimpleCache {
 
   /**
    * Delete a key from cache
+   * Marks cache as dirty for persistence.
+   * @param key - Cache key to delete
+   * @returns true if key was deleted, false if key didn't exist
    */
   delete(key: string): boolean {
     const result = this.cache.delete(key);
@@ -189,6 +268,7 @@ export class SimpleCache {
 
   /**
    * Clear all cache entries
+   * Marks cache as dirty for persistence.
    */
   clear(): void {
     if (this.cache.size > 0) {
@@ -199,13 +279,15 @@ export class SimpleCache {
 
   /**
    * Get number of cached entries
+   * @returns Number of entries currently in cache
    */
   size(): number {
     return this.cache.size;
   }
 
   /**
-   * Get all keys
+   * Get all keys in cache
+   * @returns Array of all cache keys
    */
   keys(): string[] {
     return Array.from(this.cache.keys());
@@ -213,6 +295,7 @@ export class SimpleCache {
 
   /**
    * Get all entries as array of [key, value] pairs
+   * @returns Array of [key, value] tuples
    */
   entries(): Array<[string, string]> {
     return Array.from(this.cache.entries()).map(([key, entry]) => [key, entry.value]);
@@ -220,6 +303,7 @@ export class SimpleCache {
 
   /**
    * Get cache statistics
+   * @returns Object containing cache size, file path, and dirty flag
    */
   getStats(): { size: number; path: string; isDirty: boolean } {
     return {
